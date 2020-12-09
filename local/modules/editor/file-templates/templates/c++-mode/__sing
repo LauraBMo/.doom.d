@@ -1,0 +1,17 @@
+# -*- mode: snippet -*-
+# group: file templates
+# contributor: Laura Brustenga
+# --
+
+LIB "resolve.lib"; // blowup;
+LIB "matrix.lib"; // symmatricPower
+LIB "primdec.lib"; //primdecGZT
+LIB "numerAlg.lib"; // Equal
+LIB "ncalg.lib";
+LIB "poly.lib";
+LIB "sing.lib";
+LIB "latex.lib"; // texobj("",f);texpoly("",f);
+LIB "standard.lib";
+LIB "sing.lib"; //slocus (singular locus)
+
+ring R = ($0,e), (x(1..4)), dp; minpoly = e^2-1;

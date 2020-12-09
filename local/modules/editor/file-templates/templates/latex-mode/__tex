@@ -1,0 +1,213 @@
+\documentclass[12pt]{amsart}
+
+%%%%%%%%%%%%%%%% Hyperref %%%%%%%%%%%%%%%%
+%%% with nice colors and boxes. %%%%%%
+% \usepackage[pdftex, pdfusetitle, plainpages=false,  bookmarks, bookmarksnumbered,colorlinks, linkcolor=blue, citecolor=red,filecolor=black, urlcolor=black]{hyperref}
+\usepackage[hyperref,x11names]{xcolor}
+\usepackage{hyperref}
+\hypersetup{%
+colorlinks = true,       % Don't put a box around links
+breaklinks = true,       % Allow line breaks inside links
+urlcolor   = SteelBlue3, % Web addresses SteelBlue3
+ linkcolor  = blue, % Firebrick3, Cross-references to theorems etc
+citecolor = Firebrick3, % OliveDrab4 Cites red!40!gray
+% linkcolor =Firebrick3,
+% DarkOliveGreen4 %Aquamarine4
+}
+
+%%% Codificació de font
+\usepackage[T1]{fontenc} %% Usual
+\usepackage[utf8]{inputenc}
+\usepackage[english=british]{csquotes}
+\usepackage{subfig}
+%%% More resolution fonts
+\usepackage{lmodern}%
+
+%%%%%%%%% ToDo notes %%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{todonotes}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%% American Mathematical Society
+\usepackage{%
+  amssymb, % Extra symbols
+  amsmath, % Basic math
+  amsfonts,
+  %amstext,
+  %amscd, % commutative diagrams (We use tikcd)
+  amsthm, % Theorem... environment
+  %amsgen,
+}
+
+\usepackage{mathtools}
+% \usepackage{colonequals} %% mathtools already have the macro \coloneqq
+\usepackage{mathrsfs}
+\usepackage[left=3cm, right=3cm, top=2.5cm,bottom=2.5cm]{geometry}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%% cleveref need to be the last
+%%%%%%%%%%%%%%%% load package that modify the cross refering system!!!
+%%%%%%%%%%%%%%%% and before defining/modifying your own Theorem environments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[capitalise,noabbrev]{cleveref}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%% For a better spacing %%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{microtype}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%% For commutative diagrams %%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{tikz}       % note we use both package calc
+\usepackage{pgfplots}
+\usepackage{tikz-cd}
+\usetikzlibrary{3d,shapes,calc,arrows,intersections} % and tikzlibrary calc
+\usepackage{tikz-cd}
+% \tikzcdset{
+% arrow style       = tikz,
+% cramped,
+% diagrams          = {>=stealth},
+% %diagrams         = {>={Straight Barb[scale=0.8]}},
+% row sep/normal    = 2.2em,
+% column sep/normal = 2.7em,
+% %inner sep        = 0pt,
+% %outer sep        = 0pt,
+% }
+% \tikzset{>={Stealth[length=6mm,width=3mm]}}
+\tikzset{%
+  > = {Stealth},
+  inner sep = 1.8pt,
+  outer sep = auto,
+}
+
+\usepackage[linesnumbered,lined,commentsnumbered,ruled]{algorithm2e}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+% \newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{hypothesis}[theorem]{Hypothesis}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{remark}[theorem]{Remark}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{notation}[theorem]{Notation}
+\theoremstyle{remark}
+\newtheorem*{question*}{\sc Question}
+\newtheorem*{example*}{\sc Example}
+\newtheorem{question}[theorem]{\sc Question}
+\newtheorem{example}[theorem]{\sc Example}
+\newtheorem{idea}[theorem]{\sc Idea}
+\newtheorem{problem}[theorem]{\sc Problem}
+\newtheorem{remarks}[theorem]{\sc Remarks}
+\newtheorem{note}[theorem]{\sc Note}
+\newtheorem{alg}[theorem]{\sc Algorithm}
+
+% Enumerate equations with respect to sections
+\numberwithin{equation}{section}
+
+\usepackage{verbatim} % verbatim and verbatim* environments
+% \usepackage{subcaption}
+\usepackage{framed} % creates three environments:
+    % framed, which puts an ordinary frame box around the region,
+    % shaded, which shades the region, and
+    % leftbar, which places a line at the left side.
+
+% \usepackage{graphicx} % providing a key-value interface for optional arguments to the \includegraphics command.
+
+\usepackage{float} % improves the interface for defining floating objects such as figures and tables (The option H for includegraphics).
+
+\usepackage{enumitem} % provides user control over the layout of the three basic list environments: enumerate, itemize and description.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%% Classic sets
+\newcommand*{\classicsets}[1]{\mathbb{#1}} % Classic sets face
+
+\newcommand*{\nat}{\classicsets{N}}   % Natural numbers
+\newcommand*{\rat}{\classicsets{Q}}   % Rational numbers
+
+
+\newcommand*{\bR}{\classicsets{R}}   % Real numbers
+\newcommand*{\rgz}{\bR_{> 0}} % Positive real numbers
+\newcommand*{\rgez}{\bR_{\ge 0}} % Non-negative real numbers
+\newcommand*{\bP}{\mathbb{P}}
+\newcommand*{\by}{\mathbf{y}}
+\newcommand*{\byz}{\mathbf{y_0}}
+% \newcommand*{\vE}{{\vert E\vert}}
+\newcommand*{\vv}[1]{{\vert #1\vert}}
+\newcommand*{\vE}{{E}}
+\newcommand*{\bx}{\mathbf{x}}
+\newcommand*{\bxz}{\mathbf{x_0}}
+
+\newcommand*{\from}{{\colon\mspace{-3mu}}\linebreak[0]} % Colon for f: A --> B
+\newcommand*{\card}[1]{|#1|}
+\newcommand*{\m}{\setminus}
+% \newcommand{\defi}{\textbf}
+% \renewcommand*{\emph}{\textbf}
+
+%%%%%%%%%%%%%%%%%% Arrows %%%%%%%%%%%%%%
+\newcommand*{\rightstealtharrow}{%
+  \mathrel{\begin{tikzcd}[ampersand replacement=\&, column sep=1.15em]\arrow[r]\&{}\end{tikzcd}}}
+
+\newcommand*{\myapplication}[1]{\mspace{-8mu} #1 \mspace{-8mu}} % \! == -3mu
+% \renewcommand*{\to}{\myapplication{\rightstealtharrow}}
+
+%%%%%%%%%%%%%%%% Math operators
+\DeclareMathOperator{\rk}{rk}
+
+\DeclareMathOperator{\grad}{grad}
+\DeclareMathOperator{\Sing}{Sing}
+
+\DeclareMathOperator{\codim}{codim}
+\DeclareMathOperator{\homo}{Hom}
+\DeclareMathOperator{\im}{Im}
+\DeclareMathOperator{\dd}{d}
+
+%%%%%%%%%%%%%%%%% Tables of contents
+% \usepackage[tight]{minitoc} % to add mini-tables-of-contents (minitocs) at the beginning of every chapter, part or section.
+% \usepackage{tocloft} % Provides control over the typography of the Table of Contents, List of Figures and List of Tables,
+% \setlength{\cftchapnumwidth}{3em}
+
+%%%%%%%%%%%%%%%% Bibliography
+% \bibliographystyle{abbrv}
+% \usepackage[square,numbers]{natbib}
+% \bibliographystyle{abbrv}
+ \usepackage[backref=true,maxbibnames=99]{biblatex}
+\addbibresource{biblio_dyn.bib}
+%\usepackage{mathscinet} % A Perl script that downloads references from MathSciNet in BibTeX format.
+
+
+\title{}
+\date{\today}%November 6, 2019
+\author{Laura Brustenga i Moncusí}
+% \shortauthormark
+
+\setcounter{tocdepth}{1}
+%% See bad boxes and company in the log file or output of pdflatex.
+\showboxdepth=5
+\showboxbreadth=5
+
+\begin{document}
+% \setcounter{tocdepth}{3}
+% \setcounter{secttocdepth}{3}
+
+\begin{abstract}
+\end{abstract}
+
+\maketitle
+
+\tableofcontents
+
+
+\section*{Introduction}
+
+\end{document}
