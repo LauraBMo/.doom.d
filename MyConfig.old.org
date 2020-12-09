@@ -1,0 +1,3779 @@
+#-*- mode: org -*-
+
+#+TITLE=Main config file
+#+STARTUP:overview
+
+(What the world needs (I think) is not
+      (a Lisp (with fewer parentheses))
+      but (an English (with more.)))
+-- Brian Hayes, http://tinyurl.com/3y9l2kf
+
+ Emacs is a flexible platform for developing end-user applications
+   –unfortunately it is generally perceived as merely a text editor.
+Some people use it specifically for one or two applications.
+   https://alhassy.github.io/init/
+
+I’m rarely happier than when spending an entire day programming my computer
+  to perform automatically a task that would otherwise take me a
+  good ten seconds to do by hand.
+-- Douglas Adams
+
+* init.el
+** Generic settings
+*** Personal data
+#+BEGIN_SRC elisp
+(setq user-full-name "Laura Brustenga i Moncusí"
+      user-mail-address "laurea987@gmail.com")
+#+END_SRC
+*** Scratch message
+#+BEGIN_SRC elisp
+  ;; (setq initial-scratch-message ";;;;;;;;;;;;; Bon Dia!!!! ;;;;;;;;;;;;;;;;\n\n\n")
+  (setq initial-scratch-message ";; ╔═╗┌─┐┬─┐┌─┐┌┬┐┌─┐┬ ┬\n;; ╚═╗│  ├┬┘├─┤ │ │  ├─┤\n;; ╚═╝└─┘┴└─┴ ┴ ┴ └─┘┴ ┴\n")
+#+END_SRC
+*** Personal english-words disctionary
+Look at Spell header to undersand the reason of the following code.
+It is used in company-ispell
+**** Creat it when starting Emacs
+#+BEGIN_SRC elisp
+  (defun brust-create-english-word-file nil
+    (let ((p nil))
+      (with-temp-buffer
+        (when (file-exists-p "~/Dropbox/config/english-words-saved.txt")
+          (insert-file-contents "~/Dropbox/config/english-words-saved.txt")
+          (end-of-buffer)
+          (setq p t))
+        (when (file-exists-p "~/Dropbox/config/personal-words.txt")
+          (insert-file-contents "~/Dropbox/config/personal-words.txt")
+          (setq p t))
+        (when p
+          (write-file "~/.doom.d/local/english-words.txt")))))
+
+  (add-hook 'emacs-startup-hook #'brust-create-english-word-file)
+#+END_SRC
+
+#+RESULTS:
+| brust-create-english-word-file | brust-init-files |
+**** Save it when killing Emacs
+#+begin_src elisp
+(defun brust-update-personal-words (&optional ARG)
+  (interactive "P")
+  (when (and (file-exists-p "~/.aspell.en.pws")
+             (file-exists-p "~/Dropbox/config/personal-words.txt"))
+    (with-temp-buffer
+      (insert-file-contents "~/.aspell.en.pws")
+      (delete-region (point) (1+ (point-at-eol)))
+      (insert-file-contents "~/Dropbox/config/personal-words.txt")
+      (delete-duplicate-lines (point-min) (point-max))
+      (write-file "~/Dropbox/config/personal-words.txt"))))
+
+;; (advice-add 'save-buffers-kill-emacs :before #'brust-update-personal-words)
+#+end_src
+*** Killing Emacs with no questions
+#+BEGIN_SRC elisp
+(setq confirm-kill-emacs nil)
+
+;; (require 'cl)
+(defun brust-save-buffers-kill-emacs-advice (orig-fun &rest args)
+  (brust-update-personal-words)
+  (cl-flet ((process-list ()))
+    (apply orig-fun args)))
+
+(advice-add 'save-buffers-kill-emacs :around #'brust-save-buffers-kill-emacs-advice)
+(advice-add 'save-buffers-kill-terminal :around #'brust-save-buffers-kill-emacs-advice)
+#+END_SRC
+
+#+RESULTS:
+
+*** Set Monoid font family.
+#+BEGIN_SRC elisp
+  (when (member "IBM Plex Mono" (font-family-list))
+    (set-frame-font "IBM Plex Mono Light 13")
+    (add-to-list 'initial-frame-alist '(font . "IBM Plex Mono Light"))
+    (add-to-list 'default-frame-alist '(font . "IBM Plex Mono Light")))
+#+END_SRC
+
+#+RESULTS:
+: ((font . IBM Plex Mono Light) (right-divider-width . 1) (bottom-divider-width . 1) (font . -*-monospace-*-*-*-*-14-*-*-*-*-*-*-*) (vertical-scroll-bars) (tool-bar-lines . 0) (menu-bar-lines . 0))
+
+*** European agenda.
+#+BEGIN_SRC elisp
+(setq european-calendar-style t
+      calendar-week-start-day 1)
+#+END_SRC
+
+*** Local Variables
+    Set save all local variable and do not query.
+#+BEGIN_SRC elisp
+(setq enable-local-variables :all)
+#+END_SRC
+
+*** Enable
+    Learn to use =set-goal-column=!!
+#+BEGIN_SRC elisp
+;;; Enable disabled commands
+
+(put 'erase-buffer    'disabled nil)
+(put 'eval-expression 'disabled nil)   ; Let ESC-ESC work
+(put 'upcase-region   'disabled nil)
+(put 'downcase-region 'disabled nil)
+(put 'list-timers     'disabled nil)
+(put 'set-goal-column 'disabled nil)
+;; (put 'company-coq-fold            'disabled nil)
+;; (put 'TeX-narrow-to-group         'disabled nil)
+;; (put 'LaTeX-narrow-to-environment 'disabled nil)
+(put 'narrow-to-region            'disabled nil)
+(put 'narrow-to-defun             'disabled nil)
+(put 'narrow-to-page              'disabled nil)
+#+END_SRC
+
+*** Clipboard
+     Save whatever in the current (system) clipboard before replacing it with the Emacs' text.
+#+BEGIN_SRC elisp
+  (setq save-interprogram-paste-before-kill t
+        ;; kill-ring-max 50
+        )
+#+END_SRC
+
+#+RESULTS:
+: t
+
+** Doom stuff
+*** Buffer line numbers
+#+begin_src elisp
+;; Line numbers are pretty slow all around. The performance boost of
+;; disabling them outweighs the utility of always keeping them on.
+(setq display-line-numbers-type nil)
+;; (global-display-line-numbers-mode -1)
+#+end_src
+*** Dashboard menu
+#+begin_src elisp
+(setq +doom-dashboard-menu-sections
+      '(
+        ("Load workspace" :icon
+         (all-the-icons-octicon "rocket" :face 'doom-dashboard-menu-title)
+         :action +workspace/load)
+        ("Email"
+         :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
+         :action mu4e)
+        ;; ("Open register" :icon
+        ;;  (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
+        ;;  :action jump-to-register)
+        ;; ("Jump to bookmark"
+        ;;  :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
+        ;;  :action bookmark-jump)
+        ("Open org-agenda" :icon
+         (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
+         :when
+         (fboundp 'org-agenda)
+         :action org-agenda)
+        ("Reload last session" :icon
+         (all-the-icons-octicon "history" :face 'doom-dashboard-menu-title)
+         :when
+         (file-exists-p
+          (expand-file-name persp-auto-save-fname persp-save-dir))
+         :face
+         (:inherit
+          (doom-dashboard-menu-title bold))
+         :action doom/quickload-session)
+        ("Open private configuration"
+         :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
+         :when (file-directory-p doom-private-dir)
+         :action doom/open-private-config)
+        ;; ("Notes"
+        ;;  :icon (all-the-icons-octicon "light-bulb" :face 'font-lock-keyword-face)
+        ;;  :action ragone-deft-or-close)
+        ;; ("Passwords"
+        ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
+        ;;  :action pass)
+        ;; ("IRC"
+        ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
+        ;;  :action =irc)))
+        ))
+#+end_src
+*** Find file project
+#+begin_src elisp
+(defun doom/find-file-in-private-config nil
+  (interactive)
+  (counsel-find-file "~/.doom.d/"))
+#+end_src
+*** Formater
+#+begin_src elisp
+(setq +format-on-save-enabled-modes
+      '(not emacs-lisp-mode  ; elisp's mechanisms are good enough
+            sql-mode         ; sqlformat is currently broken
+            tex-mode         ; latexindent is broken
+            c-mode
+            latex-mode))
+#+end_src
+
+#+RESULTS:
+| not | emacs-lisp-mode | sql-mode | tex-mode | c-mode | latex-mode |
+
+*** Killing and Yanking
+Cycling through =kill-ring= with =C-P=
+#+begin_src elisp
+(defun brust-evil-paste-pop-backwards nil
+  (evil-paste-pop -1))
+#+end_src
+
+*** Killing current buffer
+ #+begin_src elisp
+(defun brust-kill-buffer (arg)
+  (interactive "P")
+  (when arg (save-buffer))
+  (if server-buffer-clients
+      (server-edit)
+    (kill-current-buffer)))
+#+end_src
+
+*** Lookup online
+- Thresauros for synonyms.
+#+begin_src elisp
+(setq +lookup-provider-url-alist
+      '(;; ("Doom Emacs issues" "https://github.com/hlissner/doom-emacs/issues?q=is%%3Aissue+%s")
+        ("Google"            +lookup--online-backend-google "https://google.com/search?q=%s")
+        ("Wikipedia"         "https://wikipedia.org/search-redirect.php?language=en&go=Go&search=%s")
+        ("Singular Manual"   "https://www.google.com/search?q=site:www.singular.uni-kl.de+%s")
+        ("Project Gutenberg" "http://www.gutenberg.org/ebooks/search/?query=%s")
+        ;; ("DuckDuckGo"        +lookup--online-backend-duckduckgo "https://duckduckgo.com/?q=%s")
+        ("DevDocs.io"        "https://devdocs.io/#q=%s")
+        ("StackOverflow"     "https://stackoverflow.com/search?q=%s")
+        ;; ("Github"            "https://github.com/search?ref=simplesearch&q=%s")
+        ("Youtube"           "https://youtube.com/results?aq=f&oq=&search_query=%s")
+        ;; ("Wolfram alpha"     "https://wolframalpha.com/input/?i=%s")
+        ("Google images"     "https://www.google.com/images?q=%s")
+        ("Google maps"       "https://maps.google.com/maps?q=%s")
+        ))
+#+end_src
+
+#+RESULTS:
+| Google            | +lookup--online-backend-google                                        | https://google.com/search?q=%s |
+| Wikipedia         | https://wikipedia.org/search-redirect.php?language=en&go=Go&search=%s |                                |
+| Singular Manual   | https://www.google.com/search?q=site:www.singular.uni-kl.de+%s        |                                |
+| Project Gutenberg | http://www.gutenberg.org/ebooks/search/?query=%s                      |                                |
+| DevDocs.io        | https://devdocs.io/#q=%s                                              |                                |
+| StackOverflow     | https://stackoverflow.com/search?q=%s                                 |                                |
+| Youtube           | https://youtube.com/results?aq=f&oq=&search_query=%s                  |                                |
+| Google images     | https://www.google.com/images?q=%s                                    |                                |
+| Google maps       | https://maps.google.com/maps?q=%s                                     |                                |
+
+*** Mode Line
+**** COMMENT Help echo messages
+#+begin_src elisp
+;; Disable help mouse-overs for mode-line segments (i.e. :help-echo text).
+;; They're generally unhelpful and only add confusing visual clutter.
+(setq mode-line-default-help-echo nil
+      show-help-function nil)
+#+end_src
+**** Display time
+#+begin_src elisp
+(defun brust-kill-date nil
+  (interactive)
+  (kill-new (format-time-string "%a, %b %e %Y" (current-time))))
+
+(defun brust-message-date nil
+  (interactive)
+  (message (format-time-string "%a, %b %e %Y" (current-time))))
+
+;; Time format
+(customize-set-variable 'display-time-string-forms
+                        '((propertize (concat " " 12-hours ":" minutes am-pm " ")
+                                      'keymap '(mode-line keymap
+                                                          (mouse-3 . brust-kill-date)
+                                                          (mouse-1 . brust-message-date)))))
+#+end_src
+**** Do not show file size
+#+begin_src elisp
+(add-hook! 'emacs-startup-hook (setq size-indication-mode nil))
+#+end_src
+**** Do not show column number
+#+begin_src elisp
+     (setq column-number-mode nil)
+#+end_src
+
+#+RESULTS:
+
+**** TODO Show number of lines
+The stirng is not propertized!
+#+begin_src elisp
+;; (make-face 'mode-line-top-line-number)
+;; (set-face-attribute
+;;  'mode-line-top-line-number nil
+;;  :inherit 'doom-modeline-faces
+;;  :foreground "gray60"
+;;  :height 0.7)
+
+(defface mode-line-top-line-number
+  '((t (:inherit mode-line :foreground "gray60" :height 0.7)))
+  "Face used for the total number of lines in the mode-line."
+  :group 'doom-modeline-faces)
+
+(defvar-local brust-buffer-total-lines ""
+  "Show the numbers of total lines in modeline")
+
+;; I do not know, but the face is not propertized.
+(defun brust-buffer-update-total-lines nil
+  (when (buffer-modified-p)
+    (let ((num-total-lines
+           (save-excursion (goto-char (point-max)) (format-mode-line "/%l/"))))
+      (setq brust-buffer-total-lines
+            (propertize num-total-lines
+                        'face 'mode-line-top-line-number)))))
+
+(defun brust-buffer-total-lines-activate nil
+  (let ((curr-file (buffer-file-name)))
+    (when curr-file
+      (setq brust-buffer-total-lines
+            (with-temp-buffer
+              (insert-file-contents curr-file)
+              (concat "/" (number-to-string (line-number-at-pos (point-max))) "/")))))
+  (add-hook 'post-command-hook #'brust-buffer-update-total-lines nil t))
+
+(add-hook! '(find-file-hook
+             text-mode-hook
+             prog-mode-hook)
+           #'brust-buffer-total-lines-activate)
+#+end_src
+**** Global mode string
+#+begin_src elisp
+(defun brust-setting-global-mode-string nil
+  (display-time-mode +1)
+  (setq global-mode-string '("" brust-buffer-total-lines display-time-string)))
+
+(add-hook 'emacs-startup-hook #'brust-setting-global-mode-string)
+#+end_src
+**** Use buffer-name for buffer name
+#+begin_src elisp
+(setq doom-modeline-buffer-file-name-style 'buffer-name)
+#+end_src
+*** TODO Persp
+#+begin_src elisp
+(setq persp-save-dir (expand-file-name "~/.doom.d/local/workspaces/")
+      persp-auto-save-persps-to-their-file-before-kill t)
+;; persp-save-to-file-by-names
+#+end_src
+*** Real buffers
+See =doom-unreal-buffer-functions=
+#+begin_src elisp
+(defvar brust-doom-my-real-buffers
+  (list "singular"
+        "julia"
+        "^[*]Org Src" )
+  "List of my real buffers, please Doom do not diminish them"
+  )
+
+(defun brust-doom-my-real-buffers-p (buf)
+  (let ((real-p nil)
+        (ncheck 0)
+        (bfr-nm (buffer-name buf))
+        (checking))
+    (while (setq checking (nth ncheck brust-doom-my-real-buffers))
+      (if (string-match-p checking bfr-nm)
+          (setq ncheck (1+ (length brust-doom-my-real-buffers))
+                real-p t)
+        (setq ncheck (1+ ncheck))))
+    real-p))
+
+(when doom-real-buffer-functions
+  (setq doom-real-buffer-functions
+        (append
+         doom-real-buffer-functions
+         '(brust-doom-my-real-buffers-p))))
+#+end_src
+
+*** Scratch mode
+#+begin_src elisp
+(setq doom-scratch-initial-major-mode 'lisp-interaction-mode)
+#+end_src
+
+#+RESULTS:
+: lisp-interaction-mode
+
+*** Visual fill mode
+    It is like visual line mode but breaks the lines at =fill-column=
+#+begin_src elisp
+;; For visual-fill-mode see https://github.com/hlissner/doom-emacs/pull/1906/files
+(setq +word-wrap-extra-indent 'single
+      ;; +word-wrap-fill-style 'soft
+      )
+(+global-word-wrap-mode +1)
+(add-to-list '+word-wrap-disabled-modes 'emacs-lisp-mode)
+(add-to-list '+word-wrap-visual-modes 'org-mode)
+#+end_src
+
+** TODO Handy Doom
+*** File templates
+Add my own templates for LaTeX, Singular, Julia... Looks pretty handy :)
+Copy folder module in local to .emacs.d (I'm making your live easier)
+#+begin_src elisp
+(set-file-template! "[.]sing" :trigger "__sing" :mode 'c++-mode)
+#+end_src
+
+#+RESULTS:
+
+*** TODO My Projects
+*** TODO Rotate text
+Rotate text under cursor under pre-establish patterns
+For example, var1, var2, ... varN
+See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Rotate Text]]
+** Bindings
+#+begin_src elisp
+(map!
+ ;; s- commands: commands executed several times AND in several distinct modes.
+ "s-s"      #'save-buffer
+ "s-w"      #'evil-window-next
+ "s-c"      #'close-quoted-open-paren-right-or-left
+ ;; "s-SPC"    #'brust-cycle-whitespace ;; Use it once I am used to 'g SPC'
+ "s-h"      #'recenter-top-bottom
+ ;; "s-f"      #'flyspell-correct-previous ;; Learning to use z=
+ ;; s- motion command
+ "s-j"      #'evil-scroll-down
+ "s-k"      #'evil-scroll-up
+ ;; Cycling in kill-ring
+ "C-P"      #'brust-evil-paste-pop-backwards
+ "M-p"      #'counsel-yank-pop
+ ;; :ier "M-i" #'evil-normal-state ;; it was tab-to-tab-stop
+ ;; Now I use evil-escape (equivalent to key-chords jk kj) Press them a single key!
+
+ ;; Normal mode workarounds (keep it to minimum)
+ ;; :n "u"     #'emacs-undo ;; now undo works fine
+ :nim "C-e" #'doom/forward-to-last-non-comment-or-eol
+ :n "Q"     #'evil-delete-buffer
+ :n "q"     #'brust-kill-buffer
+ :nvmro "w" #'evil-backward-word-begin
+ :nvmro "W" #'evil-backward-WORD-begin
+ ;; :n "H"     #'recenter-top-bottom ;; There is no difference with s-h
+ ;; More handy TABs (From Hlissner)
+ :n [tab] (general-predicate-dispatch nil
+            (fboundp 'evil-jump-item)
+            #'evil-jump-item)
+
+ :v [tab] (general-predicate-dispatch nil
+            (and (bound-and-true-p yas-minor-mode)
+                 (or (eq evil-visual-selection 'line)
+                     (not (memq (char-after) (list ?\( ?\[ ?\{ ?\} ?\] ?\))))))
+            #'yas-insert-snippet
+            (fboundp 'evil-jump-item)
+            #'evil-jump-item)
+
+ ;; Personal extensions
+ "<f9>"     #'mu4e
+ "<f10>"    #'magit-status
+ "<f5>"     #'counsel-kmacro
+ :n "g SPC" #'brust-cycle-whitespace ;; It was unbind
+ (:prefix "z"
+  :n "j" #'+spell/next-error
+  :n "k" #'+spell/previous-error)
+ (:leader
+  :desc "locleader" "SPC" nil ;; Unbind "SPC SPC"
+  :desc "Delete other windows" "w 0" #'delete-other-windows
+  :desc "Rotate anticlockwise" "w a" #'rotate-frame-anticlockwise
+  ;; :desc "Switch buffer"              "b b" #'ivy-switch-buffer
+
+  ;; My global bindings of Laura: functions used everywhere but not so often.
+  (:prefix ("l" . "BMO")
+   "n"    #'endless/narrow-or-widen-dwim
+   "i"    #'endless/ispell-word-then-abbrev
+   ;; "%"    #'vr/replace
+   "%"    #'vr/query-replace
+   "<f3>" #'kmacro-query-my
+   ;; Zooming in emacs
+   "1"    #'zoom-out ;; enlarge font
+   "2"    #'zoom-in ;; reduce font
+   (:prefix ("a" . "accents")
+    ;; Easy Catala i Castella
+    :desc "Insert ç" "c" (lambda nil (interactive) (insert "ç"))
+    :desc "Insert Ç" "C" (lambda nil (interactive) (insert "Ç"))
+    :desc "Insert ñ" "n" (lambda nil (interactive) (insert "ñ"))
+    :desc "Insert Ñ" "N" (lambda nil (interactive) (insert "Ñ"))
+    :desc "Insert à" "a" (lambda nil (interactive) (insert "à"))
+    :desc "Insert À" "A" (lambda nil (interactive) (insert "À"))
+    :desc "Insert è" "e" (lambda nil (interactive) (insert "è"))
+    :desc "Insert È" "E" (lambda nil (interactive) (insert "È"))
+    :desc "Insert é" "r" (lambda nil (interactive) (insert "é"))
+    :desc "Insert É" "R" (lambda nil (interactive) (insert "É"))
+    :desc "Insert í" "i" (lambda nil (interactive) (insert "í"))
+    :desc "Insert Í" "I" (lambda nil (interactive) (insert "Í"))
+    :desc "Insert ï" "k" (lambda nil (interactive) (insert "ï"))
+    :desc "Insert Ï" "K" (lambda nil (interactive) (insert "Ï"))
+    :desc "Insert ò" "o" (lambda nil (interactive) (insert "ò"))
+    :desc "Insert Ò" "O" (lambda nil (interactive) (insert "Ò"))
+    :desc "Insert ó" "p" (lambda nil (interactive) (insert "ó"))
+    :desc "Insert Ó" "P" (lambda nil (interactive) (insert "Ó"))
+    :desc "Insert ú" "u" (lambda nil (interactive) (insert "ú"))
+    :desc "Insert Ú" "U" (lambda nil (interactive) (insert "Ú"))
+    :desc "Insert ü" "j" (lambda nil (interactive) (insert "ü"))
+    :desc "Insert Ü" "J" (lambda nil (interactive) (insert "Ü"))
+    )))
+ )
+#+end_src
+
+#+RESULTS:
+| lambda | nil | (interactive) | (insert Ü) |
+
+** My functions
+*** COMMENT Add blank pages to a pdf
+#+BEGIN_SRC elisp
+  (defun brust-pdf-add-blank-pages (-file init-page)
+    (interactive
+     (list  (read-file-name "Pdf to modify: ")
+            (read-number "Page to start adding blank pages: ")))
+    (let (-num -page (i init-page) -commstr)
+      (with-temp-buffer
+        (insert (shell-command-to-string (format "pdftk %s dump_data" -file)))
+        (goto-char (point-min))
+        (re-search-forward "NumberOfPages: \\([0-9]+\\)$" nil t)
+        (setq -num (- (string-to-number (match-string 1)) i))
+        (setq -page
+              (if (re-search-forward "PageMediaDimensions: \\([0-9]+\\) \\([0-9]+\\)$" nil t)
+                  (concat (match-string 1) "x" (match-string 2))
+                "a4")))
+      (setq -commstr
+            (concat (format "A1-%d " i)
+                    (cl-loop repeat -num
+                             concat (format "B1 A%d " (setq i (1+ i))))))
+      (let ((-blanche (concat (file-name-directory -file) "pageblanche.pdf"))
+            (-mod (concat (file-name-directory -file) "mod_" (file-name-base -file) ".pdf"))
+            (-out (concat (file-name-directory -file) "print_" (file-name-base -file) ".pdf")))
+        (shell-command (format "convert xc:none -page %s %s" -page -blanche))
+        (shell-command (format "pdftk A=%s B=%s cat %s output %s" -file -blanche -commstr -mod))
+        (shell-command (format "rm %s" -blanche)))))
+  ;; (shell-command (format "pdfnup %s --nup 2x1 --landscape --outfile %s" -mod -out))
+  ;; (shell-command (format "rm %s && rm %s" -mod -blanche)))))
+#+END_SRC
+
+#+RESULTS:
+: brust-pdf-add-blank-pages
+
+*** By five
+#+BEGIN_SRC elisp
+  (defun brust-by-five (-function args)
+    (funcall-interactively -function (if (numberp args)
+                                         (* 5 args)
+                                       5)))
+#+END_SRC
+
+#+RESULTS:
+: brust-by-five
+
+*** Change font size
+#+begin_src elisp
+  (defun zoom-in nil
+    (interactive)
+    (set-face-attribute 'default nil :height (+ (face-attribute 'default :height) 10)))
+
+  (defun zoom-out nil
+    (interactive)
+    (set-face-attribute 'default nil :height (- (face-attribute 'default :height) 10)))
+#+end_src
+
+*** Close<->open parents
+**** Parenthesis syntax.
+#+BEGIN_SRC elisp
+  (defconst all-paren-syntax-table
+     (let ((table (make-syntax-table)))
+       (modify-syntax-entry ?{  "(}" table)
+       (modify-syntax-entry ?}  "){" table)
+       (modify-syntax-entry ?\( "()" table)
+       (modify-syntax-entry ?\) ")(" table)
+       (modify-syntax-entry ?\[ "(]" table)
+       (modify-syntax-entry ?\] ")[" table)
+       (modify-syntax-entry ?\\ "'"  table)
+       ;; (modify-syntax-entry ?\< "(>" table)
+       ;; (modify-syntax-entry ?\> ")<" table)
+       table)
+     "A syntax table giving all parenthesis parenthesis syntax.")
+#+END_SRC
+
+**** Generic function
+#+BEGIN_SRC elisp
+(defun close-quoted-open-paren (args dir)
+  "dir=0 -> right, dir=1 -> left"
+  (with-syntax-table all-paren-syntax-table
+    (cl-loop repeat args do
+             (let* ((i dir)
+                    (pos (save-excursion (up-list (1- (* 2 dir))) (point)))
+                    (closing (matching-paren (char-after (- pos dir)))))
+               (while (eq (char-before (- pos i)) ?\\)
+                 (setq i (1+ i)))
+               (cl-loop repeat (- i dir) do
+                        (progn
+                          (unless (or (eolp) (evil-insert-state-p)) (forward-char +1))
+                          (insert "\\")
+                          ))
+               (unless (or (eolp) (evil-insert-state-p)) (forward-char +1))
+               (insert closing)
+               (backward-char (* dir i)))))
+  t)
+#+END_SRC
+
+**** By right
+#+BEGIN_SRC elisp
+  (defun close-quoted-open-paren-right (&optional args)
+    (interactive "P")
+    (close-quoted-open-paren (if (numberp args) args 1) 0))
+
+  (defun close-all-open-paren-right nil
+    (interactive)
+    (while (ignore-errors (close-quoted-open-paren-right))))
+
+#+END_SRC
+**** By left
+#+BEGIN_SRC elisp
+  (defun close-quoted-open-paren-left (&optional args)
+    (interactive "P")
+    (close-quoted-open-paren (if (numberp args) args 1) 1))
+
+  (defun close-all-open-paren-left nil
+    (interactive)
+    (while (ignore-errors (close-quoted-open-paren-left))))
+#+END_SRC
+**** By right or left
+#+BEGIN_SRC elisp
+  (defun my-texmathp nil
+    (interactive)
+    (when (texmathp)
+      (let ((pnt (point))
+            (p (ignore-errors
+                 (goto-char (cdr texmathp-why))
+                 (sp-forward-sexp 1))))
+        (goto-char pnt)
+        p)))
+
+  (defun close-quoted-open-paren-right-or-left (&optional args)
+    (interactive "P")
+    (or args (setq args 1))
+    (cl-loop repeat args do
+             (if (and (fboundp 'texmathp)
+                      (my-texmathp))
+                 (unless (and (ignore-errors (close-quoted-open-paren-right))
+                              (if (my-texmathp) t (delete-char -2) nil))
+                   (unless (and (ignore-errors (close-quoted-open-paren-left))
+                                (if (my-texmathp) t (delete-char 2) nil))))
+               (unless (ignore-errors (close-quoted-open-paren-right))
+                 (unless (ignore-errors (close-quoted-open-paren-left)))))))
+#+END_SRC
+
+#+RESULTS:
+: close-quoted-open-paren-right-or-left
+
+**** COMMENT New paren
+#+BEGIN_SRC elisp
+
+    (defvar brust-open-paren-last 1 "Number corresponding to last inserted paren by `brust-open-paren-alist'")
+
+    (defvar brust-open-paren-alist '((1 . "(")
+                                     (2 . "[")
+                                     (3 . "{")
+                                     (4 . "<"))
+      "List with open paren to cycle through")
+
+    (defun brust-open-paren-insert (-paren)
+      (insert (cdr (assoc (setq brust-last-open-paren -paren)
+                          brust-open-paren-alist))))
+
+    (defun brust-open-paren-cycle (&optional args)
+      (interactive "P")
+      (if (string= (cdr (assoc brust-last-open-paren
+                               brust-open-paren-alist))
+                   (buffer-substring-no-properties (1- (point)) (point)))
+          (delete-char -1)
+        (setq brust-open-paren-last 0))
+      (brust-open-paren-insert
+       (setq brust-open-paren-last
+             (if (< brust-open-paren-last (length brust-open-paren-alist))
+                 (1+ brust-open-paren-last)
+               1))))
+
+    (defun brust-open-paren-add-more nil
+      "Copy previous char"
+      (interactive)
+      (insert (buffer-substring-no-properties (1- (point)) (point))))
+
+    (defun brust-open-paren-insert-backslash nil
+      "Insert backslash before previous char"
+      (interactive)
+      (save-excursion
+        (forward-char -1)
+        (insert "\\")))
+
+  (defun brust-open-paren-leave-just-backslash nil
+    (interactive)
+    (delete-char -1)
+    (insert "\\"))
+
+  (defun brust-open-paren-ordered-string-of-options nil
+    (cl-loop for xx in brust-open-paren-alist
+             concat (cdr xx)))
+
+  (defhydra brust-open-paren-hydra nil
+    "
+
+    ^ Open paren %(brust-open-paren-ordered-string-of-options): "
+    ("SPC" (brust-open-paren-cycle) "Cycle")
+    ("a" (brust-open-paren-add-more) "Add another")
+    ("b" (brust-open-paren-insert-backslash) "Add backslash")
+    ("q" (brust-open-paren-leave-just-backslash) "Just backslash"))
+#+END_SRC
+
+#+RESULTS:
+: brust-open-paren-hydra/body
+
+*** Customize face at point
+    A handy function for customization
+#+BEGIN_SRC elisp
+  (defun customize-face-at-point nil
+    "Customize face which point is at."
+    (interactive)
+    (let ((face (get-text-property (point) 'face)))
+      (if face
+          (customize-face face)
+        (message "No face defined at point"))))
+
+#+END_SRC
+*** Double Capitals
+    Convert words in DOuble CApitals to Single Capitals.
+    [[https://emacs.stackexchange.com/questions/13970/fixing-double-capitals-as-i-type][From StackExange]]
+
+**** The function
+#+BEGIN_SRC elisp
+(defun dcaps-to-scaps nil
+  "Convert word in DOuble CApitals to Single Capitals."
+  (interactive)
+  (and (= ?w (char-syntax (char-before)))
+       (save-excursion
+         (and (if (called-interactively-p)
+                  (skip-syntax-backward "w")
+                (= -3 (skip-syntax-backward "w")))
+              (let (case-fold-search)
+                (looking-at "\\b[[:upper:]]\\{2\\}[[:lower:]]"))
+              (capitalize-word 1)))))
+
+#+END_SRC
+**** New minor mode
+#+BEGIN_SRC elisp
+(define-minor-mode dubcaps-mode
+  "Toggle `dubcaps-mode'.  Converts words in DOuble CApitals to
+Single Capitals as you type."
+  :init-value nil
+  :lighter ("") ;; String to show in mode-line
+  (if dubcaps-mode
+      (add-hook 'post-self-insert-hook #'dcaps-to-scaps nil 'local)
+    (remove-hook 'post-self-insert-hook #'dcaps-to-scaps 'local)))
+
+
+#+END_SRC
+**** Activation
+#+BEGIN_SRC elisp
+(add-hook 'text-mode-hook #'dubcaps-mode)
+
+#+END_SRC
+*** Find file sudo
+#+BEGIN_SRC elisp
+(defun find-file-sudofying (FILENAME &optional WILDCARDS)
+  "Find file as root if necessary."
+  (when (and
+         buffer-file-name
+         (not (file-writable-p buffer-file-name))
+         ;; (called-interactively-p "any")
+         (y-or-n-p "File not writable. Open it as root?"))
+    (find-alternate-file (concat "/sudo:root@localhost:" buffer-file-name))))
+
+(advice-add 'find-file :after #'find-file-sudofying)
+#+END_SRC
+
+#+RESULTS:
+
+*** Macro query
+#+BEGIN_SRC elisp
+(defun kmacro-query-my (arg)
+  "Prompt for input using minibuffer during kbd macro execution.
+   With prefix argument, allows you to select what prompt string to use.
+   If the input is non-empty, it is inserted at point."
+  (interactive "P")
+  (let* ((prompt (if arg (read-from-minibuffer "PROMPT: ") "Input: "))
+         (input (minibuffer-with-setup-hook (lambda nil (kbd-macro-query t))
+                  (read-from-minibuffer prompt))))
+    (unless (string= "" input) (insert input))))
+
+
+#+END_SRC
+
+#+RESULTS:
+: kmacro-query-my
+
+*** Mouse wheel
+    Mouse wheel: try it with S and C
+**** Functions
+#+BEGIN_SRC elisp
+(defun up-slightly (args) (interactive "p") (brust-by-five #'scroll-up args))
+(defun down-slightly (args) (interactive "p") (brust-by-five #'scroll-down args))
+
+(defun up-one nil (interactive) (scroll-up 1))
+(defun down-one nil (interactive) (scroll-down 1))
+
+(defun up-a-lot nil (interactive) (scroll-up))
+(defun down-a-lot nil (interactive) (scroll-down))
+
+#+END_SRC
+
+**** Keybindings
+#+BEGIN_SRC elisp
+(global-set-key [mouse-4] 'down-slightly)
+(global-set-key [mouse-5] 'up-slightly)
+
+(global-set-key [S-mouse-4] 'down-one)
+(global-set-key [S-mouse-5] 'up-one)
+
+(global-set-key [C-mouse-4] 'down-a-lot)
+(global-set-key [C-mouse-5] 'up-a-lot)
+#+END_SRC
+
+*** Narrow or widen dwin
+ There's a nice helper from [[http://endlessparentheses.com/emacs-narrow-or-widen-dwim.html][Endless Parentheses]] that defines a do-what-I-mean version
+ of the narrow-or-widen so I don't have to keep remembering which is which.
+#+BEGIN_SRC elisp
+  (defun endless/narrow-or-widen-dwim (p)
+    "Widen if buffer is narrowed, narrow-dwim otherwise.
+  Dwim means: region, org-src-block, org-subtree, or
+  defun, whichever applies first. Narrowing to
+  org-src-block actually calls `org-edit-src-code'.
+
+  With prefix P, don't widen, just narrow even if buffer
+  is already narrowed."
+    (interactive "P")
+    (declare (interactive-only))
+    (cond ((and (buffer-narrowed-p)
+                (not p))
+           (widen)
+           (let ((recenter-redisplay t))
+             (recenter nil)))
+          ((region-active-p)
+           (narrow-to-region (region-beginning)
+                             (region-end))
+           (deactivate-mark)
+           (goto-char (point-min)))
+          ((derived-mode-p 'org-mode)
+           ;; `org-edit-src-code' is not a real narrowing
+           ;; command. Remove this first conditional if
+           ;; you don't want it.
+           (cond ((ignore-errors (org-edit-src-code) t)
+                  (delete-other-windows))
+                 ((ignore-errors (org-narrow-to-block) t))
+                 (t (org-narrow-to-subtree))))
+          ((and (derived-mode-p 'latex-mode)
+                (ignore-errors (LaTeX-narrow-to-environment))))
+          ((derived-mode-p 'emacs-lisp-mode)
+           (narrow-to-defun))
+          (t
+           (brust-narrow-to-paragraph))))
+#+END_SRC
+
+#+RESULTS:
+: endless/narrow-or-widen-dwim
+
+*** COMMENT Open fast usual files (by Xah Lee)
+    This is an adaptation to my needs of [[http://ergoemacs.org/emacs/emacs_hotkey_open_file_fast.html][Emacs: Hotkey to Open File Fast]] by Xah Lee.
+    Use registers instead and add to Doom dashboard.
+    ;; Store some more frequently used files in the
+(set-register ?d '(file . "~/Documents/org/decrypt.org"))
+(set-register ?e '(file . "~/.doom.d/config.org"))
+(set-register ?i '(file . "~/Documents/org/gtd/inbox.org"))
+
+**** Lists
+#+BEGIN_SRC elisp
+(defvar brust-file-list-list
+  '(("xah-filelist" . (
+                       ;; ("Doc-Org"    . "~/Dropbox/Org/Doc.org")
+                       ;; ("Th-master"  . "~/Dropbox/Thesis/classicthesis/master.tex")
+                       ("My-AG"  . "~/Dropbox/Math/Doctorat11/Apunts/basic-algebraic-geometry.tex")
+                       ("My-CRN" . "~/Dropbox/Math/Networks/Notes/notes.tex")
+                       ;; ("Com-in-Alg" . "~/Dropbox/Math/Doctorat_Laura/Com_in_Alg/PauBrustenga_Urcf4.tex")
+                       ;; ("pdf-notes"  . "~/Dropbox/bibliography/notes.org")
+                       ("MyFinances" . "~/Dropbox/Org/ledger-2020.dat")
+                       ("WebPage"    . "~/Dropbox/WebPage/LauraBMo.github.io/index.html")
+                       ("MyBib"      . "~/Dropbox/bibliography/my.bib")
+                       ))
+    ("org-files"    . (
+                       ("My-Org" . "~/Dropbox/Org/my.org")
+                       ("biblio" . "~/Dropbox/bibliography/notes.org")
+                       ))
+    ("config-files" . (
+                       ("Config"       . "~/.doom.d/MyConfig.org")
+                       ("Doom modules" . "~/.doom.d/init.el")
+                       ("Packages"     . "~/.doom.d/packages.el")
+                       ("LaTeX"        . "~/.doom.d/lisp/brusts-latex-config.org")
+                       ("Mu4e"         . "~/.doom.d/lisp/brusts-mu4e-config.org")
+                       ))
+    )
+  "List of association list of file/dir paths. Used by `xah-open-file-fast'. Key is a short abbrev string, Value is file path string.")
+#+END_SRC
+
+#+RESULTS:
+: brust-file-list-list
+
+**** Function to open it fast.
+#+BEGIN_SRC elisp
+  (defun xah-open-file-fast nil
+    "Prompt to open a file from `xah-filelist'.
+      URL `http://ergoemacs.org/emacs/emacs_hotkey_open_file_fast.html'
+      Version 2015-04-23"
+    (interactive)
+    (let* ((-list (cl-loop for xx in (mapcar 'cdr brust-file-list-list)
+                           append xx))
+           (ξabbrevCode (ivy-read "Open (%d) :" (mapcar 'car -list))))
+      (if (file-exists-p ξabbrevCode)
+          (find-file (cdr (assoc ξabbrevCode -list)))
+        (error "File do not exits, update your list of files!"))))
+#+END_SRC
+
+#+RESULTS:
+: xah-open-file-fast
+
+**** Create and bind direct functions
+     Really handy joinly with =which-key=.
+#+BEGIN_SRC elisp
+(let ((i 0))
+  (cl-loop
+   for xx in (mapcar 'cdr brust-file-list-list) do
+   (let ((j 1)
+         (file (car xx))
+         (prfx (if (< i 1) "<f2>"
+                 (if (< i 2) (format "<f2> <f%d>" i)
+                   (format "<f2> <f%d>" (1+ i))))))
+     (setq i (1+ i))
+     (while file
+       (let ((name (intern (format "Open:%s" (car file)))))
+         (fset name
+               `(lambda nil
+                  (interactive) (find-file ,(cdr file))))
+         (setq file (nth j xx))
+         (unless (< j 10) (setq file nil j 0))
+         (global-set-key (kbd (format "%s %d" prfx j)) name)
+         (setq j (1+ j)))))))
+
+(global-set-key (kbd "<f2> <f2>") 'xah-open-file-fast)
+#+END_SRC
+
+#+RESULTS:
+: xah-open-file-fast
+*** Org mode eval all elisp src blocks under current header
+#+BEGIN_SRC elisp
+(defun brust-endless/org-eval-current-header nil
+  (interactive)
+  (brust-endless/org-eval-eblocks
+   (and (org-copy-subtree)
+        (pop kill-ring))))
+#+END_SRC
+*** COMMENT PDF From MR to pdf
+commands to work with MangaRock comics
+#+BEGIN_SRC bash
+  cd "~/Dropbox/files/26897765-1546816941953/"
+  parallel convert '{} {.}.pdf' ::: * && pdftk `ls | grep "pdf" | sort -n` cat output Vol-2.pdf
+#+END_SRC
+
+#+RESULTS:
+
+*** Prompt in Singular... Non-editable
+#+begin_src elisp
+        (defvar brust-math-software-buffers-prompts
+          '(("*julia*"    . "^julia>")
+            ("*singular*" . "^>"))
+          "List of cons with buffer names runing some math software and a regex for its promp string")
+
+        (defun brust-math-software-intangify-buffer-text (-regexp beg end)
+          "Set cursor-intangible property to all buffer text maching regular expresion `-regexp` between `beg` and  `end`"
+          (save-excursion
+            (goto-char beg)
+            (save-match-data
+              (while (re-search-forward -regexp end t)
+                (add-text-properties (1- (match-beginning 0)) (match-end 0) '(cursor-intangible t rear-nonsticky nil))))))
+
+        (defun brust-math-software-intangify-cursor-on-prompt (beg end length)
+          "Set cursor-intangible in math software buffers prompts"
+          (let ((-prompt (cdr (assoc (buffer-name) brust-math-software-buffers-prompts))))
+            (when -prompt
+              (brust-math-software-intangify-buffer-text -prompt beg end))))
+
+        (defun brust-math-software-hookfun-to-intangify-prompt nil
+          (cursor-intangible-mode 1)
+          (add-hook 'after-change-functions #'brust-math-software-intangify-cursor-on-prompt nil t))
+#+end_src
+
+#+RESULTS:
+: brust-math-software-hookfun-to-intangify-prompt
+
+*** RGB color (get numbers)
+#+begin_src elisp
+(defvar brust-colors-rgb-decimal-points 1 "Number of decimal points rounding RGB colors")
+(defvar brust-colors-rgb-separator "," "SEPARATOR between numbers")
+
+(defun brust-round (list-of-num)
+  (let ((rounding (* 10 brust-colors-rgb-decimal-points)))
+    (cl-loop for x in list-of-num
+             collect (/ (fround (* rounding x)) rounding))))
+
+(defun brust-colors-num-to-str (color)
+  (mapconcat #'number-to-string color brust-colors-rgb-separator))
+
+(defun brust-colors-insert-rgb (color)
+  "Insert the RGB value 'num1,num2,num3' with num between 0 and 1"
+  (insert (brust-colors-num-to-str (color-name-to-rgb color))))
+
+(defun brust-colors-insert-rounded-rgb (color)
+  "Insert the RGB value 'num1,num2,num3' with num between 0 and 1"
+  (insert (brust-colors-num-to-str (brust-round (color-name-to-rgb color)))))
+
+(defun brust-colors-kill-rgb (color)
+  "Insert the RGB value 'num1,num2,num3' with num between 0 and 1"
+  (kill-new (brust-colors-num-to-str (color-name-to-rgb color))))
+
+(defun brust-colors-kill-rounded-rgb (color)
+  "Insert the RGB value 'num1,num2,num3' with num between 0 and 1"
+  (kill-new (brust-colors-num-to-str (brust-round (color-name-to-rgb color)))))
+
+(after! ivy
+  (ivy-add-actions
+   'counsel-colors-emacs
+   '(("g" brust-colors-insert-rgb "insert RGB value")
+     ("r" brust-colors-insert-rounded-rgb "insert round RGB value")
+     ("G" brust-colors-kill-rgb "kill RGB value")
+     ("R" brust-colors-kill--rounded-rgb "kill round RGB value")))
+  (ivy-add-actions
+   'counsel-colors-web
+   '(("g" brust-colors-insert-rgb "insert RGB value")
+     ("r" brust-colors-insert-rounded-rgb "insert round RGB value")
+     ("G" brust-colors-kill-rgb "kill RGB value")
+     ("R" brust-colors-kill-rounded-rgb "kill round RGB value")))
+  )
+#+end_src
+
+*** Word count
+#+BEGIN_SRC elisp
+  (defun brust-wc-get-word-count-list-of-current-project nil
+    (let ((project-master (expand-file-name (TeX-master-file t nil t))))
+      (with-temp-buffer
+        (call-process-shell-command
+         (concat "texcount -opt="
+                 (expand-file-name "~/Dropbox/config/TeXcount-emacs.txt")
+                 " -dir="
+                 (file-name-directory project-master)
+                 " "
+                 project-master)
+         nil t)
+        (re-search-backward
+         "new\\([0-9]+\\)w\\([0-9]+\\)im\\([0-9]+\\)dm\\([0-9]+\\)cd\\([0-9]+\\)h\\([0-9]+\\)file" nil t)
+        (cl-loop for xx from 1 to 6
+                 if (= xx 3) collect (number-to-string (- (string-to-number (match-string-no-properties 3))
+                                                          (string-to-number (match-string-no-properties 4))))
+                 else
+                 collect (match-string-no-properties xx)))))
+
+  (defun brust-wc-save-words nil
+    (interactive)
+    (let ((wc-sat (brust-wc-get-word-count-list-of-current-project)))
+      (find-file (concat
+                  (file-name-directory (expand-file-name (TeX-master-file t nil t)))
+                  "wc-statistics.txt"))
+      (goto-char (point-max))
+      (insert "\n" (format-time-string "%x, %X, ")
+              (cl-loop for xx in wc-sat
+                       concat (concat xx ", ")))
+      (save-buffer)
+      (kill-buffer)))
+
+  (defun brust-wc-save-words-my-thesis nil
+    (interactive)
+    (find-file "~/Dropbox/Math/Doctorat_Laura/Thesis/master.tex")
+    (brust-wc-save-words))
+#+END_SRC
+
+*** Whitespace cycle
+    This is a remake and merge of `cycle-spacing' `delete-blank-lines' and `xah-shrink-whitespaces'.
+#+BEGIN_SRC elisp
+  (defun brust-cycle-whitespace nil
+    (interactive)
+    (let* ((--pt0 (point))
+           (--inline-skip-chars " \t\v\f")
+           (--skip-chars " \t\v\f\n")
+           (--beg (progn
+                    (skip-chars-backward --skip-chars)
+                    (constrain-to-field nil --pt0)
+                    (point)))
+           (--end (progn
+                    (skip-chars-forward --skip-chars)
+                    (constrain-to-field nil --pt0)
+                    (point)))
+           (--indent (buffer-substring-no-properties
+                      (progn
+                        (skip-chars-backward --inline-skip-chars)
+                        (point))
+                      --end))
+           (--contex (buffer-substring --beg --end))
+           (--lnum (1- (length (split-string --contex "\n")))))
+      (cond
+       ((or (not (equal last-command this-command))
+            (not brust-cycle-whitespace--context))
+        ;; Special handling for case where there was no space at all.
+        (cond ((< --beg --end)
+               (setq brust-cycle-whitespace--context ;;Save for later.
+                     (cons --pt0 --contex))
+               (delete-region --beg --end)
+               (when (and (< (1+ --beg) --end)   ;; more than one space
+                          (< --end (point-max))  ;; erase whitespace at eobp
+                          (< (point-min) --beg)) ;; and at bobp
+                 (insert
+                  (cond ((< --lnum 2) " ")
+                        ((< --lnum 3) (concat "\n" --indent))
+                        (t (concat "\n\n" --indent))))))
+              (t ;; indent when it is called without surrounding whitespaces.
+               (end-of-line)
+               (brust-cycle-whitespace))))
+       ;; Final call: (and (equal last-command this-command) (equal --beg --end))
+       ((not (< --beg --end))
+        (insert (cdr brust-cycle-whitespace--context))
+        (goto-char (car brust-cycle-whitespace--context))
+        (setq cycle-spacing--context nil))
+       ;; Intermadiate calls (and (equal last-command this-command) (< --beg --end))
+       (t
+        (delete-region --beg --end)
+        (insert
+         (cond ((< --lnum 1) "")
+               ((< --lnum 2) " ")
+               ((< --lnum 3) (concat "\n" --indent))
+               (t (concat "\n\n" --indent))))))))
+    ;; (more-expansions #'(brust-cycle-whitespace)))
+
+  (defvar brust-cycle-whitespace--context nil
+    "Store context used in consecutive calls to `brust-cycle-whitespace' command.
+       The first time `brust-cycle-whitespace' runs, it saves in this variable:
+       the original point position, and the original spacing around point.")
+
+#+END_SRC
+** TODO Org mode
+*** Main config
+ #+BEGIN_SRC elisp
+(defun brust-org-my-defaults nil
+  (setq org-hide-leading-stars nil
+        org-src-fontify-natively t   ;; Pretty code blocks
+        org-src-ask-before-returning-to-edit-buffer nil
+        ;; org-edit-src-auto-save-idle-delay 20
+        org-confirm-babel-evaluate nil
+        org-cycle-global-at-bob t
+        ;; org-startup-folded t
+        ;; org-hide-emphasis-markers t
+        org-outline-path-complete-in-steps nil
+        org-return-follows-link t
+        ;; org-link-frame-setup (quote ((file . find-file)))
+        org-ellipsis " ↴"
+        ))
+
+(add-hook 'org-mode-hook #'brust-org-my-defaults t)
+ #+END_SRC
+
+ #+RESULTS:
+
+*** Pretty headlines
+#+begin_src elisp
+(font-lock-add-keywords            ;; A bit silly but my headers are now
+ 'org-mode                         ;; shorter, and that is nice canceled
+ (mapcar (lambda (keysymbol)
+           `(,(concat "^\\(\\*\\{" (car keysymbol) "\\}\\) ")
+             (1
+              (progn (compose-region (match-beginning 1) (match-end 1) ,(cdr keysymbol)) nil)
+              append)))
+         '(("1" . "☰")
+           ("2" . "☱")
+           ("3" . "☲")
+           ("4" . "☳")
+           ("5" . "☴")
+           ("6" . "☵")
+           ("7" . "☶")
+           ("8," . "☷"))))
+#+end_src
+*** Maps
+#+begin_src elisp
+  (map! :map org-mode-map "<" 'brust-org<
+        (:localleader
+         :desc "Biblio" "B" #'ivy-bibtex-with-local-bibliography))
+#+end_src
+*** TODO Agenda
+#+begin_src elisp
+(after! org
+  (setq org-agenda-files (quote ("~/Dropbox/Org/" "~/Dropbox/bibliography/notes.org"))
+        org-directory "~/Dropbox/Org/"
+        org-agenda-todo-list-sublevels nil
+        org-deadline-warning-days 3
+        org-agenda-skip-scheduled-if-done 1
+        org-agenda-skip-deadline-if-done 1
+        org-agenda-skip-deadline-if-done 1
+        org-agenda-custom-commands
+        '(("h" "My agenda view"
+           ((agenda "")
+            (todo))))))
+#+end_src
+
+*** TODO Capture
+ #+BEGIN_SRC elisp
+(use-package! org-capture
+  :defer t
+  :after org
+  :init
+  (defvar my/org-ledger-card-template
+    "%(org-read-date) %^{Payee}
+       Expenses:%^{Account}  €%^{Amount}
+       Liabilities:DebidCard:Mediolanum"
+    "Template for devid card transaction with ledger.")
+
+  (defvar my/org-ledger-cash-template
+    "%(org-read-date) * %^{Payee}
+       Expenses:%^{Account}  €%^{Amount}
+       Assets:Cash:Wallet"
+    "Template for cash transaction with ledger.")
+  :config
+  (setq org-capture-templates
+        (append
+         (when (boundp 'org-capture-templates) org-capture-templates)
+         `(("l" "Ledger")
+           ("lb" "Bank" plain (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y"))),
+            my/org-ledger-card-template
+            :empty-lines 1
+            :immediate-finish t)
+           ("lc" "Cash" plain (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y"))),
+            my/org-ledger-cash-template
+            :empty-lines 1
+            :immediate-finish t)
+           ("o"
+            "TODO respond to email"
+            entry
+            (file YOUR_TODO_FILE.org)
+            "* TODO %^{Description}\n%A\n%?\n")))))
+ #+END_SRC
+
+ #+RESULTS:
+*** COMMENT Pdf links org-pdftools
+     Org links for pdfs
+#+begin_src elisp
+  (use-package org-pdfview
+    :config ;;(setq org-pdftools-root-dir "~/Dropbox/bibliography/pdf")
+    )
+#+end_src
+
+#+RESULTS:
+
+*** COMMENT Ledgers
+    Mainly from [[https://www.reddit.com/r/emacs/comments/8x4xtt/tip_how_i_use_ledger_to_track_my_money/][Reddit discution]]
+**** Main config
+#+BEGIN_SRC elisp
+  (use-package! ledger-mode
+    :mode ("\\.dat\\'"
+           "\\.ledger\\'")
+    :custom
+    (ledger-clear-whole-transactions t)
+    (add-hook 'ledger-mode-hook #'ledger-flymake-enable)
+    (add-hook 'ledger-mode-hook #'company-mode)
+    (ledger-post-auto-adjust-amounts t)
+    :bind
+    (:map ledger-mode-map
+          ("C-c C-a" . brust-ledger-add-transaction)))
+
+  (with-eval-after-load 'ledger-mode
+    (define-key ledger-mode-map [remap save-buffer] #'std::ledger::save))
+#+END_SRC
+
+#+RESULTS:
+: std::ledger::save
+
+**** MyFuns
+#+BEGIN_SRC elisp
+  (defun brust-ledger-add-transaction (&optional -date)
+    "Add new transaction using `org-read-date'"
+    (interactive)
+    (ledger-add-transaction
+     (or -date (org-read-date))
+     nil)
+    (insert "?\n    Assets:DebitCard")
+    (cdlatex-position-cursor))
+
+  (defun std::ledger::save nil
+    "First `ledger-mode-clean-buffer', then `save-buffer'."
+    (interactive)
+    (save-excursion
+      (when (buffer-modified-p)
+        (with-demoted-errors (ledger-mode-clean-buffer))
+        (save-buffer))))
+
+  (defun brust-ledger-copy-transaction-from-extract nil
+    "`-string' is a line of my bank extract in cvs format"
+    (interactive)
+    (let ((-entry
+           (split-string
+            (buffer-substring-no-properties (point-at-bol) (point-at-eol))
+            "\,")))
+      (switch-to-buffer "ledger-2018.dat")
+      (brust-ledger-add-transaction
+       (brust-from-eur-ame-date (nth 0 -entry)))
+      (insert (capitalize (nth 1 -entry))
+              "\n    ?  €"
+              (nth 3 -entry))
+      (cdlatex-position-cursor)))
+
+
+  (defun brust-from-eur-ame-date (-date)
+    (let ((-new-date (split-string -date "/")))
+      (concat (nth 2 -new-date)
+              "-"
+              (nth 1 -new-date)
+              "-"
+              (nth 0 -new-date))))
+#+END_SRC
+
+#+RESULTS:
+: std::ledger::save
+
+** LaTeX mode
+*** AUCTeX
+#+BEGIN_SRC elisp
+(after! latex
+  ;; File types
+  (add-to-list 'auto-mode-alist '("\\.sty\\'"  . LaTeX-mode))
+
+  ;; Doom stuff
+  (remove-hook 'TeX-mode-hook #'TeX-fold-mode)
+  (setq +latex-bibtex-file "~/Dropbox/bibliography/my.bib"
+        +latex-viewers '(pdf-tools))
+
+  ;; Settings
+  ;; Add hooks and some basic variables declations
+  (brust-endless/org-eval-eblocks "~/.doom.d/lisp/brusts-latex-config.org" "init" t)
+  ;; Config options
+  (brust-endless/org-eval-eblocks "~/.doom.d/lisp/brusts-latex-config.org" "config" t)
+  ;; Add C-c C-q for clean and indent
+  (brust-endless/org-eval-eblocks "~/.doom.d/lisp/brusts-latex-config.org" "LaTeX-extra" t)
+  )
+#+END_SRC
+
+*** RefTeX
+Add interactive TOC and references manager at .tex files.
+#+begin_src elisp
+(after! (latex reftex)
+  (brust-endless/org-eval-eblocks "~/.doom.d/lisp/brusts-latex-config.org" "RefTeX" t)
+
+  (add-hook! 'reftex-select-label-mode-hook
+    (map! :map reftex-select-label-mode-map
+          :e "j"  #'reftex-select-next
+          :e "k"  #'reftex-select-previous))
+
+  (add-hook! 'reftex-toc-mode-hook
+    (map! :map 'local
+          :e "1"  #'brust-reftex-toc-level-1
+          :e "2"  #'brust-reftex-toc-level-2
+          :e "3"  #'brust-reftex-toc-level-3
+          :e "4"  #'brust-reftex-toc-level-4
+          :e "5"  #'brust-reftex-toc-level-5
+          :e "6"  #'brust-reftex-toc-level-6
+          :e "m"  #'describe-mode
+          )))
+#+end_src
+
+*** CDLaTeX
+#+begin_src elisp
+(after! (latex cdlatex)
+  (brust-endless/org-eval-eblocks "~/.doom.d/lisp/brusts-latex-config.org" "cdLaTeX" t))
+#+end_src
+*** Bratex
+    Load before auctex ??2
+#+BEGIN_SRC elisp
+(use-package! bratex
+  :after latex)
+#+END_SRC
+
+#+RESULTS:
+: bratex-config
+*** Bindings
+#+begin_src elisp
+(map! :after latex
+      (:map LaTeX-mode-map
+       :gin "]"    #'brust-LaTeX-insert-math1
+       :gin "}"    #'brust-LaTeX-insert-math2
+       "C-c C-q"   #'latex/clean-fill-indent-environment
+       "s-e"       #'brust-LaTeX-next-error
+       "s-t"       #'TeX-complete-symbol ;; Auto-complete funcion of AUCTeX
+       "C-c C-e"   #'brust-LaTeX-env
+       "<M-up>"    #'bratex-cycle-size
+       "<M-down>"  #'bratex-cycle-size-reverse
+       "<M-right>" #'bratex-cycle-bracket
+       "<M-left>"  #'bratex-cycle-bracket-reverse
+       (:localleader
+        "5" #'latex-replace-in-math
+        "%" #'latex-replace-regexp-in-math
+        "0" #'brust-cycle-texmath
+        "W" #'brust-wc-save-words
+        "r" #'reftex-reference
+        "t" #'reftex-toc
+        "b" #'reftex-citation
+        "SPC" #'TeX-command-master
+        "m" #'TeX-insert-macro
+        "]" #'LaTeX-close-environment
+        "E" #'LaTeX-environment
+        "c" #'ivy-bibtex-with-local-bibliography)))
+
+(map! :after (latex cdlatex)
+      :map cdlatex-mode-map
+      ;; "'" nil
+      "`" nil
+      ;; "¿" 'cdlatex-math-modify
+      ;; "'"   #'cdlatex-math-modify
+      :gni "#"   #'cdlatex-math-symbol
+      :i "TAB" #'cdlatex-tab
+      :localleader
+      "e" #'cdlatex-environment)
+#+end_src
+
+#+RESULTS:
+
+*** COMMENT LSP LaTeX
+#+begin_src elisp
+;; "texlab" must be located at a directory contained in `exec-path'.
+;; If you want to put "texlab" somewhere else,
+;; you can specify the path to "texlab" as follows:
+(setq lsp-latex-texlab-executable "~/src/texlab-git/target/release/texlab")
+
+(after!
+  (require 'lsp-latex)
+  (add-hook 'tex-mode-hook 'lsp)
+  (add-hook 'latex-mode-hook 'lsp))
+#+end_src
+** TODO Bibliography
+*** BibTeX
+#+begin_src elisp
+(after! (latex bibtex)
+  (add-to-list 'auto-mode-alist '("\\.bib\\'"  . bibtex-mode))
+  (setq bibtex-maintain-sorted-entries t ;; to sort bibtex entries with C-c C-c
+        bibtex-comma-after-last-field t ;; coma is inserted after last field
+        bibtex-entry-format
+        (append '(whitespace
+                  realign
+                  unify-case
+                  last-comma
+                  sort-fields)
+                (delq! 'required-fields bibtex-entry-format))))
+#+end_src
+*** Biblio
+Getting bibtex entries from crossref and much more.
+#+begin_src elisp
+(setq biblio-crossref-user-email-address user-mail-address) ;; CrossRef gives priority to queries that include an email address.
+
+;; Use the same shortcut to search bib items on internet for all the engines.
+(after! bibtex-completion
+  (setq bibtex-completion-fallback-options
+        (append
+         '(("MathSciNet                                (bibretrive.el)"
+            . (lambda (search-expression) (bibretrieve))))
+         bibtex-completion-fallback-options)))
+#+end_src
+**** COMMENT MathSciNet backend
+Problem: MathSciNet uses author title... not a "everywhere" query.
+The package bibretrive is a mess, but it works.
+To unify engines: Added action to "ivy-bibtex" to look for MathSciNet using bibretrive
+Once it is done, add the correspnding entrie to =bibtex-completion-fallback-options=
+#+begin_src elisp
+(defun biblio-crossref-backend (command &optional arg &rest more)
+  "A CrossRef backend for biblio.el.
+COMMAND, ARG, MORE: See `biblio-backends'."
+  (pcase command
+    (`name "CrossRef")
+    (`prompt "CrossRef query: ")
+    (`url (biblio-crossref--url arg))
+    (`parse-buffer (biblio-crossref--parse-search-results))
+    (`forward-bibtex (biblio-crossref--forward-bibtex arg (car more)))
+    (`register (add-to-list 'biblio-backends #'biblio-crossref-backend))))
+
+(defun biblio-msn-backend (command &optional arg &rest more)
+  "A MathSciNet backend for biblio.el.
+COMMAND, ARG, MORE: See `biblio-backends'."
+  (pcase command
+    (`name "MathSciNet")
+    (`prompt "MathSciNet query: ")
+    (`url (biblio-crossref--url arg))
+    (`parse-buffer (biblio-crossref--parse-search-results))
+    (`forward-bibtex (biblio-crossref--forward-bibtex arg (car more)))
+    (`register (add-to-list 'biblio-backends #'biblio-crossref-backend))))
+
+
+(defun biblio-msn--url (query)
+  "Create a MathSciNet url to look up QUERY."
+  (let* ((pairs `(("bdlback" . "r=1")
+		              ("dr" . "all")
+		              ("l" . "20")
+		              ("pg3" . "TI")
+		              ("s3" . ,title)
+		              ("pg4" . "ICN")
+		              ("s4" . ,author)
+		              ("fn" . "130")
+		              ("fmt" . "bibtex")
+		              ("bdlall" . "Retrieve+All"))))
+	  (url (concat "https://mathscinet.ams.org/mathscinet/search/publications.html?" (mm-url-encode-www-form-urlencoded pairs)))))
+
+(defun biblio-crossref--url (query)
+  "Create a CrossRef url to look up QUERY."
+  (format "https://api.crossref.org/works?query=%s%s"
+          (url-encode-url query)
+          (if biblio-crossref-user-email-address
+              (format "&mailto=%s" (url-encode-url biblio-crossref-user-email-address)) "")))
+#+end_src
+
+*** Bibretrive
+Getting bib entries from MathSciNet
+#+BEGIN_SRC elisp
+;; See https://github.com/pzorin/bibretrieve
+(use-package! bibretrieve
+  :after latex
+  :config
+  (setq bibretrieve-prompt-for-bibtex-file nil ;; use defaul bib file
+        bibretrieve-backends '(("msn" . 10) ("arxiv" . 5))))
+#+END_SRC
+*** TODO Sci hub
+*** Ivy-bibtex
+Insert cite links and open pdf
+#+begin_src elisp
+(setq bibtex-completion-bibliography "~/Dropbox/bibliography/my.bib"
+      bibtex-completion-additional-search-fields '(keywords tags)
+      bibtex-completion-pdf-extension '(".pdf" ".djvu")
+      ivy-bibtex-default-action 'ivy-bibtex-insert-citation
+      bibtex-completion-pdf-field "file" ;; pdf assoc a bib entry by field "file = {/path/to/article.pdf;:/path2...}"
+      bibtex-completion-display-formats
+      '((t . "${author:25} ${year:4} ${title:*} ${=has-pdf=:1} ${keywords:10} ${=type=:3}")))
+
+;; Show entries in the same order as in bibtex file
+(advice-add 'bibtex-completion-candidates
+            :filter-return 'reverse)
+#+end_src
+
+*** ox-bibtex
+Maintaining notes.org
+#+begin_src elisp
+(after! org
+  (require 'ox-bibtex)
+  )
+#+end_src
+
+** Mu4e
+*** General info
+    - Manual [[https://www.djcbsoftware.nl/code/mu/mu4e/index.html#Top][Mu4e's online manual]]
+    - TODOs [0/6]
+      - [ ] Install [[https://github.com/iqbalansari/mu4e-alert][mu4e alerts]]
+      - [ ] Improve keybinding
+      - [ ] Show links
+      - [ ] Show images
+      - [ ] Check autopudate (related to point one).
+      - [ ] Improve contact completion with ivy :) [[http://pragmaticemacs.com/emacs/even-better-email-contact-completion-in-mu4e/]]
+    - Helpful places [5/9]
+      - [X] [[https://webgefrickel.de/blog/a-modern-mutt-setup][A modern mutt setup with neomutt, mbsync, msmtp and mu]] (blog - interesting not just emacs)
+      - [ ] [[http://cachestocaches.com/2017/3/complete-guide-email-emacs-using-mu-and-][A Complete Guide to Email in Emacs using Mu and Mu4e]] (blog interesting by itself - really fancy emacs stuff)
+      - [ ] [[https://www.djcbsoftware.nl/code/mu/mu4e/Example-configurations.html#Example-configurations][Example config (from mu4e the manual)]]
+      - [ ] [[http://xenodium.com/#trying-out-mu4e-and-offlineimap][Albaro]] & [[http://xenodium.com/#trying-out-mu4e-with-mbsync][Albaro2]] (here there are many nice links) (blog - interesting not just emacs).
+      - [X] [[https://stackoverflow.com/questions/50199837/mu4e-with-msmtp-does-not-store-mail-sent-directory-after-sending-mails][How to config mu4e to send mail using msmtp]]
+      - [X] [[https://blog.programster.org/ubuntu-install-gpg-2][Install gpg2 (much better)]] to encript your mail password (echo password | gpg2 -c) then delete the corresponding line on bash history ;)
+      - [ ] [[http://pragmaticemacs.com/mu4e-tutorials/][mu4e tutorials (form pragmatic emacs)]]
+      - [X] [[https://wiki.archlinux.org/index.php/msmtp][Archlnux msmpt config page]]
+      - [X] [[https://wiki.archlinux.org/index.php/Isync#Troubleshooting][Archlinux mbsync config page]]
+      -
+*** COMMENT Install
+ Just in case to generate a certificate:
+ # openssl s_client -connect mail.mat.uab.cat:993 -showcerts 2>&1 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sed -ne '1,/-END CERTIFICATE-/p' > ~/mail.uab.cat.ctr
+
+ #+BEGIN_SRC bash
+   # Install things
+   sudo apt install msmtp-gnome msmtp-mta isync gnupg2
+   cd src
+   git clone https://github.com/djcb/mu.git
+   ./autogen.sh
+   make
+
+   # Paswords
+   ## UAB
+   cd
+   echo PASSWORD > .mathuab
+   gpg2 -c .mathuab
+   rm .mathuab
+   ## Gmail
+   echo PASSWORD > .gmailpass
+   gpg2 -c .gmailpass
+   rm .gmailpass
+   # Delete corresponding lines of .bash_history
+
+   mkdir Maildir
+   # Copy from Dropbox/config/Maildir
+ #+END_SRC
+
+ #+RESULTS:
+*** Add Path
+ #+BEGIN_SRC elisp
+(add-to-list 'load-path (expand-file-name "~/src/mu/mu4e/"))
+ #+END_SRC
+
+ #+RESULTS:
+*** Config
+[[file:lisp/brusts-mu4e-config.org][Mu4e config file]]
+#+begin_src elisp
+(use-package! mu4e
+  :commands (mu4e)
+  :config
+  ;; The setq's
+  (brust-endless/org-eval-eblocks "~/.doom.d/lisp/brusts-mu4e-config.org" "Basic" t)
+
+  ;; My contexts
+  (brust-endless/org-eval-eblocks "~/.doom.d/lisp/brusts-mu4e-config.org" "Contexts" t)
+
+  ;; Actions
+  (brust-endless/org-eval-eblocks "~/.doom.d/lisp/brusts-mu4e-config.org" "Actions" t)
+
+  ;; My Main menu
+  (brust-endless/org-eval-eblocks "~/.doom.d/lisp/brusts-mu4e-config.org" "Main Menu" t)
+
+  ;; Marking emails for new actions
+  (brust-endless/org-eval-eblocks "~/.doom.d/lisp/brusts-mu4e-config.org" "Marks" t)
+  (map! (:map mu4e-headers-mode-map
+          "g" #'mu4e-headers-mark-for-tag
+          "A" #'mu4e-headers-mark-for-moveUAB)
+        (:map mu4e-view-mode-map
+          "g" #'mu4e-headers-mark-for-tag
+          "A" #'mu4e-headers-mark-for-moveUAB))
+
+  ;; Fixing 'evil-collection-mu4e', see update in https://github.com/emacs-evil/evil-collection/issues/309
+  (defun brust-workaround-fixing-evil-collection-mu4e nil
+    (remove-hook 'mu4e-main-mode-hook 'evil-collection-mu4e-update-main-view))
+(remove-hook 'mu4e-main-mode-hook 'evil-collection-mu4e-update-main-view)
+  (advice-add 'evil-collection-mu4e-setup :after #'brust-workaround-fixing-evil-collection-mu4e)
+
+  (map! :map mu4e-headers-mode-map
+        "." #'hydra-mu4e-headers/body ; This hydra is for headers mode
+        "o" #'my/org-capture-mu4e                 ; differs from built-in
+        "A" #'mu4e-headers-mark-for-action        ; differs from built-in
+        "|" #'mu4e-view-pipe                         ; does not seem to be built in any longer
+        ))
+#+end_src
+
+#+RESULTS:
+: t
+** Programming
+*** Julia mode
+**** Intro
+julia-mode is just for editing .jl files (every other julia related mode uses it for this propose).
+
+ESS julia provides ESS[julia] mode to edit .jl files, which uses julia-mode for syntaxis.
+It also provides an interaction with Julia REPL, but with limited functionality:
+Starts a julia process whose output is print in a buffer, but the buffer is not a terminal.
+Problems:
+  - Polymake does not load (I do not know the reason)
+  - It has no colors
+  - The functionalities ; ] of julia does not work and ? works but prompt does not changes.
+    see[[https://github.com/emacs-ess/ESS/issues/143][Terminal not fully functional]]
+Good things
+  - It creates a backend for company (it requires to start the julia process)
+  - The backend (sometimes?) even incorporates user defined variables!
+  - Full integration with Doom emacs (eval region/line... under localleader key)
+
+julia-repl is another way to communicate with julia.
+It creates a julia process running in a term terminal in Emacs.
+Good
+  - Polymake load
+  - has colors
+  - has the functionalities ; ] ? and the prompt changes.
+Bad
+  - zero integration with company
+  - zero integration with Doom emacs
+    see [[https://github.com/tpapp/julia-repl/issues/81][problem with executable]]
+**** Julia mode
+#+begin_src elisp
+;; (require 'julia-mode)
+;; (require 'julia-repl)
+;; (add-hook 'julia-mode-hook 'julia-repl-mode) ;; always use minor mode
+(setq julia-repl-executable-records
+      `(;; (default "julia")
+        (master ,(expand-file-name (concat "~/src/julia/"
+                                           (if (member "bin" (directory-files "~/src/julia"))
+                                               "bin/")
+                                           "julia"))))) ; in the executable path
+;; (setq
+;;  term-char-mode-buffer-read-only nil
+;;  term-char-mode-point-at-process-mark nil)
+
+(after! julia-repl
+  (add-hook 'term-mode-hook #'visual-line-mode)
+  (add-hook! 'julia-repl-hook (julia-repl--send-string (concat "include(\"" (expand-file-name "~/.julia/config/startup.jl") "\")")))
+  (map! (:map julia-repl-mode-map
+         (:localleader
+          :desc "line or region"      "SPC" #'julia-repl-send-region-or-line
+          :desc "Start process"       "o" #'+julia/open-repl
+          :desc "Set dir to buffer's" "d" #'julia-repl-cd
+          :desc "Doc symbol"          "h" #'julia-repl-doc
+          :desc "Call \\@edit"        "e" #'julia-repl-edit
+          :desc "Send buffer"         "b" #'julia-repl-send-buffer
+          :desc "Generate exports"    "x" #'brust-julia-update-exports
+          :desc "Methods symbol"      "m" #'julia-repl-list-methods))
+        (:map term-raw-map
+         "C-RET" #'brust-julia-close-send-line
+         (:prefix "C-c"
+          :desc "Clear buffer" "d" #'comint-clear-buffer
+          :desc "Send typeof"  "o" #'brust-julia-send-typeof
+          :desc "Send eltype"  "e" #'brust-julia-send-eltype
+          :desc "Close and send line" "c" #'brust-julia-close-send-line))))
+#+end_src
+
+#+RESULTS:
+**** eglot-jl
+#+begin_src elisp
+(use-package! eglot-jl
+  ;; :when (featurep! +lsp)
+  :after eglot
+  :preface
+  (setq eglot-connect-timeout 120)
+  ;; (add-hook 'julia-mode-local-vars-hook #'lsp!)
+  :config (eglot-jl-init))
+#+end_src
+
+**** ad-hoc functions
+***** generic
+#+begin_src elisp
+(defun brust--julia-input-bounds nil
+  (save-excursion
+    (move-beginning-of-line 1)
+    (search-forward "> " (point-at-eol) t)
+    ;; (message "  Input bounds are %i %i"
+    ;;          (car (cons (point) (point-at-eol)))
+    ;;          (cdr (cons (point) (point-at-eol))))
+    (cons (point) (point-at-eol))))
+
+(defun brust--julia-input-string nil
+  (let* ((-bounds (brust--julia-input-bounds))
+         (-str (buffer-substring (car -bounds) (cdr -bounds))))
+    ;; (message "  Input string is \"%s\"" -str)
+    -str))
+
+(defun brust--julia-input-delete nil
+  (let* ((-bounds (brust--julia-input-bounds))
+         (N (- (cdr -bounds) (car -bounds))))
+    (dotimes (i N) (term-send-left))
+    (dotimes (i N) (term-send-del))))
+
+;; (defun singpolyma/term-insert-literal (key)
+;;     "Take a keypress and insert it literally into a terminal."
+;;     (interactive "cPress key:")
+;;     (message "%s" (format "%c" key))
+;;     )
+#+end_src
+
+#+RESULTS:
+: brust--julia-input-delete
+
+***** Send common functions
+#+begin_src elisp
+(defun brust-julia--add-function (-fun)
+  ;; (move-end-of-line 1)
+  ;; (dotimes (i (point-at-eol) (point)) (term-send-right))
+  (let ((input (brust--julia-input-string)))
+    (brust--julia-input-delete)
+    (julia-repl--send-string (concat -fun "(" input ")"))))
+
+(defun brust-julia-send-typeof nil
+  (interactive)
+  (brust-julia--add-function "typeof"))
+
+(defun brust-julia-send-eltype nil
+  (interactive)
+  (brust-julia--add-function "eltype"))
+#+end_src
+
+#+RESULTS:
+: brust-julia-send-eltype
+
+***** Close line
+#+begin_src elisp
+(defun brust-julia-close-send-line nil
+  (interactive)
+  (let ((input (brust--julia-input-string)))
+    (if (string= input "")
+        (term-send-raw)
+      (brust--julia-input-delete)
+      (julia-repl--send-string
+       (with-temp-buffer
+         (insert input)
+         (goto-char (point-max))
+         (close-all-open-paren-right)
+         (buffer-string))))))
+#+end_src
+
+#+RESULTS:
+: brust-julia-close-send-line
+***** Generate 'exports'
+#+begin_src elisp
+(defun brust-julia-update-exports nil
+  (interactive)
+  (save-excursion
+    (let ((defunlist (brust-julia--collect-defuns)))
+      (goto-char (point-min))
+      (insert "\nexport\n")
+      (while (< 1 (length defunlist))
+        (insert (car (pop defunlist)) ",\n"))
+      (insert (car (pop defunlist)) "\n"))))
+
+(defun brust-julia--collect-defuns nil
+  (goto-char (point-max))
+  (let ((defunlist '()))
+    (while (julia-beginning-of-defun)
+      (if (string= (thing-at-point 'word t) "function") (forward-word 2))
+      (pushnew! defunlist (julia-repl--symbols-at-point))
+      (move-beginning-of-line 1))
+    defunlist))
+#+end_src
+
+*** Maple
+#+begin_src elisp
+;; (add-load-path! "~/src/maplev-master/lisp")
+(autoload 'maplev-mode "maplev" "Maple editing mode" 'interactive)
+(add-to-list 'auto-mode-alist '("\\.mpl\\'" . maplev-mode))
+#+end_src
+
+*** POV-Ray
+#+begin_src elisp
+(defun brust-pov-ray-compile nil
+  (interactive)
+  (save-buffer)
+  (pov-menu-render-highest))
+
+(map! :localleader
+      :map pov-mode-map
+      "SPC" #'brust-pov-ray-compile
+      "q" #'pov-command-query ;AS
+      "h" #'pov-keyword-help
+      "r" #'pov-tool-bar-command-render
+      "l" #'pov-show-render-output
+      "1" #'pov-menu-render-test
+      "2" #'pov-menu-render-low
+      "3" #'pov-menu-render-mid
+      "4" #'pov-menu-render-high
+      "5" #'pov-menu-render-highest
+      "i" #'pov-open-include-file
+      "e" #'pov-menu-external-viewer
+      "v" #'pov-menu-internal-viewer
+      )
+#+end_src
+
+#+RESULTS:
+: brust-pov-ray-compile
+
+*** COMMENT SAGE
+#+BEGIN_SRC elisp
+  (use-package sage-shell-mode
+    :init
+    (setq sage-shell:sage-root "~/SageMath")
+    :config
+    ;; Run SageMath by M-x run-sage instead of M-x sage-shell:run-sage
+    (sage-shell:define-alias)
+
+    ;; Turn on eldoc-mode in Sage terminal and in Sage source files
+    (add-hook 'sage-shell-mode-hook #'eldoc-mode)
+    (add-hook 'sage-shell:sage-mode-hook #'eldoc-mode))
+#+END_SRC
+
+#+RESULTS:
+: t
+
+*** COMMENT SASS files
+    For some reason turn-off aggressive-indent do not work :(
+#+BEGIN_SRC elisp
+  (use-package sass-mode
+    :config
+    (defun aggressive-indent-mode-off nil
+      (aggressive-indent-mode -1))
+    (setq scss-compile-at-save nil)
+    (add-hook 'sass-mode-hook #'aggressive-indent-mode-off))
+#+END_SRC
+
+#+RESULTS:
+: t
+
+*** Singular
+**** Config
+#+BEGIN_SRC elisp
+(setq singular-emacs-home-directory "/usr/share/singular/emacs/")
+(add-load-path! singular-emacs-home-directory)
+(autoload 'singular "singular"
+  "Start Singular using default values." t)
+(autoload 'singular-other "singular"
+  "Ask for arguments and start Singular." t)
+
+(add-to-list 'auto-mode-alist '("\\.sing\\'" . c++-mode))
+(add-to-list 'auto-mode-alist '("\\.lib\\'" .  c++-mode))
+
+(defun brust-singular-mode-hook nil
+  ;; turn-on fontification for c++-mode
+  (font-lock-mode 1)
+  (set (make-local-variable 'singular-commands-alist) nil)
+  (load (concat singular-emacs-home-directory "cmd-cmpl"))
+  ;; turn on aut-new line
+  (c-toggle-auto-newline 1)
+  ;; tunr off hungry-delete
+  (c-toggle-hungry-state -1)
+  (company-mode -1))
+
+(add-hook 'c++-mode-hook #'brust-singular-mode-hook)
+
+(defun brust-singular-intetractive-mode nil
+  (brust-math-software-hookfun-to-intangify-prompt)
+  (hl-line-mode 1))
+
+(add-hook 'singular-interactive-mode-hook #'brust-singular-intetractive-mode)
+
+(defadvice singular-send-or-copy-input (before finish-line activate)
+  (brust-singular-finish-line-interaction-mode))
+
+#+END_SRC
+
+#+RESULTS:
+: singular-send-or-copy-input
+**** Maps
+#+begin_src elisp
+(map! (:map c++-mode-map
+       "C-<return>" #'newline
+       "<return>" #'brust-singular-finish-line-singular-edit-mode
+       (:localleader
+        "<tab>" #'brust-singular-dynamic-complete
+        "a"   #'singular-beginning-of-line
+        "p"   #'brust-singular-add-print
+        "s"   #'brust-singular-add-std
+        "SPC" #'brust-singular-eval-region-or-line
+        ";" #'comment-region
+        "b" #'brust-singular-eval-buffer
+        "s" #'brust-singular-fixed-region-set-region
+        "f" #'brust-singular-fixed-region-eval
+        "e" #'brust-singular-eval-proc))
+      (:map singular-interactive-mode-map
+       "C-p" #'brust-singular-add-print
+       "C-s" #'brust-singular-add-std))
+#+end_src
+
+**** function to send the working file.
+#+BEGIN_SRC elisp
+
+  (defvar brust-singular-fixed-region-poss nil "Cons of positions delimiting the fixed region")
+
+  (defun brust-singular-fixed-region-set-region (args)
+    (interactive "P")
+    (unless (use-region-p) (user-error "Region has to be activate"))
+    (let ((beg (region-beginning))
+          (end (region-end)))
+      (setq brust-singular-fixed-region-poss (cons beg end))
+      (message "Fixed-region seted from line %d to %d"
+               (line-number-at-pos beg)
+               (line-number-at-pos end)))
+    (deactivate-mark t))
+
+  (defun brust-singular-fixed-region-eval (args)
+    (interactive "P")
+    (message "Evaluated region (%d:%d) in [[%s]]"
+             (line-number-at-pos (car brust-singular-fixed-region-poss))
+             (line-number-at-pos (cdr brust-singular-fixed-region-poss))
+             buffer-file-name)
+    (brust-singular--eval-string
+     (buffer-substring-no-properties
+      (car brust-singular-fixed-region-poss)
+      (cdr brust-singular-fixed-region-poss))
+     args))
+
+  (defun brust-singular-eval-region-or-line (args)
+    (interactive "P")
+    (let (-str)
+      (if (not (use-region-p))
+          (save-excursion
+            (while (not (or (brust-singular--ending-semicolon-p) (bobp)))
+              (forward-line -1))
+            (setq -str (thing-at-point 'line t))
+            (unless (brust-singular--ending-semicolon-p -str)
+              (user-error "There is no line to eval"))
+            (unless (brust-singular--check-parents -str)
+              (user-error "Unbalanced Parents!!!"))
+            (message "Evaluated line (%d) in [[ %s ]]"
+                     (line-number-at-pos (point))
+                     (buffer-name)))
+        (message "Evaluated region between lines (%d:%d) in [[ %s ]]"
+                 (line-number-at-pos (region-beginning))
+                 (line-number-at-pos (region-end))
+                 (buffer-name))
+        (setq -str (buffer-substring-no-properties
+                    (region-beginning) (region-end))))
+      (brust-singular--eval-string -str args)))
+
+  (defun brust-singular--ending-semicolon-p (&optional -string)
+    (unless -string
+      (setq -string (thing-at-point 'line t)))
+    (string= ";"
+             (substring (s-trim
+                         (car
+                          (split-string
+                           -string "//")))
+                        -1)))
+
+  (defun brust-singular--check-parents (&optional -string)
+    (unless -string
+      (setq -string (thing-at-point 'line t)))
+    (with-temp-buffer
+      (insert -string)
+      (ignore-errors (check-parens) t)))
+
+  (defun brust-singular--eval-string (-str &optional args)
+    (save-window-excursion
+      (singular)
+      (goto-char (point-max))
+      (let ((process (singular-process))
+            (--str (concat (s-trim -str)
+                           (unless (string= (substring -str -1) ";")
+                             "\n;"))))
+        (when args (singular-control-c 'restart))
+        (singular-input-filter process --str)
+        (singular-send-string process --str))))
+
+  (defun brust-singular--delete-comments (&optional -string)
+    (unless -string
+      (setq -string (thing-at-point 'line t)))
+    (with-temp-buffer
+      (insert -string)
+      (goto-char (point-min))
+      (while (search-forward "//" nil t)
+        (forward-char -2)
+        (delete-region (point) (line-end-position)))
+      (buffer-string)))
+
+  (defun brust-singular-eval-proc (args)
+    "Eval last proc declaration."
+    (interactive "P")
+    (save-excursion
+      (search-backward "proc" nil t)
+      (let ((-beg (point))
+            (-name
+             (if (re-search-forward "[ \s\t]+" (line-end-position) t)
+                 (let ((-beg2 (point)))
+                   (if (search-forward "(" (line-end-position) t)
+                       (s-trim (buffer-substring-no-properties -beg2 (1- (point))))
+                     nil))
+               nil)))
+        (search-forward "{" nil t)
+        (forward-char -1)
+        (sp-forward-sexp)
+        (brust-singular--eval-string
+         (buffer-substring-no-properties -beg (point))
+         args)
+        (if -name
+            (message "Evaluated proc {{%s}}, between lines (%d:%d), in file [[%s]]"
+                     -name
+                     (line-number-at-pos -beg)
+                     (line-number-at-pos (point))
+                     (file-name-base (buffer-name)))
+          (message "Evaluated proc between lines (%d:%d) and file [[%s]] (Warring:: its name is not on the definition line)"
+                   (line-number-at-pos -beg)
+                   (line-number-at-pos (point))
+                   (file-name-base (buffer-name)))))))
+
+      ;;(defun brust-singular-eval-buffer-line-by-line nil
+      ;;  (interactive)
+      ;;  (let ((-total-str (buffer-string))
+      ;;        (-base-name (file-name-base (buffer-name))))
+      ;;    (with-temp-buffer
+      ;;      (insert -total-str)
+      ;;      (brust-singular--delete-comments)
+      ;;      (goto-char (point-min))
+      ;;      (while (not (eobp))
+      ;;        ;;(or (brust-check-line-parents) (user-error "Unbalanced Parent!!!"))
+      ;;        (let ((-str (s-trim (buffer-substring-no-properties
+      ;;                             (line-beginning-position)
+      ;;                             (line-end-position))))
+      ;;              (-line (line-number-at-pos)))
+      ;;          (unless
+      ;;              (cond ((string= -str "") t)
+      ;;                    ((string= (substring -str -1) ";")
+      ;;                     (brust-singular--eval-string
+      ;;                      -str
+      ;;                      (format "line:%d:of::%s--" -line -base-name)
+      ;;                      nil)
+      ;;                     t)
+      ;;                    (t (brust-singular-eval-environment args) t))
+      ;;            (message "Error on line:%d (%s)" -line -str)
+      ;;            (goto-char (point-max)))
+      ;;          ;;(when err (goto-char err))
+      ;;          (forward-line 1))))))
+
+      ;;(defun brust-singular--temp-file (-str -name)
+      ;;  (let ((-temp-file
+      ;;         (make-temp-file
+      ;;          (replace-regexp-in-string "[.]" "-" -name)
+      ;;          nil ".sing")))
+      ;;    (with-temp-buffer
+      ;;      (insert -str)
+      ;;      (append-to-file (point-min) (point-max) -temp-file))
+      ;;    -temp-file))
+#+END_SRC
+
+#+RESULTS:
+: brust-singular-eval-proc
+
+**** functions for *singular*
+***** Add print std...
+#+BEGIN_SRC elisp
+  (defun brust-singular-add-print nil
+    (interactive)
+    (brust-singular-add-function "print"))
+
+  (defun brust-singular-add-std nil
+    (interactive)
+    (brust-singular-add-function "std"))
+
+  (defun brust-singular-add-function (-fun)
+    (let* ((-bounds (if (region-active-p)
+                        `(,(region-beginning) . ,(region-end))
+                      (save-excursion
+                        (move-beginning-of-line 1)
+                        (search-forward "> " (point-at-eol) t)
+                        `(,(point) . ,(progn
+                                        (move-end-of-line 1)
+                                        (search-backward ";" (point-at-bol) t)
+                                        (point))))))
+           (-str (buffer-substring-no-properties (car -bounds) (cdr -bounds))))
+      (goto-char (car -bounds))
+      (delete-region (car -bounds) (cdr -bounds))
+      (insert -fun "(" -str ")")
+      (move-end-of-line 1)
+      (insert ";")))
+#+END_SRC
+
+#+RESULTS:
+: brust-singular-finish-line
+***** Finish line
+#+BEGIN_SRC elisp
+  (defun brust-singular-finish-line-singular-edit-mode nil
+    (interactive)
+    (if (or (bolp) (eobp)) (insert "\n")
+      (move-end-of-line 1)
+      (when (search-backward "//" (point-at-bol) t)
+        (skip-chars-backward "[:space:]"))
+      (let ((-main-line (s-trim-right
+                         (buffer-substring-no-properties (point-at-bol) (point))))
+            (-comment-line (buffer-substring-no-properties (point) (point-at-eol))))
+        (delete-region (point-at-bol) (point-at-eol))
+        (if (or (< (length -main-line) 1))
+            (insert (concat -comment-line "\n"))
+          (insert
+           (concat ;;compare (insert (concat nil "hello")) vs (insert nil "hello")
+            (with-temp-buffer ;; To close-all-open-paren-r just of this line and do not use narrow
+              (insert (concat -main-line
+                              (unless (string= (substring -main-line -1) ";")
+                                ";")))
+              (forward-char -1)
+              (close-all-open-paren-right)
+              (buffer-string))
+            -comment-line
+            "\n"))))))
+
+  (defun brust-singular-finish-line-interaction-mode nil
+    (interactive)
+    (narrow-to-region (point-at-bol) (point-at-eol))
+    (move-end-of-line 1)
+    (delete-horizontal-space)
+    (unless (string= (string (char-before (point))) ";")
+      (insert ";"))
+    (forward-char -1)
+    (close-all-open-paren-right)
+    (widen))
+
+#+END_SRC
+
+#+RESULTS:
+: brust-singular-finish-line-interaction-mode
+
+***** Dynamic expand in non-running Singular buffer
+#+BEGIN_SRC elisp
+  (defun brust-singular-dynamic-complete ()
+    "Dynamic complete word before point.
+      Performs completion of Singular commands."
+    (interactive)
+    (let* ((end (point))
+           (beg
+            (save-excursion
+              (skip-chars-backward "a-zA-Z0-9")
+              (point)))
+           (str (buffer-substring-no-properties beg end)))
+      (if (string= str "")
+          (indent-region (point-at-bol) (point-at-eol))
+        ;; (call-interactively 'indent-region)
+        (if singular-commands-alist
+            (singular-completion-do str beg end singular-commands-alist)
+          (message "Completion of Singular commands disabled.")
+          (ding)))))
+#+END_SRC
+
+#+RESULTS:
+: brust-singular-dynamic-complete
+*** Macaulay2
+#+begin_src elisp
+;; Setup M2.el for autoloading
+;; add "/usr/share/info" to Info-default-directory-list if it isn't there (it is already there)
+;; (add-to-list 'Info-default-directory-list "/usr/share/info")
+(add-load-path! "/usr/share/emacs/site-lisp/Macaulay2")
+
+(autoload 'M2             "M2" "Run Macaulay2 in an emacs buffer" t)
+(autoload 'M2-mode        "M2" "Macaulay2 editing mode" t)
+(autoload 'm2-mode        "M2" "Macaulay2 editing mode, name in lower case" t)
+(autoload 'm2-comint-mode "M2" "Macaulay2 command interpreter mode, name in lower case" t)
+(add-to-list 'auto-mode-alist '("\\.m2\\'" . M2-mode))
+
+(map! (:map M2-mode
+       (:localleader
+        "SPC" #'M2)))
+;; Uncomment these lines to enable syntax highlighting for the interpreter language
+;;(autoload 'D-mode "D-mode" "Editing mode for the interpreter language" t)
+;;(add-to-list 'auto-mode-alist '("\\.dd?\\'" . D-mode))
+
+;; You may comment out the following line with an initial semicolon if you
+;; want to use your f12 key for something else.  However, this action
+;; will be undone the next time you run setup() or setupEmacs().
+;; (global-set-key [ f12 ] 'M2)
+#+end_src
+** Build-in modes
+*** Abbrev's
+**** Setting
+#+BEGIN_SRC elisp
+  (setq pre-abbrev-expand-hook (quote (ignore))
+        abbrev-file-name "~/Dropbox/config/abbrev-def.el"
+        save-abbrevs 'silently)
+
+  (setq-default abbrev-mode t)
+
+  (quietly-read-abbrev-file)
+#+END_SRC
+
+#+RESULTS:
+
+**** Endless ispell & abbrev
+     It comes from [[http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html][Ispell and abbrev]], to find the misspelled work plain =ispell= is used, I adapted it to use =flyspell=, now I just get words which are underlined as misspelled (red curvi line under the word).
+     That's useful in TeX files where plain ispell has many false misspellings, but it could be a problem on buffers without =flyspell= minormode.
+#+BEGIN_SRC elisp
+  (defun endless/simple-get-word ()
+    (car-safe (save-excursion (ispell-get-word nil))))
+
+  (defun endless/ispell-word-then-abbrev (p)
+    "Call `ispell-word', then create an abbrev for it.
+  With prefix P, create local abbrev. Otherwise it will
+  be global.
+  If there's nothing wrong with the word at point, keep
+  looking for a typo until the beginning of buffer. You can
+  skip typos you don't want to fix with `SPC', and you can
+  abort completely with `C-g'."
+    (interactive "P")
+
+    (let ((top (window-start))
+          (bot (window-end))
+          (position (point))
+          incorrect-word-pos
+          position-at-incorrect-word
+          bef aft)
+      (save-excursion
+        (save-restriction
+          ;; make sure that word under point is checked first
+          (forward-word)
+
+          ;; narrow the region
+          (narrow-to-region top bot)
+          (overlay-recenter (point))
+
+          (let ((overlay-list (overlays-in (point-min) (+ position 1)))
+                (overlay 'dummy-value))
+
+            (while overlay
+              (setq overlay (car-safe overlay-list))
+              (setq overlay-list (cdr-safe overlay-list))
+              (when (and overlay
+                         (flyspell-overlay-p overlay))
+                (setq incorrect-word-pos (overlay-start overlay))
+
+                ;; try to correct word
+                (save-excursion
+                  (goto-char incorrect-word-pos)
+                  (setq bef (endless/simple-get-word))
+                  ;; `flyspell-correct-at-point' returns t when there is
+                  ;; nothing to correct. In such case we just skip current word.
+                  (unless (flyspell-correct-at-point)
+                    (setq overlay nil)
+                    (setq aft (endless/simple-get-word)))))))))
+      (if (and aft bef (not (equal aft bef)))
+          (let ((aft (downcase aft))
+                (bef (downcase bef)))
+            (define-abbrev
+              (if p local-abbrev-table global-abbrev-table)
+              bef aft)
+            (message "\"%s\" now expands to \"%s\" %sally"
+                     bef aft (if p "loc" "glob")))
+        (user-error "No typo at or before point"))))
+#+END_SRC
+
+#+RESULTS:
+: endless/ispell-word-then-abbrev
+
+*** Auto composition
+    Disabled it, I never use it.
+#+BEGIN_SRC elisp
+(global-auto-composition-mode -1)
+#+END_SRC
+
+*** Auto revert
+    I need this to work with Git and branching.
+    Auto refresh all buffers when files have changed on disk.
+#+BEGIN_SRC elisp
+(setq global-auto-revert-ignore-modes (quote (PDFView))
+      auto-revert-check-vc-info t)
+
+(add-hook! 'emacs-startup-hook (global-auto-revert-mode +1))
+#+END_SRC
+*** Delete selection on type.
+#+BEGIN_SRC elisp
+(add-hook! 'emacs-startup-hook (delete-selection-mode +1))
+;; (setq delete-selection-save-to-register 'kill-ring)
+#+END_SRC
+
+*** Display time
+    Not show the average of load times.
+#+BEGIN_SRC elisp
+(setq display-time-default-load-average nil)
+(add-hook! 'emacs-startup-hook (display-time-mode +1))
+#+END_SRC
+
+#+RESULTS:
+: t
+
+*** Ediff
+   The default Ediff behavior is confusing and not desirable. This fixes it.
+#+BEGIN_SRC elisp
+(setq ediff-window-setup-function 'ediff-setup-windows-plain
+      ediff-split-window-function 'split-window-horizontally)
+#+END_SRC
+
+   Make it compatible with =org-mode=
+#+BEGIN_SRC elisp
+(defun ora-ediff-prepare-buffer nil
+  (when (memq major-mode '(org-mode emacs-lisp-mode))
+    (outline-show-all)))
+#+END_SRC
+
+#+BEGIN_SRC elisp
+  (defun ediff-copy-both-to-C nil
+    (interactive)
+    (ediff-copy-diff
+     ediff-current-difference nil 'C nil
+     (concat
+      (ediff-get-region-contents
+       ediff-current-difference 'A ediff-control-buffer)
+      (ediff-get-region-contents
+       ediff-current-difference 'B ediff-control-buffer))))
+
+  (defun add-d-to-ediff-mode-map nil
+    (define-key ediff-mode-map "d" #'ediff-copy-both-to-C))
+#+END_SRC
+
+#+begin_src elisp
+(after! ediff
+  (add-hook 'ediff-keymap-setup-hook #'add-d-to-ediff-mode-map)
+  (add-hook 'ediff-prepare-buffer-hook 'ora-ediff-prepare-buffer))
+#+end_src
+*** COMMENT Ispell
+#+begin_src elisp
+(setq ispell-program-name "aspell"
+      ispell-really-aspell t
+      ispell-silently-savep t
+      ispell-quietly t
+      ;; ispell-personal-dictionary (file-truename "~/Dropbox/config/english-words.txt")
+      ;; "~/.emacs.d/myDictionary.pws"
+      ispell-extra-args '("--sug-mode=ultra" "--run-together" "--dont-tex-check-comments"))
+
+(add-hook! 'text-mode-hook
+  (defun +spell-remove-run-together-switch-for-aspell-h ()
+    (setq-local ispell-extra-args (remove "--run-together" ispell-extra-args))))
+
+(require 'flyspell)
+(add-hook! '(org-mode-hook
+             markdown-mode-hook
+             TeX-mode-hook
+             rst-mode-hook
+             mu4e-compose-mode-hook
+             message-mode-hook
+             git-commit-mode-hook)
+           #'flyspell-mode)
+(add-hook! '(yaml-mode-hook
+             conf-mode-hook
+             prog-mode-hook)
+           #'flyspell-prog-mode)
+
+(setq flyspell-default-dictionary "en"
+      flyspell-issue-welcome-flag nil
+      ;; Significantly speeds up flyspell, which would otherwise print
+      ;; messages for every word when checking the entire buffer
+      flyspell-issue-message-flag nil)
+(pushnew! ispell-skip-region-alist
+          '(":\\(PROPERTIES\\|LOGBOOK\\):" . ":END:")
+          '("#\\+BEGIN_SRC" . "#\\+END_SRC")
+          '("#\\+BEGIN_EXAMPLE" . "#\\+END_EXAMPLE"))
+#+end_src
+*** Tramp
+#+begin_src elisp
+(setq password-cache-expiry nil
+      remote-file-name-inhibit-cache nil
+      tramp-completion-reread-directory-timeout nil
+      tramp-ssh-controlmaster-options "" ;; See https://www.reddit.com/r/emacs/comments/fgl6gu/emacs_tramp_tricks/ and https://puppet.com/blog/speed-up-ssh-by-reusing-connections/
+      tramp-verbose 1
+      vc-ignore-dir-regexp
+      (format "\\(%s\\)\\|\\(%s\\)"
+              vc-ignore-dir-regexp
+              tramp-file-name-regexp))
+#+end_src
+
+#+RESULTS:
+
+** External modes
+*** Avy
+#+begin_src elisp
+(setq avy-flyspell-correct-function #'+spell/correct)
+#+end_src
+
+#+RESULTS:
+: +spell/correct
+
+*** Company
+**** General config.
+#+BEGIN_SRC elisp
+(map! :after company
+      :map company-active-map
+      "TAB"    #'brust-company-abort-cdlatex-or-yas
+      "<tab>"  #'brust-company-abort-cdlatex-or-yas
+      "M-o"    #'counsel-company
+      "<left>" #'company-complete-common
+      ;; "M-k" #'company-select-previous
+      ;; "M-j" #'company-select-next
+      "M-j"    #'company-next-page
+      "M-k"    #'company-previous-page
+      ;; "M-g" #'company-abort
+      "M-h"    #'company-show-doc-buffer
+      "M-l"    #'company-show-location
+      )
+
+(defun brust-company-abort-cdlatex-or-yas nil
+  (interactive)
+  (company-abort)
+  (cond ((fboundp 'cdlatex-tab) (cdlatex-tab))
+        ((fboundp 'yas-expand) (yas-expand))))
+#+END_SRC
+
+#+RESULTS:
+: brust-company-abort-cdlatex-or-yas
+*** Evil mode
+**** Setqings
+#+BEGIN_SRC elisp
+(setq evil-cross-lines t
+      ;; Use both =jk= and =kj= to esc insert mode
+      ;; (equivalent to key-chords jk kj) Press them as single key!
+      evil-escape-unordered-key-sequence t
+      evil-split-window-below t
+      ;; pasting in visual state NOT adds the replaced text to the kill ring
+      evil-kill-on-visual-paste nil
+      ;; cursor is allowed to move one character past the end of the line
+      evil-move-beyond-eol t
+      evil-vsplit-window-right t)
+(global-evil-visualstar-mode)
+#+END_SRC
+
+#+RESULTS:
+: t
+**** Del char
+Do not add single deleted chars to =kill-ring=
+[[https://github.com/syl20bnr/spacemacs/issues/6977]]
+#+begin_src elisp
+(defun bb/evil-delete--black-hole-register (orig-fn beg end &optional type _ &rest args)
+  (apply orig-fn beg end type ?_ args))
+
+(advice-add 'evil-delete-char :around 'bb/evil-delete--black-hole-register)
+(advice-add 'evil-delete-backward-char :around 'bb/evil-delete--black-hole-register)
+#+end_src
+
+#+RESULTS:
+
+*** Fuzzi file finder
+**** Main config
+#+begin_src elisp
+(after! counsel
+  (advice-add 'counsel-fzf :around #'brust-counsel-fzf-advice-add-hide-files)
+
+  (map!
+   (:leader
+     (:prefix "f"
+       (:prefix ("z" . "Fuzzy find")
+         :desc "Current dir" "z" #'counsel-fzf
+         :desc "Drobox"      "d" #'brust-counsel-fzf-dropbox
+         :desc "grep git"    "g" #'fzf-git-grep
+         :desc "Home"        "h" #'brust-counsel-fzf-home
+         :desc "Select dir"  "s" #'brust-counsel-fzf-dir
+         :desc ".emacs.d"    "e" #'brust-counsel-fzf-emacsd)))))
+#+end_src
+
+#+RESULTS:
+: brust-counsel-fzf-emacsd
+
+**** Advice counsel-fzf to include hidden files
+;; Install ag with:
+;; sudo apt install silversearcher-ag
+#+begin_src elisp
+(defun brust-counsel-fzf-advice-add-hide-files (orig-fun &rest args)
+  (if current-prefix-arg
+      (let* ((ag-args (with-temp-buffer
+                        (ivy-read "Arguments for ag: "
+                                  '(("Hidden files but not .gitignoreds --hidden --ignore .git -g \"\"" . "--hidden --ignore .git -g \"\"")
+                                    ("Hidden files and .gitignoreds -U --hidden --ignore .git -g \"\""  . "-U --hidden --ignore .git -g \"\""))
+                                  :action (lambda (x) (insert (if (listp x) (cdr x) x))))
+                        (buffer-string)))
+             (counsel-fzf-cmd (concat "ag " ag-args " | fzf -f \"%s\"")))
+        (apply orig-fun args))
+    (apply orig-fun args)))
+
+#+end_src
+
+#+RESULTS:
+: brust-counsel-fzf-advice-add-hide-files
+
+**** Workaround for jumping to specific dirs
+#+begin_src elisp
+(defun brust-counsel-fzf-dir nil
+  "fzf find file selecting a directory"
+  (interactive)
+  (let ((μdir (read-directory-name "Directory: ")))
+    (counsel-fzf
+     nil
+     μdir
+     (concat "fzf in " μdir ": "))))
+
+(defun brust-counsel-fzf-home nil
+  "fzf find file in home"
+  (interactive)
+  (counsel-fzf
+   nil
+   "~"
+   "fzf in Home: "))
+
+(defun brust-counsel-fzf-emacsd nil
+  "fzf find file in .emacs.d"
+  (interactive)
+  (counsel-fzf
+   nil
+   "~/.emacs.d"
+   "fzf in .emacs.d: "))
+
+(defun brust-counsel-fzf-dropbox nil
+  "fzf find file in Dropbox"
+  (interactive)
+  (counsel-fzf
+   nil
+   "~/Dropbox"
+   "fzf in Dropbox: "))
+#+end_src
+
+#+RESULTS:
+: brust-counsel-fzf-dropbox
+
+*** Hydra
+**** Config
+#+BEGIN_SRC elisp
+(use-package! hydra)
+#+END_SRC
+
+#+RESULTS:
+
+**** COMMENT mu4e
+#+begin_src elisp
+(defhydra hydra-mu4e-headers (:color blue :hint nil)
+  "
+ ^General^   | ^Search^           | _!_: read    | _#_: deferred  | ^Switches^
+-^^----------+-^^-----------------| _?_: unread  | _%_: pattern   |-^^------------------
+_n_: next    | _s_: search        | _r_: refile  | _&_: custom    | _O_: sorting
+_p_: prev    | _S_: edit prev qry | _u_: unmk    | _+_: flag      | _P_: threading
+_]_: n unred | _/_: narrow search | _U_: unmk *  | _-_: unflag    | _Q_: full-search
+_[_: p unred | _b_: search bkmk   | _d_: trash   | _T_: thr       | _V_: skip dups
+_y_: sw view | _B_: edit bkmk     | _D_: delete  | _t_: subthr    | _W_: include-related
+_R_: reply   | _{_: previous qry  | _m_: move    |-^^-------------+-^^------------------
+_C_: compose | _}_: next query    | _a_: action  | _|_: thru shl  | _`_: update, reindex
+_F_: forward | _C-+_: show more   | _A_: mk4actn | _H_: help      | _;_: context-switch
+_o_: org-cap | _C--_: show less   | _*_: *thing  | _q_: quit hdrs | _j_: jump2maildir "
+
+  ;; general
+  ("n" mu4e-headers-next)
+  ("p" mu4e-headers-previous)
+  ("[" mu4e-select-next-unread)
+  ("]" mu4e-select-previous-unread)
+  ("y" mu4e-select-other-view)
+  ("R" mu4e-compose-reply)
+  ("C" mu4e-compose-new)
+  ("F" mu4e-compose-forward)
+  ("o" my/org-capture-mu4e)                  ; differs from built-in
+
+  ;; search
+  ("s" mu4e-headers-search)
+  ("S" mu4e-headers-search-edit)
+  ("/" mu4e-headers-search-narrow)
+  ("b" mu4e-headers-search-bookmark)
+  ("B" mu4e-headers-search-bookmark-edit)
+  ("{" mu4e-headers-query-prev)              ; differs from built-in
+  ("}" mu4e-headers-query-next)              ; differs from built-in
+  ("C-+" mu4e-headers-split-view-grow)
+  ("C--" mu4e-headers-split-view-shrink)
+
+  ;; mark stuff
+  ("!" mu4e-headers-mark-for-read)
+  ("?" mu4e-headers-mark-for-unread)
+  ("r" mu4e-headers-mark-for-refile)
+  ("u" mu4e-headers-mark-for-unmark)
+  ("U" mu4e-mark-unmark-all)
+  ("d" mu4e-headers-mark-for-trash)
+  ("D" mu4e-headers-mark-for-delete)
+  ("m" mu4e-headers-mark-for-move)
+  ("a" mu4e-headers-action)                  ; not really a mark per-se
+  ("A" mu4e-headers-mark-for-action)         ; differs from built-in
+  ("*" mu4e-headers-mark-for-something)
+
+  ("#" mu4e-mark-resolve-deferred-marks)
+  ("%" mu4e-headers-mark-pattern)
+  ("&" mu4e-headers-mark-custom)
+  ("+" mu4e-headers-mark-for-flag)
+  ("-" mu4e-headers-mark-for-unflag)
+  ("t" mu4e-headers-mark-subthread)
+  ("T" mu4e-headers-mark-thread)
+
+  ;; miscellany
+  ("q" mu4e~headers-quit-buffer)
+  ("H" mu4e-display-manual)
+  ("|" mu4e-view-pipe)                       ; does not seem built-in any longer
+
+  ;; switches
+  ("O" mu4e-headers-change-sorting)
+  ("P" mu4e-headers-toggle-threading)
+  ("Q" mu4e-headers-toggle-full-search)
+  ("V" mu4e-headers-toggle-skip-duplicates)
+  ("W" mu4e-headers-toggle-include-related)
+
+  ;; more miscellany
+  ("`" mu4e-update-mail-and-index)           ; differs from built-in
+  (";" mu4e-context-switch)
+  ("j" mu4e~headers-jump-to-maildir)
+
+  ("." nil))
+#+end_src
+
+#+RESULTS:
+: hydra-mu4e-headers/body
+
+**** Org block template
+     https://github.com/abo-abo/hydra/wiki/Org-mode-block-templates
+***** Hot expand defun
+#+BEGIN_SRC elisp
+  (defun hot-expand (str &optional mod header)
+    "Expand org block template.
+
+    STR is a structure template string recognised by org like <s. MOD is a
+    string with additional parameters to add the begin line of the
+    structure element. HEADER string includes more parameters that are
+    prepended to the element after the #+HEADERS: tag."
+    (let ((-str (if mod (concat str " " mod) str)))
+      (if (region-active-p)
+          (let ((-str-region (buffer-substring (region-beginning) (region-end))))
+            (when header
+              (delete-region (region-beginning) (region-end))
+              (deactivate-mark)
+              (insert "#+HEADERS: " header "\n")
+              (push-mark)
+              (activate-mark t)
+              (insert -str-region))
+            (org-insert-structure-template -str))
+        (when header (insert "#+HEADERS: " header "\n"))
+        (org-insert-structure-template -str)
+        (insert "\n")
+        (backward-char 1))))
+
+  ;; (setq org-structure-template-alist (eval (car (get 'org-structure-template-alist 'standard-value))))
+  ;; (require 'org-tempo) ; Required from org 9 onwards for old template expansion
+  ;; Reset the org-template expnsion system, this is need after upgrading to org 9 for some reason
+
+  (defun brust-org< nil
+    "Self insert command or expand hydra of org block templates
+  at the beginning of a line
+  or with region active."
+    (interactive)
+    (if (or (region-active-p) (looking-back "^"))
+        (hydra-org-block-template/body)
+      (self-insert-command 1)))
+#+END_SRC
+
+#+RESULTS:
+: brust-org<
+
+***** Hydra
+#+BEGIN_SRC elisp
+  (defhydra hydra-org-block-template (:color blue :hint nil)
+    "
+     _c_enter  _q_uote     _e_macs-lisp    _L_aTeX:
+     _l_atex   _E_xample   _j_ulia         _i_ndex:
+     _a_scii   _v_erse     _P_erl tangled  _I_NCLUDE:
+     _s_rc     _n_ote      _p_erl          _H_TML:
+     _h_tml    _b_ash      plant_u_ml      _A_SCII:
+    "
+    ("s" (hot-expand "src"))
+    ("E" (hot-expand "example"))
+    ("q" (hot-expand "quote"))
+    ("v" (hot-expand "<v"))
+    ("n" (hot-expand "note"))
+    ("c" (hot-expand "center"))
+    ("l" (hot-expand "export latex"))
+    ("h" (hot-expand "export html"))
+    ("a" (hot-expand "export ascii"))
+    ("L" (hot-expand "LaTeX"))
+    ("i" (hot-expand "index"))
+    ("e" (hot-expand "src" "elisp"))
+    ("j" (hot-expand "src" "julia :session *julia*"))
+    ("b" (hot-expand "src" "bash"))
+    ("p" (hot-expand "src" "perl"))
+    ("u" (hot-expand "src" "plantuml :file CHANGE.png"))
+    ("P" (hot-expand "src" "perl" ":results output :exports both :shebang \"#!/usr/bin/env perl\""))
+    ("I" (hot-expand "INCLUDE"))
+    ("H" (hot-expand "HTML"))
+    ("A" (hot-expand "ASCII"))
+    ("<" self-insert-command "ins")
+    ("o" nil "quit"))
+#+END_SRC
+
+#+RESULTS:
+: hydra-org-block-template/body
+
+**** PdfTools
+#+begin_src elisp
+(defhydra hydra-pdftools (:color blue :hint nil)
+        "
+   ╭────────────┐
+   │ PDF Tools │^ ^    ^ ^  ^ ^  Annotations  Search/Link   Do
+   ╭────────────────────────────────────────────────────────────┐
+    History:  ↑ _B_ ↓ _N_ ^ ^    [_al_] list    [_s_] search    [_u_] revert buffer
+    Go to page: [_e_] ^ ^ ^ ^    [_am_] markup  [_o_] outline   [_i_] info
+    Scale reset: [_0_] ^ ^ ^ ^   [_at_] text    [_F_] link      [_d_] dark mode
+    Fit: [_P_], _H_ight, _W_idth [_ad_] delete  [_f_] search link
+
+   --------------------------------------------------------------------------------
+        "
+        ;; ("\\" hydra-master/body "back")
+        ;; ("<ESC>" nil "quit")
+        ("al" pdf-annot-list-annotations)
+        ("ad" pdf-annot-delete)
+        ;; ("aa" pdf-annot-attachment-dired)
+        ("am" pdf-annot-add-markup-annotation)
+        ("at" pdf-annot-add-text-annotation)
+        ;; ("y"  pdf-view-kill-ring-save)
+        ("0" pdf-view-scale-reset)
+        ("H" pdf-view-fit-height-to-window)
+        ("W" pdf-view-fit-width-to-window)
+        ("P" pdf-view-fit-page-to-window)
+        ("d" pdf-view-dark-minor-mode)
+        ;; ("b" pdf-view-set-slice-from-bounding-box)
+        ;; ("r" pdf-view-reset-slice)
+        ("e" pdf-view-goto-page)
+        ("o" pdf-outline)
+        ("s" pdf-occur)
+        ("i" pdf-misc-display-metadata)
+        ("u" pdf-view-revert-buffer)
+        ("F" pdf-links-action-perfom)
+        ("f" pdf-links-isearch-link)
+        ("B" pdf-history-backward :color red)
+        ("N" pdf-history-forward :color red)
+        ("l" image-forward-hscroll :color red)
+        ("h" image-backward-hscroll :color red))
+#+end_src
+
+#+RESULTS:
+: hydra-pdftools/body
+
+*** Ibuffer
+#+BEGIN_SRC elisp
+  (after! ibuffer
+    (define-ibuffer-column lines-h
+      (:name "nºLines" :inline t)
+      ;;(set-buffer (buffer))
+      (let ((n (line-number-at-pos (point-max))))
+        (cond
+         ((> n 1000000) (format "%7.1fM" (/ n 1000000.0)))
+         ((> n 1000) (format "%7.1fk" (/ n 1000.0)))
+         ;;((> n 100) (format "%7.1fh" (/ n 100.0)))
+         (t (format "%8d" n)))))
+
+    (setq ibuffer-formats
+          ;; Modify the default ibuffer-formats (toggle with `)
+          '((mark modified read-only vc-status-mini " "
+                  (name 30 30 :left :elide)
+                  " "
+                  (lines-h 9 -1 :right)
+                  " "
+                  (mode 16 16 :left :elide)
+                  " "
+                  (vc-status 16 16 :left)
+                  " "
+                  filename-and-process)
+            (mark " " (name 16 -1) " " filename)))
+
+    ;; Switching to ibuffer puts the cursor on the most recent buffer
+    (defadvice ibuffer (around ibuffer-point-to-most-recent activate) ()
+               "Open ibuffer with cursor pointed to most recent buffer name"
+               (let ((recent-buffer-name (buffer-name)))
+                 ad-do-it
+                 (ibuffer-jump-to-buffer recent-buffer-name))))
+
+#+END_SRC
+
+*** Ivy
+**** General ivy
+    - Learn ivy-bibtex
+#+BEGIN_SRC elisp
+(after! ivy
+  (setq ivy-use-virtual-buffers t
+        +ivy-buffer-preview t
+        counsel-find-file-at-point t
+        ;; ivy-initial-inputs-alist nil ; remove initial ^ input.
+        ;; ivy-virtual-abbreviate 'full ; properly use of bookmarks
+        ;; ivy-height 10 ;; is already in module
+        ivy-count-format "(%d/%d) "
+        ivy-extra-directories nil ; remove . and .. directory.
+        ivy-display-style 'fancy
+        ;; Don't open in directory-mode
+        ;; Always ignore buffers set in `ivy-ignore-buffers'
+        ivy-use-ignore-default 'always)
+  ;; Ignore some buffers in `ivy-switch-buffer'
+  (cl-loop for xx in
+           '("company-statistics-cache.el"
+             "^\\*vc\\*$"
+             "^\\*log-edit-files\\*$"
+             "^\\*Ibuffer\\*$"
+             ;; "^\\*Org Src .*$"
+             "^\\*magit[-a-z]*:.*$")
+           do  (cl-pushnew xx ivy-ignore-buffers))
+  ;; Ignore some files in `counsel-find-file'
+  (setq counsel-find-file-ignore-regexp
+        (concat "\\(^#.*#$\\)\\|\\(^.*~$\\)\\|\\(^\\..*$\\)"
+                (cl-loop for -xx in
+                         '(;; ".aux" ".bbl"
+                           ".blg" ".exe"
+                           ".log" ".meta" ".out" ;;".pdf"
+                           ".synctex.gz" ".tdo" ".toc"
+                           ".elc" ".eld" ".tex~" ".el~"
+                           ".bcf" ".fls" ".rel" ".fdb_latexmk")
+                         ;; may be add '("-pkg.el" "-autoloads.el")
+                         do
+                         (cl-pushnew
+                          (concat "^.*\\" -xx "$")
+                          ivy-ignore-buffers)
+                         concat (concat "\\|\\(^.*\\" -xx "\\)") into file-regexp
+                         finally return file-regexp)))
+
+  (map!
+   (:map ivy-minibuffer-map
+    ;; Motion
+    ;;         Now   I use LOWER form my keyboard
+    ;;         "M-j" #'ivy-next-line
+    ;;         "M-k" #'ivy-previous-line
+    ;; Finish
+    "<right>"  #'ivy-alt-done
+    "<left>"   #'ivy-immediate-done
+    ;; Interaction
+    "M-w"      #'ivy-yank-word
+    "M-o"      #'ivy-dispatching-done
+    "C-o"      #'hydra-ivy/body
+    "C-<"      #'ivy-minibuffer-shrink
+    "C->"      #'ivy-minibuffer-grow
+    "M-j"      #'ivy-next-history-element
+    "M-k"      #'ivy-previous-history-element
+    "M-m"      #'ivy-mark
+    ;; Security
+    "<return>" #'nil
+    )))
+#+END_SRC
+
+#+RESULTS:
+**** Rich
+Enlarge width of some columns
+#+begin_src elisp
+(after! ivy
+  (let* ((plist (plist-get ivy-rich-display-transformers-list 'ivy-switch-buffer))
+         (switch-buffer-alist (assq 'ivy-switch-buffer-transformer (plist-get plist :columns))))
+    (when switch-buffer-alist
+      (setcdr switch-buffer-alist '((:width 80)))))
+
+  (let* ((plist (plist-get ivy-rich-display-transformers-list 'counsel-M-x))
+         (switch-buffer-alist (assq 'counsel-M-x-transformer (plist-get plist :columns))))
+    (when switch-buffer-alist
+      (setcdr switch-buffer-alist '((:width 50)))))
+  )
+#+end_src
+
+#+RESULTS:
+| :width | 50 |
+
+*** Key-frequency
+#+BEGIN_SRC elisp
+(use-package! keyfreq
+  :init
+  (keyfreq-mode 1)
+  (keyfreq-autosave-mode 1)
+  (setq keyfreq-excluded-commands
+        '(self-insert-command
+          forward-char
+          backward-char
+          previous-line
+          next-line)))
+#+END_SRC
+
+#+RESULTS:
+: keyfreq
+
+*** Magit
+    For a git and github integration with emacs!
+#+BEGIN_SRC elisp
+(after! magit
+  (setq magit-turn-on-auto-revert-mode nil
+        magit-set-upstream-on-push 'dontask
+        magit-completing-read-function 'ivy-completing-read
+        magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1
+        magit-save-repository-buffers 'dontask
+        magit-diff-paint-whitespace t
+        magit-diff-refine-ignore-whitespace nil
+        magit-diff-refine-hunk t)
+
+  (add-hook 'magit-log-edit-mode-hook #'turn-on-flyspell)
+  (add-hook 'git-commit-mode-hook #'turn-on-flyspell))
+#+END_SRC
+
+#+RESULTS:
+: magit-status
+*** Nyan
+    Show the rainbow progres line.
+#+BEGIN_SRC elisp
+(use-package! nyan-mode
+  :defer t
+  :init
+  (add-hook! 'emacs-startup-hook (nyan-mode +1))
+  :config
+  (setq nyan-minimum-window-width 90
+        ;;nyan-cat-face-number 3
+        +nyan-outerspace-image+ "~/.doom.d/local/outerspacelight.xpm"
+        nyan-wavy-trail nil
+        nyan-animate-nyancat nil
+        ;; nyan-animation-frame-interval 0.2
+        nyan-bar-length 36)
+  ;; (nyan-start-animation)
+  )
+
+(use-package! zone
+  :after nyan-mode
+  :config
+  (zone-when-idle (* 5 60)))
+
+(use-package! zone-nyan
+  :after zone
+  :config
+  (setq zone-programs [zone-nyan]
+        zone-nyan-hide-progress t))
+#+END_SRC
+
+*** Pdf tools
+#+BEGIN_SRC elisp
+(after! pdf-tools
+  ;; open pdfs scaled to fit page
+  (setq-default pdf-view-display-size 'fit-page)
+  ;; automatically annotate highlights
+  (setq pdf-annot-activate-created-annotations t
+        pdf-view-resize-factor 1.1)
+   ;; faster motion
+  (map!
+   :map pdf-view-mode-map
+   :n "<"            #'pdf-view-first-page
+   :n ">"            #'pdf-view-last-page
+   ;; "C-k"          #'pdf-view-next-page-command
+   ;; "C-i"          #'pdf-view-previous-page-command
+   ;; "s-SPC"        #'pdf-view-scroll-down-or-previous-page
+   :n "s-j"          #'pdf-view-next-line-or-next-page
+   :n "s-k"          #'pdf-view-previous-line-or-previous-page
+   :n "s-h"          #'image-backward-hscroll
+   :n "s-l"          #'image-forward-hscroll
+   :n "j"            #'brust-pdf-view-next-line-or-next-page-5
+   :n "k"            #'brust-pdf-view-previous-line-or-previous-page-5
+   :n "h"            #'brust-image-backward-hsroll-5
+   :n "l"            #'brust-image-forward-hsroll-5
+   ;; "C-n"          #'brust-ace-window
+   ;; "n"            #'brust-ace-window
+   :n "<mouse-5>"    #'brust-pdf-view-next-line-or-next-page-5
+   :n "<mouse-4>"    #'brust-pdf-view-previous-line-or-previous-page-5
+   :n "C-<mouse-5>"  #'pdf-view-next-page-command
+   :n "C-<mouse-4>"  #'pdf-view-previous-page-command
+   :n "s-<mouse-5>"  #'pdf-view-next-line-or-next-page
+   :n "s-<mouse-4>"  #'pdf-view-previous-line-or-previous-page
+   :n "."            #'hydra-pdftools/body))
+
+;; (eval-after-load 'interleave
+;; (add-hook 'pdf-view-mode-hook #'brust-pdf-tools-hook t))
+
+(defun brust-image-backward-hsroll-5 (args)
+  (interactive "p")
+  (brust-by-five #'image-backward-hscroll args))
+(defun brust-image-forward-hsroll-5 (args)
+  (interactive "p")
+  (brust-by-five #'image-forward-hscroll args))
+(defun brust-pdf-view-next-line-or-next-page-5 (args)
+  (interactive "p")
+  (brust-by-five #'pdf-view-next-line-or-next-page args))
+(defun brust-pdf-view-previous-line-or-previous-page-5 (args)
+  (interactive "p")
+  (brust-by-five #'pdf-view-previous-line-or-previous-page args))
+#+END_SRC
+
+#+RESULTS:
+: brust-pdf-view-previous-line-or-previous-page-5
+*** Prettify symbols
+[[https://www.reddit.com/r/emacs/comments/ctfxbg/emacs_doom_e15_fancy_task_priorities_in_org_mode/][reddit prettify org-mode]]
+**** Load utils
+#+begin_src elisp
+(load "~/.doom.d/lisp/prettify-utils.el/prettify-utils.el" t nil t)
+#+end_src
+**** eLisp
+#+begin_src elisp
+(defconst lisp--prettify-symbols-alist
+  '(("lambda"  . ?λ)))
+#+end_src
+**** Org-mode
+#+begin_src elisp
+(prettify-utils-add-hook org-mode
+                         ("[ ]"       "☐")
+                         ("[X]"       "☑")
+                         ("[-]"       "❍")
+                         ("TODO"      "⚑")
+                         ("DOING"     "⚐")
+                         ("CANCELED"  "✘")
+                         ("DONE"      "✔"))
+;; It does not use regexp... wtf!!
+;; ("^\\(\\*\\{1\\}\\) " "☰")
+;; ("^\\(\\*\\{2\\}\\) " "☱")
+;; ("^\\(\\*\\{3\\}\\) " "☲")
+;; ("^\\(\\*\\{4\\}\\) " "☳")
+;; ("^\\(\\*\\{5\\}\\) " "☴")
+;; ("^\\(\\*\\{6\\}\\) " "☵")
+;; ("^\\(\\*\\{7\\}\\) " "☶")
+;; ("^\\(\\*\\{8\\}\\) " "☷"))
+#+end_src
+
+*** Smerge
+See https://github.com/alphapapa/unpackaged.el#smerge-mode
+
+#+begin_src elisp
+  (use-package! smerge-mode
+    :after (hydra ediff)
+    :config
+    (defhydra unpackaged/smerge-hydra
+      (:color pink :hint nil :post (smerge-auto-leave))
+      "
+  ^Move^       ^Keep^               ^Diff^                 ^Other^
+  ^^-----------^^-------------------^^---------------------^^-------
+  _n_ext       _b_ase               _<_: upper/base        _C_ombine
+  _p_rev       _u_pper              _=_: upper/lower       _r_esolve
+  ^^           _l_ower              _>_: base/lower        _k_ill current
+  ^^           _a_ll                _R_efine
+  ^^           _RET_: current       _E_diff
+  "
+      ("n" smerge-next)
+      ("p" smerge-prev)
+      ("b" smerge-keep-base)
+      ("u" smerge-keep-upper)
+      ("l" smerge-keep-lower)
+      ("a" smerge-keep-all)
+      ("RET" smerge-keep-current)
+      ("\C-m" smerge-keep-current)
+      ("<" smerge-diff-base-upper)
+      ("=" smerge-diff-upper-lower)
+      (">" smerge-diff-base-lower)
+      ("R" smerge-refine)
+      ("E" smerge-ediff)
+      ("C" smerge-combine-with-next)
+      ("r" smerge-resolve)
+      ("k" smerge-kill-current)
+      ("ZZ" (lambda ()
+              (interactive)
+              (save-buffer)
+              (bury-buffer))
+       "Save and bury buffer" :color blue)
+      ("q" nil "cancel" :color blue))
+    (defun modi/enable-smerge-maybe ()
+      "Auto-enable `smerge-mode' when merge conflict is detected."
+      (save-excursion
+        (goto-char (point-min))
+        (when (re-search-forward "^<<<<<<< " nil :noerror)
+          (smerge-mode 1))))
+    :hook (find-file-hook . modi/enable-smerge-maybe))
+#+end_src
+
+#+RESULTS:
+| modi/enable-smerge-maybe |
+*** Suround
+#+begin_src elisp
+(setq-default
+ evil-surround-pairs-alist
+ '((?\( . ("(" . ")"))
+   (?\[ . ("[ " . "]"))
+   (?\{ . ("{" . "}"))
+   (?< . ("<" . ">"))
+
+   ;; (?\) . ("(" . ")"))
+   ;; (?\] . ("[" . "]"))
+   ;; (?\} . ("{" . "}"))
+
+   ;; (?# . ("#{" . "}"))
+   ;; (?b . ("(" . ")"))
+   ;; (?B . ("{" . "}"))
+   (?t . evil-surround-read-tag)
+   (?> . evil-surround-read-tag)
+   (?f . evil-surround-function)))
+
+;; this macro was copied from here: https://stackoverflow.com/a/22418983/4921402
+(defmacro define-and-bind-quoted-text-object (name key start-regex end-regex)
+  (let ((inner-name (make-symbol (concat "evil-inner-" name)))
+        (outer-name (make-symbol (concat "evil-a-" name))))
+    `(progn
+       (evil-define-text-object ,inner-name (count &optional beg end type)
+         (evil-select-paren ,start-regex ,end-regex beg end type count nil))
+       (evil-define-text-object ,outer-name (count &optional beg end type)
+         (evil-select-paren ,start-regex ,end-regex beg end type count t))
+       (define-key evil-inner-text-objects-map ,key #',inner-name)
+       (define-key evil-outer-text-objects-map ,key #',outer-name))))
+
+(define-and-bind-quoted-text-object "dollar" "$" "\\$" "\\$") ;; sometimes your have to escape the regex
+(define-and-bind-quoted-text-object "ddollar" "€" "\\$\\$" "\\$\\$") ;; sometimes your have to escape the regex
+(define-and-bind-quoted-text-object "inmath" ")" "\\\\(" "\\\\)")
+(define-and-bind-quoted-text-object "dismath" "]" "\\\\[" "\\\\]")
+
+(defun brust-embrace-LaTeX-mode-hook ()
+  (dolist (lst '((?= "\\verb|" . "|")
+                 (?~ "\\texttt{" . "}")
+                 (?/ "\\emph{" . "}")
+                 (?* "\\textbf{" . "}")))
+    (embrace-add-pair (car lst) (cadr lst) (cddr lst))))
+#+end_src
+
+#+RESULTS:
+: brust-embrace-LaTeX-mode-hook
+
+*** Transpose buffers
+#+BEGIN_SRC elisp
+(use-package! transpose-frame
+  :defer t
+  :commands (transpose-frame flop-frame flip-frame rotate-frame-anticlockwise))
+#+END_SRC
+
+*** Visual regexp
+#+BEGIN_SRC elisp
+(use-package! visual-regexp
+  :commands (vr/replace vr/query-replace))
+#+END_SRC
+
+*** Writable grep buffer
+#+BEGIN_SRC elisp
+  (use-package! wgrep
+    :config
+    (setq wgrep-auto-save-buffer t
+          wgrep-enable-key "r"))
+#+END_SRC
+
+*** Yassnippets
+**** COMMENT add personal dir
+unneeded, see =+snipets-doom=
+#+begin_src elisp
+(setq yas-snippet-dirs
+      (if yas-snippet-dirs
+          (append yas-snippet-dirs
+                  '("~/.doom.d/lisp/julia-jasnippets"))
+        '("~/.doom.d/lisp/julia-jasnippets")))
+#+end_src
+**** jasnippets
+#+begin_src elisp
+;; for functions
+(defun julia-split-args (arg-string)
+  "Split a julia argument string into ((name, default)..) tuples"
+  (mapcar (lambda (x)
+             (split-string x "[[:blank:]]*=[[:blank:]]*" t))
+          (split-string arg-string "[[:blank:]]*[,;][[:blank:]]*" t)))
+
+(defun julia-args-to-docstring ()
+  "return docstring format for the julia arguments in yas-text"
+  (let* ((indent (concat "\n" (make-string (current-column) 32)))
+         (args (julia-split-args yas-text))
+         (max-len (if args (apply 'max (mapcar (lambda (x) (length (nth 0 x))) args)) 0))
+         (formatted-args (mapconcat
+                (lambda (x)
+                   (concat "- " (nth 0 x) (make-string (- max-len (length (nth 0 x))) ? ) " : "
+                           (if (nth 1 x) (concat "\(default " (nth 1 x) "\)"))))
+                args
+                indent)))
+    (unless (string= formatted-args "")
+      (mapconcat 'identity (list "# Arguments" formatted-args) indent))))
+
+#+end_src
+
+*** Zoom
+#+begin_src elisp
+(use-package! zoom
+  :defer t
+  :init
+  (setq zoom-size '(0.618 . 0.618)
+        zoom-ignored-major-modes '("dired-mode"
+                                   "ediff-mode"
+                                   ;; "eshell-mode"
+                                   ;; "neotree-mode"
+                                   "sr-speedbar-mode")
+        zoom-ignored-buffer-name-regexps '("^*calc" "^\\*magit: +.*"))
+  (add-hook! 'emacs-startup-hook (zoom-mode +1)))
+
+(after! ediff
+  (add-hook! 'ediff-before-setup-hook (zoom-mode -1))
+  (add-hook! 'ediff-cleanup-hook (zoom-mode +1))
+  )
+#+end_src
+
+#+RESULTS:
+| brust-zoom-on |
+
+* Not usual packages
+  Load each with =brust-endless/org-eval-current-header=
+** Maxima
+*** Load-path
+#+BEGIN_SRC elisp
+(push "/usr/share/emacs/site-lisp/maxima/" load-path)
+
+#+END_SRC
+*** Auto-load
+#+BEGIN_SRC elisp
+(autoload 'maxima-mode "maxima" "Maxima mode" t)
+(autoload 'maxima "maxima" "Maxima interaction" t)
+(autoload 'imaxima "imaxima" "Frontend for maxima with Image support" t)
+;(autoload 'imath-mode "imath" "Imath mode for math formula input" t)
+;(autoload 'imath "imath" "Interactive Math mode" t)
+;(autoload 'imath-mode "imath" "Interactive Math mode" t);;
+
+#+END_SRC
+*** Auto-mode
+#+BEGIN_SRC elisp
+(add-to-list 'auto-mode-alist '("\\.ma[cx]" . maxima-mode))
+
+#+END_SRC
+*** Config:
+**** COMMENT setq
+#+BEGIN_SRC elisp
+  (setq imaxima-fnt-size "huge"
+        ;;  imaxima-latex-preamble "\\usepackage{concrete}\\usepackage{euler}"
+        imaxima-use-maxima-mode-flag t
+        maxima-save-input-history t
+        ;; maxima-use-full-color-in-process-buffer t
+        maxima-minibuffer-2d t
+        imaxima-pt-size 12)
+
+#+END_SRC
+**** COMMENT An advice
+     For a correct use of imaxima.
+#+BEGIN_SRC elisp
+(defadvice maxima-send-region (before maxima-start-imaxima first)
+  "Ensures that imaxima is running and the correct flag is set."
+  (setq imaxima-use-maxima-mode-flag t)
+  (unless (get-buffer "*maxima*")
+    (with-temp-buffer (imaxima))))
+(ad-activate 'maxima-send-region)
+
+#+END_SRC
+*** Keybindings
+**** COMMENT Maxima
+#+BEGIN_SRC elisp
+(defun customize-maxima-mode nil
+  (interactive)
+  (local-set-key (kbd "TAB") 'maxima-complete)
+  (local-set-key (kbd "C-2") 'AcMe-new-parameter))
+
+(add-hook 'maxima-mode-hook 'customize-maxima-mode)
+
+#+END_SRC
+**** COMMENT iMaxima
+#+BEGIN_SRC elisp
+(defun customize-imaxima nil
+ "For the imaxima buffer"
+  (interactive)
+  (local-set-key (kbd "TAB") 'maxima-complete)
+  (local-set-key (kbd "<f6>") 'transpose-buffers))
+(add-hook 'imaxima-startup-hook 'customize-imaxima)
+
+#+END_SRC
+*** DeFuns AcMe
+**** COMMENT AcMe-max-to-xml
+#+BEGIN_SRC elisp
+(defun AcMe-max-to-xml (xmlFileName); pNumber)
+  "Convert standard maxima file to xml, you need an xml template.
+   This function only changes the math content of the xml file.
+   The xml template doesn't need to have the same number of parameters that
+   your code, but must have some parameter defined.
+   In your .max file, each parameter must be enclosed between the lines <parameter> and <end code>
+   and the solution between <solution> and <end code>"
+ (interactive (list (read-file-name "Path to the .xml \"tamplete\":"))); (read-number "Number of parameters:")))
+ (let (maxbuffer xmlbuffer (xmlpos1 1) (xmlpos2 1) (maxpos1 1) (maxpos2 1) (i 1))
+   (setq maxbuffer (buffer-name))
+   (find-file xmlFileName)
+   (setq xmlbuffer (buffer-name))
+   (goto-char 1)
+(if (y-or-n-p "Erase the parameters of the .xml?")
+    (progn
+      (re-search-forward "<parameters>") (forward-line) (setq xmlpos1 (line-beginning-position))
+      (re-search-forward "</parameters>") (forward-line -1); (setq xmlpos2 (line-end-position))
+      (delete-region xmlpos1 (line-end-position))
+      (set-buffer maxbuffer)
+   (goto-char 1)
+   (while (re-search-forward "<parameter>" nil t)
+     (forward-line) (setq maxpos1 (line-beginning-position))
+     (re-search-forward "<end code>") (forward-line -1) (setq maxpos2 (line-end-position))
+     (set-buffer xmlbuffer)
+     (insert (concat "                       <parameter>
+         <number>" (number-to-string i) "</number>
+         <type>calculated</type>
+         <value>
+            <program>2</program>
+            <mathCode>
+
+            </mathCode>
+         </value>
+      </parameter>\n"))
+     (re-search-backward "<mathCode>") (forward-line)
+     (insert-buffer-substring-no-properties maxbuffer maxpos1 maxpos2)
+     (set-buffer maxbuffer)
+     (setq i (+ i 1))))
+  (progn
+    (set-buffer maxbuffer)
+    (goto-char 1)
+    (while (re-search-forward "<parameter>" nil t)
+     (forward-line) (setq maxpos1 (line-beginning-position))
+     (re-search-forward "<end code>") (forward-line -1) (setq maxpos2 (line-end-position))
+     (set-buffer xmlbuffer)
+     (re-search-forward "<mathCode>") (forward-line) (setq xmlpos1 (line-beginning-position))
+     (re-search-forward "</mathCode>") (forward-line -1); (setq xmlpos2 (line-end-position))
+     (delete-region xmlpos1 (line-end-position))
+     (insert-buffer-substring-no-properties maxbuffer maxpos1 maxpos2)
+     (set-buffer maxbuffer) )))
+   (set-buffer xmlbuffer)
+   (goto-char 1)
+   (set-buffer maxbuffer)
+   (goto-char 1)
+   (while (search-forward "<solution>" nil t)
+     (forward-line) (setq maxpos1 (line-beginning-position))
+     (search-forward "<end code>") (forward-line -1) (setq maxpos2 (line-end-position))
+     (set-buffer xmlbuffer)
+   (re-search-forward "<solution>")
+   (re-search-forward "<text>") (forward-line) (setq xmlpos1 (line-beginning-position))
+   (re-search-forward "</text>") (forward-line -1) ;(setq xmlpos2 (line-end-position))
+   (delete-region xmlpos1 (line-end-position))
+   (insert-buffer-substring-no-properties maxbuffer maxpos1 maxpos2)
+   (set-buffer maxbuffer))
+   (set-buffer xmlbuffer) (save-buffer)
+   (if (y-or-n-p "Kill .xml buffer?") (kill-buffer xmlbuffer) ())))
+
+#+END_SRC
+**** COMMENT AcMe-xml-to-max
+#+BEGIN_SRC elisp
+  (defun AcMe-xml-to-max (maxFileName); pNumber)
+    "Convert AcMe standard .xml file to a maxima file with the conventions to the reverse convertion.
+     Any content of the .max file is deleted. Puts the solution on top."
+    (interactive (list (read-file-name "Path to the .max file:"))); (read-number "Number of parameters:")))
+    (let (maxbuffer xmlbuffer (xmlpos1 1) (xmlpos2 1) (maxpos1 1) (maxpos2 1) maxStr moreLines (i 1))
+      (setq xmlbuffer (buffer-name))
+      (find-file maxFileName)
+      (setq maxbuffer (buffer-name))
+      (if (y-or-n-p "Erase the file .max?") (erase-buffer) (goto-char 1))
+      (set-buffer xmlbuffer)
+      (goto-char 1)
+      (while (re-search-forward "<solution>" nil t)
+        (re-search-forward "<text>") (forward-line) (setq xmlpos1 (line-beginning-position))
+        (re-search-forward "</text>") (forward-line -1) (setq xmlpos2 (line-end-position))
+        (set-buffer maxbuffer)
+        (insert "/************ <solution> <"(number-to-string i)">***************/\n")
+        (insert-buffer-substring-no-properties xmlbuffer xmlpos1 xmlpos2)
+        (insert "\n/********* <end code> solution <"(number-to-string i)"> *************/\n\n\n\n")
+        (set-buffer xmlbuffer)
+        (setq i (+ i 1)))
+      (goto-char 1)
+      (setq i 1)
+      (while (re-search-forward "<mathCode>" nil t)
+                 ;      (goto-char 1) (re-serch-forward (concat "<number>"(number-to-string i)"</number>"))
+        (forward-line) (setq xmlpos1 (line-beginning-position))
+        (re-search-forward "</mathCode>") (forward-line -1) (setq xmlpos2 (line-end-position))
+        (setq maxStr (buffer-substring-no-properties xmlpos1 xmlpos2))
+        (set-buffer maxbuffer)
+        (insert (concat "/******** <parameter> <" (number-to-string i) ">  ****************/\n" maxStr
+              "\n/*********** <end code> parameter <"(number-to-string i)"> ***************/\n\n\n\n"))
+        (setq i (+ 1 i))
+        (set-buffer xmlbuffer))
+      (set-buffer maxbuffer)
+      (goto-char 1)
+      (setq moreLines t)
+      (while moreLines
+        (setq maxStr (buffer-substring-no-properties (line-beginning-position) (line-end-position))
+              maxStr (replace-regexp-in-string "\&quot;" "\"" maxStr)
+              maxStr (replace-regexp-in-string "\&gt;" ">" maxStr)
+              maxStr (replace-regexp-in-string "\&lt;" "<" maxStr))
+        (insert (s-trim maxStr))
+        (delete-region (point) (line-end-position))
+        (setq moreLines (= 0 (forward-line 1))))
+      (save-buffer)
+    (if (y-or-n-p "Kill .xml buffer?") (kill-buffer xmlbuffer) ())))
+
+#+END_SRC
+**** COMMENT AcMe-new-parameter
+#+BEGIN_SRC elisp
+(defun AcMe-new-parameter (paramater_num)
+  "Example function taking a prefix arg, or reading a number if no prefix arg"
+  (interactive
+   (if (and current-prefix-arg (not (consp current-prefix-arg)))
+       (list (prefix-numeric-value current-prefix-arg))
+     (list (read-number "Paramater number: "))))
+  (let ((char 1))
+    (insert (concat "/******** <parameter> <" (number-to-string paramater_num) ">  ****************/\n"))
+    (setq char (point))
+    (insert (concat "\n valor_calcul : $\nvalor_visual :  $\nprint(\"#\",valor_visual,\"#\",valor_calcul,\"#\")$\n/*********** <end code> parameter <"(number-to-string paramater_num)"> ***************/\n\n\n\n"))
+    (goto-char char)))
+
+
+#+END_SRC
+** Yanki
+#+BEGIN_SRC elisp
+  (setq auto-mode-alist
+        (append '(("\\.yanki\\'"    . Yanki-mode)
+                  ("\\.yanki-b\\'"  . Yanki-build-mode))
+                auto-mode-alist))
+  (with-temp-buffer
+    (insert-file-contents "~/.emacs.d/Yanki/Yanki-mode.el")
+    (eval-buffer))
+
+#+END_SRC
+
+** Table org duplicates into columns
+  #+BEGIN_SRC elisp
+      (defun brust-org-table-delete-duplicates-by-current-column (args)
+        (interactive "P")
+        (unless (org-at-table-p) (user-error "No table at point"))
+        (org-table-align)          ; Make sure we have everything we need.
+        (narrow-to-region (org-table-begin) (org-table-end))
+        (let ((nn (current-column)) (lines (line-number-at-pos (point-max))) (str (brust-org-table-field)))
+          (while (not (eobp))
+            (delete-matching-lines str)
+            (brust-down-vertically nn)
+            (setq str (brust-org-table-field)))
+          (message "I've deleted %d lines." (- lines (line-number-at-pos (point-max))))
+          (widen)))
+
+
+  (defun brust-down-vertically (nn)
+    (interactive "nColumn number:")
+        (ignore-errors
+          (forward-line 1)
+          (forward-char nn)))
+
+  (defun brust-down-vertically nil
+    (interactive)
+    (ignore-errors
+      (goto-char (+ (1- (line-end-position)) (current-column)))))
+
+
+      (defun brust-org-table-field nil
+        (let ((n0 (point)))
+          (org-forward-sentence)
+          (s-trim (buffer-substring-no-properties n0 (point)))))
+
+  (defun brust-org-table-leave-only-Si nil
+      (interactive)
+      (unless (org-at-table-p) (user-error "No table at point"))
+      (org-table-align)          ; Make sure we have everything we need.
+      (narrow-to-region (org-table-begin) (org-table-end))
+      (let ((nn (current-column)) (lines (line-number-at-pos (point-max))))
+          (while (not (eobp))
+            (unless (looking-at-p "S[ií] ")
+              (message "%s" (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+              (delete-region (line-beginning-position) (line-end-position)))
+            (brust-down-vertically nn))
+      (message "The table has %d lines." (- lines (line-number-at-pos (point-max)))))
+      (widen))
+
+    (defun brust-org-table-count-lines nil
+      (interactive)
+      (unless (org-at-table-p) (user-error "No table at point"))
+      (org-table-align)          ; Make sure we have everything we need.
+      (narrow-to-region (org-table-begin) (org-table-end))
+      (message "The table has %d lines."  (line-number-at-pos (point-max)))
+      (widen))
+
+#+END_SRC
+
+** My-dictionary
+#+BEGIN_SRC elisp
+  (global-set-key (kbd "<C-M-return>") 'brust-my-dictionary-edit-an-entry)
+
+  (global-set-key (kbd "<s-return>") 'brust-my-dictionary-new-entry)
+
+  (defvar brust-my-dictionary-dir "Directory where is the dictionary")
+
+  (setq brust-my-dictionary-dir "~/Dropbox/English/My-dictionary/")
+
+  (defun brust-my-dictionary-open-an-entry (header)
+    (let ((TeX-master t))
+      (find-file (concat brust-my-dictionary-dir
+                       "sections/"
+                       (capitalize (substring header 0 1))
+                       "/"
+                       (replace-regexp-in-string "[ ]" "-" header)
+                       ".tex"))))
+
+    (defun brust-my-dictionary-new-entry (header)
+      (interactive (list
+                    (read-string "Give me the header:")))
+      (brust-my-dictionary-open-an-entry header)
+      (erase-buffer)
+      (insert-file-contents (concat brust-my-dictionary-dir "tamplate-new-entry.tex"))
+      (goto-char (point-min))
+      (search-forward "entry{}{}{}{}" nil t)
+      (backward-char 7)
+      (insert header)
+      (forward-char 2)
+      (save-buffer))
+
+  (defun brust-my-dictionary-edit-an-entry (header)
+    (interactive
+     (list
+      (headlong-with
+       (completing-read
+        "Give me the entry to edit:"
+        (cl-remove-duplicates
+         (mapcar (lambda (x) (replace-regexp-in-string "[-]" " " (file-name-base x)))
+                 (directory-files-recursively (concat brust-my-dictionary-dir "sections") ".+[.]tex"))
+         :test (lambda (x y) (string= x y)))
+        nil t))))
+    (brust-my-dictionary-open-an-entry header))
+
+  ;; From abo-abo, his headlong.el
+  (defmacro headlong-with (&rest forms)
+    "Execute FORMS with completion headlong."
+    `(if (window-minibuffer-p)
+         (user-error "Already in minibuffer")
+       (let ((minibuffer-local-must-match-map headlong-minibuffer-map)
+             (completing-read-function 'completing-read-default))
+         ,@forms)))
+
+  (defvar headlong-minibuffer-map
+    (let ((map (copy-keymap minibuffer-local-must-match-map)))
+      (define-key map [remap self-insert-command] 'headlong-self-insert-complete-and-exit)
+      (define-key map "\C-i" (lambda nil
+                               (interactive)
+                               (minibuffer-complete)
+                               (minibuffer-completion-help)))
+      map)
+    "Keymap for headlong minibuffer completion.")
+
+  (defun headlong-self-insert-complete-and-exit (n)
+    "Insert the character you type and try to complete.
+                                               If this results in:
+                                               - zero candidates: remove char and show completions
+                                               - one candidate: immediately exit the minibuffer.
+                                               N is passed to `self-insert-command'."
+    (interactive "p")
+    (self-insert-command n)
+    (let ((candidates (completion-all-sorted-completions)))
+      (cond
+       ((null candidates)
+        (backward-delete-char-untabify 1)
+        (minibuffer-complete))
+       ((eq 1 (safe-length candidates))
+        (minibuffer-complete-and-exit)))))
+
+  (defun headlong-bookmark-jump (bookmark)
+    "Jump to BOOKMARK headlong."
+    (interactive
+     (list (headlong-with
+            (completing-read "Jump to bookmark: " bookmark-alist nil t))))
+    (ignore-errors
+      (bookmark-jump bookmark)))
+
+  ;; end abo-abo.
+
+#+END_SRC
+
+#+RESULTS:
+: headlong-bookmark-jump
+
+** Teaching
+   From Excel save the table in csv format into /"tmp/my-table.csv"/ using {tab} as separators.
+   Eval =C-c C-c=:
+#+BEGIN_SRC elisp
+  (find-file (concat temporary-file-directory "new-notes.org"))
+  (insert "#+NAME: alumnes\n")
+  (org-table-import (concat temporary-file-directory "my-table.csv") nil)
+  (goto-char (point-max))
+  (insert "\n\n")
+#+END_SRC
+
+  And copy the following subtree =C-c C-x M-w= under the table and eval the code.
+
+*** Teaching functions
+#+BEGIN_SRC elisp :command export :var data=alumnes
+  (require 's)
+
+  (defvar brust-mark-column "Column number (starting from 1) where to insert marks (hard-code)")
+  (defvar brust-niu-column "Column number (starting from 1) where nius are (hard-code)")
+  (defvar brust-whatever-to-comma-p "It has to be a string or nil. If it is nil do nothing, if not, then replace whatever string or char using as separator into its value")
+  (defvar brust-time-if-there-was-a-mark "Time in seconds to wait for an acction if the studen had a mark")
+  ;;  (defvar brust-marks-let-line-highlight-p "t doen't turn down the highlighted line between NIUs")
+  (defvar brust-do-visible-bell-p)
+
+  (setq brust-whatever-to-comma-p ",")
+  (setq brust-mark-column 4)
+  (setq brust-niu-column 1)
+  (setq brust-time-if-there-was-a-mark 0)
+  ;;  (setq brust-marks-let-line-highlight-p t)
+  (setq brust-do-visible-bell-p t)
+
+  (global-set-key (kbd "<s-return>") 'brust-call-niu-insert-mark)
+
+  (defvar brust-niu-list "List with nius (autoload)")
+  (defvar brust-marks-hist "The history of inserted marks (auxiliar)")
+  (setq brust-marks-hist '("5"))
+
+
+  ;; From abo-abo, his headlong.el
+  (defmacro headlong-with (&rest forms)
+    "Execute FORMS with completion headlong."
+    `(if (window-minibuffer-p)
+         (user-error "Already in minibuffer")
+       (let ((minibuffer-local-must-match-map headlong-minibuffer-map)
+             (completing-read-function 'completing-read-default))
+         ,@forms)))
+
+  (defvar headlong-minibuffer-map
+    (let ((map (copy-keymap minibuffer-local-must-match-map)))
+      (define-key map [remap self-insert-command] 'headlong-self-insert-complete-and-exit)
+      (define-key map "\C-i" (lambda nil
+                               (interactive)
+                               (minibuffer-complete)
+                               (minibuffer-completion-help)))
+      map)
+    "Keymap for headlong minibuffer completion.")
+
+  (defun headlong-self-insert-complete-and-exit (n)
+    "Insert the character you type and try to complete.
+                                           If this results in:
+                                           - zero candidates: remove char and show completions
+                                           - one candidate: immediately exit the minibuffer.
+                                           N is passed to `self-insert-command'."
+    (interactive "p")
+    (self-insert-command n)
+    (let ((candidates (completion-all-sorted-completions)))
+      (cond
+       ((null candidates)
+        (backward-delete-char-untabify 1)
+        (minibuffer-complete))
+       ((eq 1 (safe-length candidates))
+        (minibuffer-complete-and-exit)))))
+
+  (defun headlong-bookmark-jump (bookmark)
+    "Jump to BOOKMARK headlong."
+    (interactive
+     (list (headlong-with
+            (completing-read "Jump to bookmark: " bookmark-alist nil t))))
+    (ignore-errors
+      (bookmark-jump bookmark)))
+  ;; end abo-abo.
+
+  (defun string-reverse (str)
+    "Reverse the str where str is a string"
+    (apply #'string
+           (reverse
+            (string-to-list str))))
+
+  (defun number-to-string-reverse (num)
+    "Reverse the num where num is a number"
+    (string-reverse
+     (number-to-string num)))
+
+  (setq brust-niu-list
+        (mapcar 'number-to-string-reverse
+                (cl-remove-if-not 'numberp
+                                  (mapcar '(lambda (x) (nth (1- brust-niu-column) x))
+                                          data))))
+
+  (defun brust-do-visible-bell nil
+    (and brust-do-visible-bell-p
+         (let ((visible-bell t))
+           (ding))))
+
+    (defun brust-replace-whatever-into-comma (str)
+      (if (and brust-whatever-to-comma-p (string-match-p "[^0-9]" str))
+          (let ((number (split-string str "[^0-9]+")))
+            (concat (if (string= "" (car number)) "0" (car number))
+                    brust-whatever-to-comma-p
+                    (if (string= "" (car (cdr number))) "0" (car (cdr number)))))
+        str))
+
+    (defun brust-search-new-niu (NIU)
+      (unless (org-at-table-p) (user-error "No table at point"))
+      (org-table-align)          ; Make sure we have everything we need.
+      (narrow-to-region (org-table-begin) (org-table-end))
+      (goto-char (point-min))
+      (let ((p (if (search-forward NIU nil t)
+                   (hl-line-mode 1)
+                 nil)))
+        (widen)
+        p))
+
+    (defun brust-call-niu-insert-mark nil
+      (interactive)
+      (hl-line-mode 0)
+      (let ((NIU (string-reverse
+                  (headlong-with
+                   (completing-read "Insert NIU: "
+                                    brust-niu-list nil t)))))
+        (brust-do-visible-bell)
+        (if (brust-search-new-niu NIU)
+            (let ((old-mark (s-trim (org-table-get-field brust-mark-column))))
+              (when (or (s-blank? old-mark)
+                        (y-or-n-p-with-timeout
+                         (format "This stundent had the mark %s. Continue? (default yes)" old-mark)
+                         brust-time-if-there-was-a-mark
+                         t))
+                (org-table-get-field brust-mark-column
+                                     (brust-replace-whatever-into-comma
+                                      (read-string "Enter mark:" nil 'brust-marks-hist)))
+                (org-table-align)))
+          (user-error "Error: NIU %d is in the list but not in the table!! (Reload all)" niu)))
+      (brust-call-niu-insert-mark))
+
+#+END_SRC
+
+#+RESULTS:
+: brust-call-niu-insert-mark
+
+
+* To improve
+** Smart naviagtion inside line
+[[*Smarter navigation inside a line][Smarter navigation inside a line]]
+
+Comment charts hard coded :(
+** Close open parents: more smart

@@ -1,0 +1,235 @@
+#    -*- mode: org -*-
+
+
+* Init.el
+** Programing
+*** Julia
+**** COMMENT LSP
+     :PROPERTIES:
+     :ARCHIVE_TIME: 2020-10-09 Fri 14:17
+     :ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+     :ARCHIVE_OLPATH: init.el/Programming/Julia mode
+     :ARCHIVE_CATEGORY: MyConfig
+     :END:
+   #+begin_src elisp
+(setq lsp-julia-default-environment "~/.julia/environments/v1.5.2"
+      lsp-julia-command (car (cdr (assoc 'master julia-repl-executable-records)))
+      ;; If you would like to use your own installation of ~LanguageServer.jl~, put the
+      ;; following in your personal ~config.el~.
+      lsp-julia-package-dir nil
+      lsp-print-io t
+      julia-mode-enable-lsp t
+      julia-mode-enable-ess nil)
+   #+end_src
+
+   #+RESULTS:
+
+**** COMMENT ESS (julia interaction)
+     :PROPERTIES:
+     :ARCHIVE_TIME: 2020-10-09 Fri 14:17
+     :ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+     :ARCHIVE_OLPATH: init.el/Programming/Julia mode
+     :ARCHIVE_CATEGORY: MyConfig
+     :END:
+***** Load it
+       - ob-julia.el does not work properly see [[https://stackoverflow.com/questions/52043705/emacs-org-babel-with-ob-julia-el-does-not-work-anymore-with-julia-v1-0][StackOverflow disscution]]
+   #+begin_src elisp
+;; (add-to-list 'auto-mode-alist '("\\.jl\\'" . ess-julia-mode)) ;; auto loads
+
+(setq inferior-julia-program
+      (concat "~/src/"
+              (cl-loop for -dir in (directory-files "~/src")
+                       if (string-match-p "julia" -dir) return -dir)
+              "/bin/julia"))
+
+(map! :map ess-mode-map
+      "C-c C-c" #'ess-eval-region-or-line-and-step
+      "C <RET>" #'ess-eval-region-or-function-or-paragraph-and-step)
+
+(setq ;; comint-prompt-read-only t
+ ess-history-directory "~/.doom.d/local/"
+ ess-history-file ".julia_history")
+
+
+(add-hook! 'ess-julia-mode-hook (set-input-method "TeX"))
+;; (add-hook 'comint-mode-hook #'brust-math-software-hookfun-to-intangify-prompt)
+   #+end_src
+
+   #+RESULTS:
+
+***** Turn on latexsubs
+   This needs load julia something in lisp folder
+   #+begin_src elisp
+(defadvice ess-indent-or-complete (after julia-latexsubs activate)
+  (unless (use-region-p)
+    (call-interactively 'julia-latexsub-or-indent)))
+   #+end_src
+
+   #+RESULTS:
+   : ess-indent-or-complete
+
+***** COMMENT System environment parameter.
+   #+begin_src elisp
+  (setenv "JULIA_HISTORY"  ".julia_history")
+  (setenv "JULIA_ANSWER_COLOR" "blue")
+  (setenv "JULIA_NUM_THREADS" "3")
+   #+end_src
+
+   #+RESULTS:
+   : 3
+***** COMMENT LSP Julia
+   It requires julia> Pkg.add("LanguageServer")
+   #+begin_src elisp
+(use-package! lsp-julia ;; USE lsp!
+  :after ess-julia
+  :config
+  (add-hook 'ess-julia-mode-hook #'lsp-mode))
+   #+end_src
+
+* Aggressive indent
+:PROPERTIES:
+:ARCHIVE_TIME: 2020-10-14 Wed 18:22
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/External modes
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+#+BEGIN_SRC elisp
+(use-package! aggressive-indent
+  :defer t
+  :init
+  (add-hook! 'emacs-startup-hook (global-aggressive-indent-mode +1)))
+#+END_SRC
+
+
+* Retrieving old undo
+:PROPERTIES:
+:ARCHIVE_TIME: 2020-10-14 Wed 19:44
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/Doom stuff
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+#+begin_src elisp
+(defun emacs-undo nil nil)
+(global-set-key [remap emacs-undo] #'undo)
+(add-hook! 'emacs-startup-hook (global-undo-tree-mode -1))
+#+end_src
+
+* COMMENT Tabnine
+:PROPERTIES:
+:ARCHIVE_TIME: 2020-11-29 dom 21:30
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/External modes/Company
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+see [[https://github.com/TommyX12/company-tabnine][Tabnine]]
+#+begin_src elisp
+(use-package! company-tabnine
+  :after company
+  (add-to-list 'company-backends #'company-tabnine))
+
+;; (after! company
+;;   ;; Trigger completion immediately.
+;;   (setq company-idle-delay 0
+;;         company-show-numbers t)) ;; Number the candidates (use M-1, M-2 etc to select completions).
+(setq company-minimum-prefix-length 2
+      company-idle-delay 0.5
+      company-show-numbers t)
+#+end_src
+
+
+* COMMENT Backends
+:PROPERTIES:
+:ARCHIVE_TIME: 2020-11-29 dom 21:31
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/External modes/Company
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+#+BEGIN_SRC elisp
+;; OPTIONAL, if `company-ispell-dictionary' is nil, `ispell-complete-word-dict' is used
+;;  but I prefer hard code the dictionary path. That's more portable.
+(when (file-exists-p "~/Dropbox/config/english-words.txt")
+  (setq company-ispell-dictionary (file-truename "~/Dropbox/config/english-words.txt")))
+
+;; https://emacs.stackexchange.com/questions/15246/how-add-company-dabbrev-to-the-company-completion-popup
+
+(defun brust-generic-company-setup (-ll)
+  (make-local-variable 'company-backends)
+  (cl-loop for -add-backend in (reverse -ll) do
+           (add-to-list 'company-backends `,-add-backend)))
+
+(defun toggle-company-ispell nil
+  (interactive)
+  (cond
+   ((memq 'company-ispell company-backends)
+    (setq company-backends (delete 'company-ispell company-backends))
+    (message "company-ispell disabled"))
+   (t
+    (add-to-list 'company-backends 'company-ispell t)
+    (message "company-ispell enabled!"))))
+
+(defun text-mode-hook-company-setup nil
+  (brust-generic-company-setup '(company-ispell)))
+
+(add-hook 'text-mode-hook #'text-mode-hook-company-setup)
+
+(use-package company-shell
+  :init
+  (defun shell-mode-hook-company-setup nil
+    (brust-generic-company-setup '((company-shell company-fish-shell))))
+  (add-hook 'shell-mode-hook #'shell-mode-hook-company-setup))
+
+;; (use-package company-math)
+(use-package company-auctex
+  :after auctex)
+;; local configuration for TeX modes
+(defun LaTeX-mode-hook-company-setup nil
+  ;; (require 'dabbrev)
+  (make-local-variable 'company-backends)
+  (setq company-backends '((company-semantic company-files company-dabbrev-code company-dabbrev company-ispell)))
+  (company-auctex-init))
+
+;;    (brust-generic-company-setup
+;;     '(;; company-auctex-labels
+;;       ;; company-auctex-bibs
+;;       (company-auctex-macros
+;;        company-auctex-symbols
+;;        company-auctex-environments
+;;        ;; company-math-symbols-latex
+;;        company-latex-commands))))
+
+;; use numbers 0-9 to select company completion candidates (from abo-abo's config file.
+;;   (let ((map company-active-map))
+;;     (mapc (lambda (x) (define-key map (format "%d" x)
+;;                         `(lambda nil (interactive) (company-complete-number ,x))))
+;;           (number-sequence 0 9)))
+)
+#+END_SRC
+
+* Dired
+:PROPERTIES:
+:ARCHIVE_TIME: 2020-11-29 dom 21:46
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/Doom stuff
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+#+BEGIN_SRC elisp
+;; (customize-set-variable 'diredp-hide-details-initially-flag nil)
+;; (put 'dired-find-alternate-file 'disabled nil)
+(setq ;; ls-lisp-dirs-first t
+ ;; dired-ls-F-marks-symlinks t
+ ;; delete-by-moving-to-trash t
+ ;; wdired-allow-to-change-permissions t
+ ;; “always” means no asking
+ ;; “top” means ask once
+ dired-recursive-deletes 'always
+ ;; copy other frame
+ ;; dired-x-hands-off-my-keys t
+ ;; dired-hide-details-hide-information-lines t
+ ;;
+ xref-show-xrefs-function 'xref--show-xref-buffer
+ )
+ ;; (map! :map dired-mode-map :n "y" #'hydra-dired/body)
+ ;; (use-package dired+)
+#+END_SRC
+
+#+RESULTS:
