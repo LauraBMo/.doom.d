@@ -321,6 +321,7 @@ Add my own templates for LaTeX, Singular, Julia... Looks pretty handy :)
 Copy folder module in local to .emacs.d (I'm making your live easier)
 #+begin_src elisp
 (set-file-template! "[.]sing" :trigger "__sing" :mode 'c++-mode)
+(set-file-template! "[.]tex" :trigger "__tex" :mode 'latex-mode)
 #+end_src
 
 #+RESULTS:

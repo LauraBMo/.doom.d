@@ -140,8 +140,8 @@
        ;; (julia +lsp)             ; a better, faster MATLAB
        julia             ; a better, faster MATLAB ; not +lsp flag in order to use eglot
        ;;kotlin            ; a better, slicker Java(Script)
-       (latex +cdlatex +lsp)  ; writing papers in Emacs has never been so fun
-       ;; (latex +cdlatex)  ; writing papers in Emacs has never been so fun
+       ;; (latex +cdlatex +lsp)  ; writing papers in Emacs has never been so fun
+       (latex +cdlatex)  ; writing papers in Emacs has never been so fun
        ;;lean
        ;;factor
        ledger            ; an accounting system in Emacs

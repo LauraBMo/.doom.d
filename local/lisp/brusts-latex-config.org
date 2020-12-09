@@ -18,7 +18,7 @@
     ;; (LaTeX-mode-hook-company-setup)
     ;; (my-LaTeX-mode-chords)
     (brust-embrace-LaTeX-mode-hook)
-    (brust-wc-save-words)
+    ;; (brust-wc-save-words)
     (setq LaTeX-clean-intermediate-suffixes ;; here the variable will be load and modified by sure
           (append LaTeX-clean-intermediate-suffixes
                   (list
