@@ -2821,6 +2821,38 @@ Enlarge width of some columns
 
 #+RESULTS:
 : brust-pdf-view-previous-line-or-previous-page-5
+*** Prettify symbols
+[[https://www.reddit.com/r/emacs/comments/ctfxbg/emacs_doom_e15_fancy_task_priorities_in_org_mode/][reddit prettify org-mode]]
+**** Load utils
+#+begin_src elisp
+(load "~/.doom.d/local/lisp/prettify-utils/prettify-utils.el" t nil t)
+#+end_src
+**** eLisp
+#+begin_src elisp
+(defconst lisp--prettify-symbols-alist
+  '(("lambda"  . ?λ)))
+#+end_src
+**** Org-mode
+#+begin_src elisp
+(prettify-utils-add-hook org-mode
+                         ("[ ]"       "☐")
+                         ("[X]"       "☑")
+                         ("[-]"       "❍"))
+;; ("TODO"      "⚑")
+;; ("DOING"     "⚐")
+;; ("CANCELED"  "✘")
+;; ("DONE"      "✔"))
+;; It does not use regexp... wtf!!
+;; ("^\\(\\*\\{1\\}\\) " "☰")
+;; ("^\\(\\*\\{2\\}\\) " "☱")
+;; ("^\\(\\*\\{3\\}\\) " "☲")
+;; ("^\\(\\*\\{4\\}\\) " "☳")
+;; ("^\\(\\*\\{5\\}\\) " "☴")
+;; ("^\\(\\*\\{6\\}\\) " "☵")
+;; ("^\\(\\*\\{7\\}\\) " "☶")
+;; ("^\\(\\*\\{8\\}\\) " "☷"))
+#+end_src
+
 *** Surround
 #+begin_src elisp
 (setq-default
