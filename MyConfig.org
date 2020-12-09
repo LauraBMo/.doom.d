@@ -190,13 +190,6 @@ Cycling through =kill-ring= with =C-P=
 | Google maps       | https://maps.google.com/maps?q=%s                                     |                                |
 
 *** Mode Line
-**** COMMENT Help echo messages
-#+begin_src elisp
-;; Disable help mouse-overs for mode-line segments (i.e. :help-echo text).
-;; They're generally unhelpful and only add confusing visual clutter.
-(setq mode-line-default-help-echo nil
-      show-help-function nil)
-#+end_src
 **** Display time
 #+begin_src elisp
 (defun brust-kill-date nil
@@ -1709,37 +1702,6 @@ Bad
 #+RESULTS:
 : brust-pov-ray-compile
 
-*** COMMENT SAGE
-#+BEGIN_SRC elisp
-  (use-package sage-shell-mode
-    :init
-    (setq sage-shell:sage-root "~/SageMath")
-    :config
-    ;; Run SageMath by M-x run-sage instead of M-x sage-shell:run-sage
-    (sage-shell:define-alias)
-
-    ;; Turn on eldoc-mode in Sage terminal and in Sage source files
-    (add-hook 'sage-shell-mode-hook #'eldoc-mode)
-    (add-hook 'sage-shell:sage-mode-hook #'eldoc-mode))
-#+END_SRC
-
-#+RESULTS:
-: t
-
-*** COMMENT SASS files
-    For some reason turn-off aggressive-indent do not work :(
-#+BEGIN_SRC elisp
-  (use-package sass-mode
-    :config
-    (defun aggressive-indent-mode-off nil
-      (aggressive-indent-mode -1))
-    (setq scss-compile-at-save nil)
-    (add-hook 'sass-mode-hook #'aggressive-indent-mode-off))
-#+END_SRC
-
-#+RESULTS:
-: t
-
 *** Singular
 **** Config
 #+BEGIN_SRC elisp
@@ -2916,15 +2878,6 @@ Enlarge width of some columns
 #+END_SRC
 
 *** Yassnippets
-**** COMMENT add personal dir
-unneeded, see =+snipets-doom=
-#+begin_src elisp
-(setq yas-snippet-dirs
-      (if yas-snippet-dirs
-          (append yas-snippet-dirs
-                  '("~/.doom.d/local/lisp/julia-jasnippets"))
-        '("~/.doom.d/local/lisp/julia-jasnippets")))
-#+end_src
 **** jasnippets
 #+begin_src elisp
 ;; for functions

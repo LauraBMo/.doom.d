@@ -233,3 +233,62 @@ see [[https://github.com/TommyX12/company-tabnine][Tabnine]]
 #+END_SRC
 
 #+RESULTS:
+
+* COMMENT SAGE
+:PROPERTIES:
+:ARCHIVE_TIME: 2020-12-09 mié 04:23
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/Programming
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+#+BEGIN_SRC elisp
+  (use-package sage-shell-mode
+    :init
+    (setq sage-shell:sage-root "~/SageMath")
+    :config
+    ;; Run SageMath by M-x run-sage instead of M-x sage-shell:run-sage
+    (sage-shell:define-alias)
+
+    ;; Turn on eldoc-mode in Sage terminal and in Sage source files
+    (add-hook 'sage-shell-mode-hook #'eldoc-mode)
+    (add-hook 'sage-shell:sage-mode-hook #'eldoc-mode))
+#+END_SRC
+
+#+RESULTS:
+: t
+
+
+* COMMENT SASS files
+:PROPERTIES:
+:ARCHIVE_TIME: 2020-12-09 mié 04:23
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/Programming
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+    For some reason turn-off aggressive-indent do not work :(
+#+BEGIN_SRC elisp
+  (use-package sass-mode
+    :config
+    (defun aggressive-indent-mode-off nil
+      (aggressive-indent-mode -1))
+    (setq scss-compile-at-save nil)
+    (add-hook 'sass-mode-hook #'aggressive-indent-mode-off))
+#+END_SRC
+
+#+RESULTS:
+: t
+
+
+* COMMENT Help echo messages
+:PROPERTIES:
+:ARCHIVE_TIME: 2020-12-09 mié 04:23
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/Doom stuff/Mode Line
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+#+begin_src elisp
+;; Disable help mouse-overs for mode-line segments (i.e. :help-echo text).
+;; They're generally unhelpful and only add confusing visual clutter.
+(setq mode-line-default-help-echo nil
+      show-help-function nil)
+#+end_src
