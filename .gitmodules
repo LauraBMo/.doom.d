@@ -1,0 +1,8 @@
+[submodule "snippets/julia-mode"]
+	path = snippets/julia-mode
+	url = git@github.com:LauraBMo/julia-jasnippets.git
+	branch = LauraBMo
+[submodule "local/lisp/prettify-utils"]
+	path = local/lisp/prettify-utils
+	url = git@github.com:LauraBMo/prettify-utils.el.git
+	branch = LauraBMo
