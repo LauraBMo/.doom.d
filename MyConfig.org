@@ -1176,15 +1176,16 @@ commands to work with MangaRock comics
 ;; Add hooks and some basic variables declations
 (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "init" t)
 
+;; + variables has to be declared before loading module
+(setq +latex-bibtex-file "~/Dropbox/bibliography/my.bib"
+      +latex-viewers '(pdf-tools))
+
 (after! latex
   ;; File types
   (add-to-list 'auto-mode-alist '("\\.sty\\'"  . LaTeX-mode))
 
   ;; Doom stuff
   (remove-hook 'TeX-mode-hook #'TeX-fold-mode)
-  (setq +latex-bibtex-file "~/Dropbox/bibliography/my.bib"
-        +latex-viewers '(pdf-tools))
-
   ;; Settings
   ;; Config options
   (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "config" t)
