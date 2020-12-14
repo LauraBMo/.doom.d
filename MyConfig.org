@@ -218,9 +218,11 @@ Cycling through =kill-ring= with =C-P=
 
 **** Do not show 
 #+begin_src elisp
-(setq column-number-mode nil
-      size-indication-mode nil
-      line-number-mode nil)
+(add-hook! 'emacs-startup-hook
+  (setq column-number-mode nil
+        size-indication-mode nil
+        doom-modeline-buffer-encoding nil
+        line-number-mode nil))
 #+end_src
 **** Show size: Total number of lines
 #+begin_src elisp
@@ -229,11 +231,10 @@ Cycling through =kill-ring= with =C-P=
 (set-face-attribute
  'mode-line-top-line-number nil
  :inherit 'mode-line
- :foreground "gray60"
- :height 0.7)
+ :foreground "gray60" :height 0.7)
 
-(defsubst brust-doom-modeline--buffer-nlines ()
-  "Show buffer number of lines."
+(defsubst brust-doom-modeline--buffer-nlines nil
+  "Show current line/buffer total number of lines."
   (when nlines-indication-mode
     (concat (doom-modeline-spc)
             ;; (:propertize "\[" face mode-line-bars-face)
@@ -248,9 +249,9 @@ Cycling through =kill-ring= with =C-P=
                         'face 'mode-line-top-line-number)
             (doom-modeline-spc))))
 
-(setq size-indication-mode nil
-      nlines-indication-mode t
-      global-mode-string '("" (:eval (brust-doom-modeline--buffer-nlines)) display-time-string))
+(add-hook! 'emacs-startup-hook
+  (setq nlines-indication-mode t
+        global-mode-string '("" (:eval (brust-doom-modeline--buffer-nlines)) display-time-string)))
 #+end_src
 
 #+RESULTS:
