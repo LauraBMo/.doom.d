@@ -378,8 +378,8 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
  "<f5>"     #'counsel-kmacro
  :n "g SPC" #'brust-cycle-whitespace ;; It was unbind
  (:prefix "z"
-  :n "j" #'+spell/next-error
-  :n "k" #'+spell/previous-error)
+  :n "j" #'brust-correct-prev-spelling
+  :n "k" #'brust-correct-prev-spelling)
  (:leader
   :desc "locleader" "SPC" nil ;; Unbind "SPC SPC"
   :desc "Delete other windows" "w 0" #'delete-other-windows
