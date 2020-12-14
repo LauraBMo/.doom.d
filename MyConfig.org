@@ -355,6 +355,7 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
  ;; :n "u"     #'emacs-undo ;; now undo works fine
  :nim "C-e" #'doom/forward-to-last-non-comment-or-eol
  :n "q"     #'kill-current-buffer
+ :i "C-,"   #'brust-correct-prev-spelling
  ;; :nvmro "w" #'evil-backward-word-begin
  ;; :nvmro "W" #'evil-backward-WORD-begin
  ;; :n "H"     #'recenter-top-bottom ;; There is no difference with s-h
@@ -879,9 +880,21 @@ commands to work with MangaRock comics
      ("R" brust-colors-kill-rounded-rgb "kill round RGB value")))
   )
 #+end_src
+*** Spelling
+#+begin_src elisp
+(defun brust-correct-prev-spelling nil
+  (interactive)
+  (save-excursion
+    (+spell/previous-error)
+    (+spell/correct)))
+#+end_src
+
+#+RESULTS:
+: brust-correct-prev-spelling
+
 *** Total number of lines
 #+begin_src elisp
-(defun brust--number-of-lines-current-buffer nil
+(defsubst brust--number-of-lines-current-buffer nil
   (let ((n (string-to-number
             (save-excursion
               (goto-char (point-max))
