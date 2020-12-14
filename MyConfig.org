@@ -2191,6 +2191,7 @@ Bad
 (setq password-cache-expiry nil
       remote-file-name-inhibit-cache nil
       tramp-completion-reread-directory-timeout nil
+      auth-source-cache-expiry nil
       tramp-ssh-controlmaster-options "" ;; See https://www.reddit.com/r/emacs/comments/fgl6gu/emacs_tramp_tricks/ and https://puppet.com/blog/speed-up-ssh-by-reusing-connections/
       tramp-verbose 1
       vc-ignore-dir-regexp
