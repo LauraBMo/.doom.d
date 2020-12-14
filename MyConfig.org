@@ -2726,7 +2726,7 @@ Enlarge width of some columns
   :config
   (setq nyan-minimum-window-width 90
         ;;nyan-cat-face-number 3
-        +nyan-outerspace-image+ "~/.doom.d/local/outerspacelight.xpm"
+        +nyan-outerspace-image+ "~/.doom.d/local/outerspace.xpm"
         nyan-wavy-trail nil
         nyan-animate-nyancat nil
         ;; nyan-animation-frame-interval 0.2
