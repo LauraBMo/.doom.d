@@ -36,17 +36,6 @@ I’m rarely happier than when spending an entire day programming my computer
   ;; (setq initial-scratch-message ";;;;;;;;;;;;; Bon Dia!!!! ;;;;;;;;;;;;;;;;\n\n\n")
   (setq initial-scratch-message ";; ╔═╗┌─┐┬─┐┌─┐┌┬┐┌─┐┬ ┬\n;; ╚═╗│  ├┬┘├─┤ │ │  ├─┤\n;; ╚═╝└─┘┴└─┴ ┴ ┴ └─┘┴ ┴\n")
 #+END_SRC
-*** Set Monoid font family.
-#+BEGIN_SRC elisp
-  (when (member "IBM Plex Mono" (font-family-list))
-    (set-frame-font "IBM Plex Mono Light 13")
-    (add-to-list 'initial-frame-alist '(font . "IBM Plex Mono Light"))
-    (add-to-list 'default-frame-alist '(font . "IBM Plex Mono Light")))
-#+END_SRC
-
-#+RESULTS:
-: ((font . IBM Plex Mono Light) (right-divider-width . 1) (bottom-divider-width . 1) (vertical-scroll-bars) (tool-bar-lines . 0) (menu-bar-lines . 0) (left-fringe . 4) (right-fringe . 4))
-
 *** European agenda.
 #+BEGIN_SRC elisp
 (setq european-calendar-style t
