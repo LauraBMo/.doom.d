@@ -2195,6 +2195,13 @@ Bad
       (format "\\(%s\\)\\|\\(%s\\)"
               vc-ignore-dir-regexp
               tramp-file-name-regexp))
+
+(defun brust-decrypt (file)
+  (let ((-temp-file (make-temp-file (file-name-base file))))
+    (epa-decrypt-file file -temp-file)
+    (delete-file -temp-file)))
+
+;; (add-hook! 'after-init-hook (brust-decrypt "~/.authinfo.gpg"))
 #+end_src
 
 #+RESULTS:
