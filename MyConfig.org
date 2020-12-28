@@ -303,9 +303,11 @@ See =doom-unreal-buffer-functions=
 (setq +word-wrap-extra-indent 'single
       ;; +word-wrap-fill-style 'soft
       )
-(+global-word-wrap-mode +1)
-(add-to-list '+word-wrap-disabled-modes 'emacs-lisp-mode)
-(add-to-list '+word-wrap-visual-modes 'org-mode)
+
+(add-hook! 'emacs-startup-hook
+  (+global-word-wrap-mode +1)
+  (add-to-list '+word-wrap-disabled-modes 'emacs-lisp-mode)
+  (add-to-list '+word-wrap-visual-modes 'org-mode))
 #+end_src
 
 ** TODO Handy Doom
