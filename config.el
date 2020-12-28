@@ -89,13 +89,12 @@
     "emacs-lisp")
   "List of strings for Elisp language")
 
-(defun brust-endless/org-eval-eblocks (µcode &optional µinit µfile-p µheader-depth µmessage-depth)
+(defun brust-endless/org-eval-eblocks (µcode &optional µinit µfile-p µheader-depth μtime)
   "Eval the SRC blocks of elisp code in µcode which is the name of a file or a string where are the blocks.
 µfile-p has to be t if µcode is a file and nil otherwise.
 When µcode is a file, if µinit is nil eval whole file, if it is a string, eval just that header and µheader-depth has to be its depth (nil means 1).
 Subtrees under a COMMENTed header are not evaluated."
   (or µheader-depth (setq µheader-depth 1))
-  (or µmessage-depth (setq µmessage-depth endless/init.org-message-depth))
   (with-temp-buffer
     (insert
      (if µfile-p
@@ -103,26 +102,32 @@ Subtrees under a COMMENTed header are not evaluated."
        µcode))
     (brust-endless/org-eval-eblocks-delete-commented-subtrees)
     (goto-char (point-min))
-    (let (pheader neblock)
-      (while (not (eobp))
-        (cond
-         ((looking-at "^\\(\\*+\\) \\(.*\\)$")
-          (setq pheader (match-string 2)
-                neblock 1)
-          (if (< (- (match-end 1) (match-beginning 1))
-                 µmessage-depth)
-              (message "%s" (match-string 0))))
-         ((looking-at brust-endless/org-babel-src-block-regexp)
-          (if (memq (match-string 2) brust-endless/org-eblocks-lang)
-              (goto-char (match-end 5))
-            (eval-region (match-beginning 5)
-                         (match-end 5))
-            (message "%s :: %d" pheader neblock)
-            (setq neblock (1+ neblock)))))
-        (forward-line))
-      (message "=========== ================================== ===========")
-      (message "=========== !! Be happy, everything is load !! ===========")
-      (message "=========== ================================== ==========="))))
+    (cl-flet ((funeval (if μtime 'brust-eval-track-time 'brust-eval-message)))
+      (let (pheader neblock)
+        (while (not (eobp))
+          (cond
+           ((looking-at "^\\(\\*+\\) \\(.*\\)$")
+            (setq pheader (match-string 2)
+                  neblock 1)
+            (message "%s" (match-string 0)))
+           ((looking-at brust-endless/org-babel-src-block-regexp)
+            ;; (when (memq (match-string 2) brust-endless/org-eblocks-lang)
+            (funeval (match-beginning 5) (match-end 5) pheader neblock)
+            (setq neblock (1+ neblock))
+            ;; (goto-char (match-end 5))
+            ))
+          (forward-line +1))))
+    (message "=========== ================================== ===========")
+    (message "=========== !! Be happy, everything is load !! ===========")
+    (message "=========== ================================== ===========")))
+
+(defun brust-eval-track-time (beg end pheader neblock)
+  (let ((sec (car (benchmark-run (eval-region beg end)))))
+    (message "%s :: %d (sec: %.3f)" pheader neblock sec)))
+
+(defun brust-eval-message (beg end pheader neblock)
+  (eval-region beg end)
+  (message "%s :: %d" pheader neblock))
 
 (defun brust-endless/org-eval-eblocks-delete-commented-subtrees nil
   (interactive)
