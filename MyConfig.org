@@ -349,6 +349,7 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
  ;; :n "u"     #'emacs-undo ;; now undo works fine
  :nim "C-e" #'doom/forward-to-last-non-comment-or-eol
  :n "q"     #'kill-current-buffer
+ :n "Q"     #'mark-whole-buffer ;; was undefined
  :i "C-,"   #'brust-correct-prev-spelling
  ;; :nvmro "w" #'evil-backward-word-begin
  ;; :nvmro "W" #'evil-backward-WORD-begin
@@ -1555,6 +1556,7 @@ Bad
          (:localleader
           :desc "line or region"      "SPC" #'julia-repl-send-region-or-line
           :desc "Start process"       "o" #'+julia/open-repl
+          :desc "Start eglot server"  "." #'+lsp!
           :desc "Set dir to buffer's" "d" #'julia-repl-cd
           :desc "Doc symbol"          "h" #'julia-repl-doc
           :desc "Call \\@edit"        "e" #'julia-repl-edit
@@ -1563,10 +1565,11 @@ Bad
           :desc "Methods symbol"      "m" #'julia-repl-list-methods))
         (:map term-raw-map
          "C-RET" #'brust-julia-close-send-line
-         (:prefix "C-c"
+         (:desc "BMO local" :prefix "C-c l"
           :desc "Clear buffer" "d" #'comint-clear-buffer
-          :desc "Send typeof"  "o" #'brust-julia-send-typeof
+          :desc "Send typeof"  "t" #'brust-julia-send-typeof
           :desc "Send eltype"  "e" #'brust-julia-send-eltype
+          :desc "Send size"    "s" #'brust-julia-send-size
           :desc "Close and send line" "c" #'brust-julia-close-send-line))))
 #+end_src
 
