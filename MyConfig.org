@@ -1638,6 +1638,10 @@ Bad
 (defun brust-julia-send-eltype nil
   (interactive)
   (brust-julia--add-function "eltype"))
+
+(defun brust-julia-send-size nil
+  (interactive)
+  (brust-julia--add-function "size"))
 #+end_src
 
 #+RESULTS:
