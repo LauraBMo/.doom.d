@@ -2808,7 +2808,10 @@ Enlarge width of some columns
 [[https://www.reddit.com/r/emacs/comments/ctfxbg/emacs_doom_e15_fancy_task_priorities_in_org_mode/][reddit prettify org-mode]]
 **** Load utils
 #+begin_src elisp
-(load "~/.doom.d/local/lisp/prettify-utils/prettify-utils.el" t nil t)
+;; (load "~/.doom.d/local/lisp/prettify-utils/prettify-utils.el" t nil t)
+(add-load-path! "~/.doom.d/local/lisp/prettify-utils/")
+(autoload 'prettify-utils-add-hook "prettify-utils"
+  "Add hook to mode defining pretty symbols alist" t)
 #+end_src
 **** eLisp
 #+begin_src elisp
@@ -2817,10 +2820,12 @@ Enlarge width of some columns
 #+end_src
 **** Org-mode
 #+begin_src elisp
-(prettify-utils-add-hook org-mode
-                         ("[ ]"       "☐")
-                         ("[X]"       "☑")
-                         ("[-]"       "❍"))
+(add-hook! 'emacs-startup-hook
+  (prettify-utils-add-hook org-mode
+                           ("[ ]"       "☐")
+                           ("[X]"       "☑")
+                           ("[-]"       "❍")))
+
 ;; ("TODO"      "⚑")
 ;; ("DOING"     "⚐")
 ;; ("CANCELED"  "✘")
