@@ -186,23 +186,23 @@ Cycling through =kill-ring= with =C-P=
 #+begin_src elisp
 (defun brust-kill-date nil
   (interactive)
-  (kill-new (format-time-string "%a, %b %e %Y" (current-time))))
+  (kill-new (format-time-string "%e/%m/%Y" (current-time))))
 
 (defun brust-message-date nil
   (interactive)
-  (message (format-time-string "%a, %b %e %Y" (current-time))))
+  (message (format-time-string "w%Wd%j %A, %e %B %Y, (%e/%m/%Y - %R %Z) -- %s" (current-time))))
 
 ;; Time format
-(customize-set-variable 'display-time-string-forms
-                        '((propertize (concat " " 12-hours ":" minutes am-pm " ")
-                                      'face 'mode-line
-                                      'help-echo "Current date: mouse 1 show, mouse 3 kill"
-                                      'keymap '(mode-line keymap
-                                                          (mouse-3 . brust-kill-date)
-                                                          (mouse-1 . brust-message-date)))))
-
-(setq display-time-default-load-average nil)
-(display-time-mode +1)
+(add-hook! 'emacs-startup-hook
+  (customize-set-variable 'display-time-string-forms
+                          '((propertize (concat " " 12-hours ":" minutes am-pm " ")
+                                        'face 'mode-line
+                                        'help-echo "Current date: mouse 1 show, mouse 3 kill"
+                                        'keymap '(mode-line keymap
+                                                            (mouse-3 . brust-kill-date)
+                                                            (mouse-1 . brust-message-date)))))
+  (setq display-time-default-load-average nil)
+  (display-time-mode +1))
 #+end_src
 
 #+RESULTS:
