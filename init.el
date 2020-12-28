@@ -107,7 +107,7 @@
        upload            ; map local to remote projects via ssh/ftp
 
        :os
-       (:if IS-MAC macos)  ; improve compatibility with macOS
+       ;;(:if IS-MAC macos)  ; improve compatibility with macOS
        ;;tty               ; improve the terminal Emacs experience
 
        :lang
@@ -197,6 +197,7 @@
        ;; (literate +bindings +smartparens)
        (default +bindings +snippets +evil-commands +smartparens)
        )
+
 ;; See https://github.com/hlissner/doom-emacs/issues/401
 (setq evil-respect-visual-line-mode t
       doom-localleader-key "SPC SPC")
