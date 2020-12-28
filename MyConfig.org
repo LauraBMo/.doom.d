@@ -1578,11 +1578,14 @@ Bad
 #+begin_src elisp
 (use-package! eglot-jl
   ;; :when (featurep! +lsp)
+  :defer t
   :after eglot
   :preface
   (setq eglot-connect-timeout 120)
-  ;; (add-hook 'julia-mode-local-vars-hook #'lsp!)
-  :config (eglot-jl-init))
+  ;; (add-hook 'julia-mode-local-vars-hook #'lsp!) ;; Too time consuming, init server when needed
+  (add-hook! 'emacs-startup-hook #'eglot-jl-init)
+  )
+#+end_src
 #+end_src
 
 **** ad-hoc functions
