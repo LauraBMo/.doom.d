@@ -975,6 +975,12 @@ commands to work with MangaRock comics
            ("7" . "☶")
            ("8," . "☷"))))
 #+end_src
+*** Hugo ox
+#+begin_src elisp
+(use-package! ox-hugo
+  :after ox)
+#+end_src
+
 *** Maps
 #+begin_src elisp
   (map! :map org-mode-map "<" 'brust-org<

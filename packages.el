@@ -34,6 +34,7 @@
 
 ;; Miscelaneos
 (package! keyfreq :recipe (:host github :repo "dacap/keyfreq"))
+(package! ox-hugo)
 (package! visual-regexp)
 (package! zoom)
 ;; (package! wc-mode :recipe (:host github :repo "bnbeckwith/wc-mode"))
