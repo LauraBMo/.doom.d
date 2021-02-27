@@ -1763,161 +1763,161 @@ Bad
 **** function to send the working file.
 #+BEGIN_SRC elisp
 
-  (defvar brust-singular-fixed-region-poss nil "Cons of positions delimiting the fixed region")
+(defvar brust-singular-fixed-region-poss nil "Cons of positions delimiting the fixed region")
 
-  (defun brust-singular-fixed-region-set-region (args)
-    (interactive "P")
-    (unless (use-region-p) (user-error "Region has to be activate"))
-    (let ((beg (region-beginning))
-          (end (region-end)))
-      (setq brust-singular-fixed-region-poss (cons beg end))
-      (message "Fixed-region seted from line %d to %d"
-               (line-number-at-pos beg)
-               (line-number-at-pos end)))
-    (deactivate-mark t))
+(defun brust-singular-fixed-region-set-region (args)
+  (interactive "P")
+  (unless (use-region-p) (user-error "Region has to be activate"))
+  (let ((beg (region-beginning))
+        (end (region-end)))
+    (setq brust-singular-fixed-region-poss (cons beg end))
+    (message "Fixed-region seted from line %d to %d"
+             (line-number-at-pos beg)
+             (line-number-at-pos end)))
+  (deactivate-mark t))
 
-  (defun brust-singular-fixed-region-eval (args)
-    (interactive "P")
-    (message "Evaluated region (%d:%d) in [[%s]]"
-             (line-number-at-pos (car brust-singular-fixed-region-poss))
-             (line-number-at-pos (cdr brust-singular-fixed-region-poss))
-             buffer-file-name)
-    (brust-singular--eval-string
-     (buffer-substring-no-properties
-      (car brust-singular-fixed-region-poss)
-      (cdr brust-singular-fixed-region-poss))
-     args))
+(defun brust-singular-fixed-region-eval (args)
+  (interactive "P")
+  (message "Evaluated region (%d:%d) in [[%s]]"
+           (line-number-at-pos (car brust-singular-fixed-region-poss))
+           (line-number-at-pos (cdr brust-singular-fixed-region-poss))
+           buffer-file-name)
+  (brust-singular--eval-string
+   (buffer-substring-no-properties
+    (car brust-singular-fixed-region-poss)
+    (cdr brust-singular-fixed-region-poss))
+   args))
 
-  (defun brust-singular-eval-region-or-line (args)
-    (interactive "P")
-    (let (-str)
-      (if (not (use-region-p))
-          (save-excursion
-            (while (not (or (brust-singular--ending-semicolon-p) (bobp)))
-              (forward-line -1))
-            (setq -str (thing-at-point 'line t))
-            (unless (brust-singular--ending-semicolon-p -str)
-              (user-error "There is no line to eval"))
-            (unless (brust-singular--check-parents -str)
-              (user-error "Unbalanced Parents!!!"))
-            (message "Evaluated line (%d) in [[ %s ]]"
-                     (line-number-at-pos (point))
-                     (buffer-name)))
-        (message "Evaluated region between lines (%d:%d) in [[ %s ]]"
-                 (line-number-at-pos (region-beginning))
-                 (line-number-at-pos (region-end))
-                 (buffer-name))
-        (setq -str (buffer-substring-no-properties
-                    (region-beginning) (region-end))))
-      (brust-singular--eval-string -str args)))
+(defun brust-singular-eval-region-or-line (args)
+  (interactive "P")
+  (let (-str)
+    (if (not (use-region-p))
+        (save-excursion
+          (while (not (or (brust-singular--ending-semicolon-p) (bobp)))
+            (forward-line -1))
+          (setq -str (thing-at-point 'line t))
+          (unless (brust-singular--ending-semicolon-p -str)
+            (user-error "There is no line to eval"))
+          (unless (brust-singular--check-parents -str)
+            (user-error "Unbalanced Parents!!!"))
+          (message "Evaluated line (%d) in [[ %s ]]"
+                   (line-number-at-pos (point))
+                   (buffer-name)))
+      (message "Evaluated region between lines (%d:%d) in [[ %s ]]"
+               (line-number-at-pos (region-beginning))
+               (line-number-at-pos (region-end))
+               (buffer-name))
+      (setq -str (buffer-substring-no-properties
+                  (region-beginning) (region-end))))
+    (brust-singular--eval-string -str args)))
 
-  (defun brust-singular--ending-semicolon-p (&optional -string)
-    (unless -string
-      (setq -string (thing-at-point 'line t)))
-    (string= ";"
-             (substring (s-trim
-                         (car
-                          (split-string
-                           -string "//")))
-                        -1)))
+(defun brust-singular--ending-semicolon-p (&optional -string)
+  (unless -string
+    (setq -string (thing-at-point 'line t)))
+  (string= ";"
+           (substring (s-trim
+                       (car
+                        (split-string
+                         -string "//")))
+                      -1)))
 
-  (defun brust-singular--check-parents (&optional -string)
-    (unless -string
-      (setq -string (thing-at-point 'line t)))
-    (with-temp-buffer
-      (insert -string)
-      (ignore-errors (check-parens) t)))
+(defun brust-singular--check-parents (&optional -string)
+  (unless -string
+    (setq -string (thing-at-point 'line t)))
+  (with-temp-buffer
+    (insert -string)
+    (ignore-errors (check-parens) t)))
 
-  (defun brust-singular--eval-string (-str &optional args)
-    (save-window-excursion
-      (singular)
-      (goto-char (point-max))
-      (let ((process (singular-process))
-            (--str (concat (s-trim -str)
-                           (unless (string= (substring -str -1) ";")
-                             "\n;"))))
-        (when args (singular-control-c 'restart))
-        (singular-input-filter process --str)
-        (singular-send-string process --str))))
+(defun brust-singular--eval-string (-str &optional args)
+  (save-window-excursion
+    (singular)
+    (goto-char (point-max))
+    (let ((process (singular-process))
+          (--str (concat (s-trim -str)
+                         (unless (string= (substring -str -1) ";")
+                           "\n;"))))
+      (when args (singular-control-c 'restart))
+      (singular-input-filter process --str)
+      (singular-send-string process --str))))
 
-  (defun brust-singular--delete-comments (&optional -string)
-    (unless -string
-      (setq -string (thing-at-point 'line t)))
-    (with-temp-buffer
-      (insert -string)
-      (goto-char (point-min))
-      (while (search-forward "//" nil t)
-        (forward-char -2)
-        (delete-region (point) (line-end-position)))
-      (buffer-string)))
+(defun brust-singular--delete-comments (&optional -string)
+  (unless -string
+    (setq -string (thing-at-point 'line t)))
+  (with-temp-buffer
+    (insert -string)
+    (goto-char (point-min))
+    (while (search-forward "//" nil t)
+      (forward-char -2)
+      (delete-region (point) (line-end-position)))
+    (buffer-string)))
 
-  (defun brust-singular-eval-proc (args)
-    "Eval last proc declaration."
-    (interactive "P")
-    (save-excursion
-      (search-backward "proc" nil t)
-      (let ((-beg (point))
-            (-name
-             (if (re-search-forward "[ \s\t]+" (line-end-position) t)
-                 (let ((-beg2 (point)))
-                   (if (search-forward "(" (line-end-position) t)
-                       (s-trim (buffer-substring-no-properties -beg2 (1- (point))))
-                     nil))
-               nil)))
-        (search-forward "{" nil t)
-        (forward-char -1)
-        (sp-forward-sexp)
-        (brust-singular--eval-string
-         (buffer-substring-no-properties -beg (point))
-         args)
-        (if -name
-            (message "Evaluated proc {{%s}}, between lines (%d:%d), in file [[%s]]"
-                     -name
-                     (line-number-at-pos -beg)
-                     (line-number-at-pos (point))
-                     (file-name-base (buffer-name)))
-          (message "Evaluated proc between lines (%d:%d) and file [[%s]] (Warring:: its name is not on the definition line)"
+(defun brust-singular-eval-proc (args)
+  "Eval last proc declaration."
+  (interactive "P")
+  (save-excursion
+    (search-backward "proc" nil t)
+    (let ((-beg (point))
+          (-name
+           (if (re-search-forward "[ \s\t]+" (line-end-position) t)
+               (let ((-beg2 (point)))
+                 (if (search-forward "(" (line-end-position) t)
+                     (s-trim (buffer-substring-no-properties -beg2 (1- (point))))
+                   nil))
+             nil)))
+      (search-forward "{" nil t)
+      (forward-char -1)
+      (sp-forward-sexp)
+      (brust-singular--eval-string
+       (buffer-substring-no-properties -beg (point))
+       args)
+      (if -name
+          (message "Evaluated proc {{%s}}, between lines (%d:%d), in file [[%s]]"
+                   -name
                    (line-number-at-pos -beg)
                    (line-number-at-pos (point))
-                   (file-name-base (buffer-name)))))))
+                   (file-name-base (buffer-name)))
+        (message "Evaluated proc between lines (%d:%d) and file [[%s]] (Warring:: its name is not on the definition line)"
+                 (line-number-at-pos -beg)
+                 (line-number-at-pos (point))
+                 (file-name-base (buffer-name)))))))
 
-      ;;(defun brust-singular-eval-buffer-line-by-line nil
-      ;;  (interactive)
-      ;;  (let ((-total-str (buffer-string))
-      ;;        (-base-name (file-name-base (buffer-name))))
-      ;;    (with-temp-buffer
-      ;;      (insert -total-str)
-      ;;      (brust-singular--delete-comments)
-      ;;      (goto-char (point-min))
-      ;;      (while (not (eobp))
-      ;;        ;;(or (brust-check-line-parents) (user-error "Unbalanced Parent!!!"))
-      ;;        (let ((-str (s-trim (buffer-substring-no-properties
-      ;;                             (line-beginning-position)
-      ;;                             (line-end-position))))
-      ;;              (-line (line-number-at-pos)))
-      ;;          (unless
-      ;;              (cond ((string= -str "") t)
-      ;;                    ((string= (substring -str -1) ";")
-      ;;                     (brust-singular--eval-string
-      ;;                      -str
-      ;;                      (format "line:%d:of::%s--" -line -base-name)
-      ;;                      nil)
-      ;;                     t)
-      ;;                    (t (brust-singular-eval-environment args) t))
-      ;;            (message "Error on line:%d (%s)" -line -str)
-      ;;            (goto-char (point-max)))
-      ;;          ;;(when err (goto-char err))
-      ;;          (forward-line 1))))))
+;;(defun brust-singular-eval-buffer-line-by-line nil
+;;  (interactive)
+;;  (let ((-total-str (buffer-string))
+;;        (-base-name (file-name-base (buffer-name))))
+;;    (with-temp-buffer
+;;      (insert -total-str)
+;;      (brust-singular--delete-comments)
+;;      (goto-char (point-min))
+;;      (while (not (eobp))
+;;        ;;(or (brust-check-line-parents) (user-error "Unbalanced Parent!!!"))
+;;        (let ((-str (s-trim (buffer-substring-no-properties
+;;                             (line-beginning-position)
+;;                             (line-end-position))))
+;;              (-line (line-number-at-pos)))
+;;          (unless
+;;              (cond ((string= -str "") t)
+;;                    ((string= (substring -str -1) ";")
+;;                     (brust-singular--eval-string
+;;                      -str
+;;                      (format "line:%d:of::%s--" -line -base-name)
+;;                      nil)
+;;                     t)
+;;                    (t (brust-singular-eval-environment args) t))
+;;            (message "Error on line:%d (%s)" -line -str)
+;;            (goto-char (point-max)))
+;;          ;;(when err (goto-char err))
+;;          (forward-line 1))))))
 
-      ;;(defun brust-singular--temp-file (-str -name)
-      ;;  (let ((-temp-file
-      ;;         (make-temp-file
-      ;;          (replace-regexp-in-string "[.]" "-" -name)
-      ;;          nil ".sing")))
-      ;;    (with-temp-buffer
-      ;;      (insert -str)
-      ;;      (append-to-file (point-min) (point-max) -temp-file))
-      ;;    -temp-file))
+;;(defun brust-singular--temp-file (-str -name)
+;;  (let ((-temp-file
+;;         (make-temp-file
+;;          (replace-regexp-in-string "[.]" "-" -name)
+;;          nil ".sing")))
+;;    (with-temp-buffer
+;;      (insert -str)
+;;      (append-to-file (point-min) (point-max) -temp-file))
+;;    -temp-file))
 #+END_SRC
 
 #+RESULTS:
@@ -1926,70 +1926,70 @@ Bad
 **** functions for *singular*
 ***** Add print std...
 #+BEGIN_SRC elisp
-  (defun brust-singular-add-print nil
-    (interactive)
-    (brust-singular-add-function "print"))
+(defun brust-singular-add-print nil
+  (interactive)
+  (brust-singular-add-function "print"))
 
-  (defun brust-singular-add-std nil
-    (interactive)
-    (brust-singular-add-function "std"))
+(defun brust-singular-add-std nil
+  (interactive)
+  (brust-singular-add-function "std"))
 
-  (defun brust-singular-add-function (-fun)
-    (let* ((-bounds (if (region-active-p)
-                        `(,(region-beginning) . ,(region-end))
-                      (save-excursion
-                        (move-beginning-of-line 1)
-                        (search-forward "> " (point-at-eol) t)
-                        `(,(point) . ,(progn
-                                        (move-end-of-line 1)
-                                        (search-backward ";" (point-at-bol) t)
-                                        (point))))))
-           (-str (buffer-substring-no-properties (car -bounds) (cdr -bounds))))
-      (goto-char (car -bounds))
-      (delete-region (car -bounds) (cdr -bounds))
-      (insert -fun "(" -str ")")
-      (move-end-of-line 1)
-      (insert ";")))
+(defun brust-singular-add-function (-fun)
+  (let* ((-bounds (if (region-active-p)
+                      `(,(region-beginning) . ,(region-end))
+                    (save-excursion
+                      (move-beginning-of-line 1)
+                      (search-forward "> " (point-at-eol) t)
+                      `(,(point) . ,(progn
+                                      (move-end-of-line 1)
+                                      (search-backward ";" (point-at-bol) t)
+                                      (point))))))
+         (-str (buffer-substring-no-properties (car -bounds) (cdr -bounds))))
+    (goto-char (car -bounds))
+    (delete-region (car -bounds) (cdr -bounds))
+    (insert -fun "(" -str ")")
+    (move-end-of-line 1)
+    (insert ";")))
 #+END_SRC
 
 #+RESULTS:
 : brust-singular-finish-line
 ***** Finish line
 #+BEGIN_SRC elisp
-  (defun brust-singular-finish-line-singular-edit-mode nil
-    (interactive)
-    (if (or (bolp) (eobp)) (insert "\n")
-      (move-end-of-line 1)
-      (when (search-backward "//" (point-at-bol) t)
-        (skip-chars-backward "[:space:]"))
-      (let ((-main-line (s-trim-right
-                         (buffer-substring-no-properties (point-at-bol) (point))))
-            (-comment-line (buffer-substring-no-properties (point) (point-at-eol))))
-        (delete-region (point-at-bol) (point-at-eol))
-        (if (or (< (length -main-line) 1))
-            (insert (concat -comment-line "\n"))
-          (insert
-           (concat ;;compare (insert (concat nil "hello")) vs (insert nil "hello")
-            (with-temp-buffer ;; To close-all-open-paren-r just of this line and do not use narrow
-              (insert (concat -main-line
-                              (unless (string= (substring -main-line -1) ";")
-                                ";")))
-              (forward-char -1)
-              (close-all-open-paren-right)
-              (buffer-string))
-            -comment-line
-            "\n"))))))
-
-  (defun brust-singular-finish-line-interaction-mode nil
-    (interactive)
-    (narrow-to-region (point-at-bol) (point-at-eol))
+(defun brust-singular-finish-line-singular-edit-mode nil
+  (interactive)
+  (if (or (bolp) (eobp)) (insert "\n")
     (move-end-of-line 1)
-    (delete-horizontal-space)
-    (unless (string= (string (char-before (point))) ";")
-      (insert ";"))
-    (forward-char -1)
-    (close-all-open-paren-right)
-    (widen))
+    (when (search-backward "//" (point-at-bol) t)
+      (skip-chars-backward "[:space:]"))
+    (let ((-main-line (s-trim-right
+                       (buffer-substring-no-properties (point-at-bol) (point))))
+          (-comment-line (buffer-substring-no-properties (point) (point-at-eol))))
+      (delete-region (point-at-bol) (point-at-eol))
+      (if (or (< (length -main-line) 1))
+          (insert (concat -comment-line "\n"))
+        (insert
+         (concat ;;compare (insert (concat nil "hello")) vs (insert nil "hello")
+          (with-temp-buffer ;; To close-all-open-paren-r just of this line and do not use narrow
+            (insert (concat -main-line
+                            (unless (string= (substring -main-line -1) ";")
+                              ";")))
+            (forward-char -1)
+            (close-all-open-paren-right)
+            (buffer-string))
+          -comment-line
+          "\n"))))))
+
+(defun brust-singular-finish-line-interaction-mode nil
+  (interactive)
+  (narrow-to-region (point-at-bol) (point-at-eol))
+  (move-end-of-line 1)
+  (delete-horizontal-space)
+  (unless (string= (string (char-before (point))) ";")
+    (insert ";"))
+  (forward-char -1)
+  (close-all-open-paren-right)
+  (widen))
 
 #+END_SRC
 
@@ -1998,23 +1998,23 @@ Bad
 
 ***** Dynamic expand in non-running Singular buffer
 #+BEGIN_SRC elisp
-  (defun brust-singular-dynamic-complete ()
-    "Dynamic complete word before point.
+(defun brust-singular-dynamic-complete ()
+  "Dynamic complete word before point.
       Performs completion of Singular commands."
-    (interactive)
-    (let* ((end (point))
-           (beg
-            (save-excursion
-              (skip-chars-backward "a-zA-Z0-9")
-              (point)))
-           (str (buffer-substring-no-properties beg end)))
-      (if (string= str "")
-          (indent-region (point-at-bol) (point-at-eol))
-        ;; (call-interactively 'indent-region)
-        (if singular-commands-alist
-            (singular-completion-do str beg end singular-commands-alist)
-          (message "Completion of Singular commands disabled.")
-          (ding)))))
+  (interactive)
+  (let* ((end (point))
+         (beg
+          (save-excursion
+            (skip-chars-backward "a-zA-Z0-9")
+            (point)))
+         (str (buffer-substring-no-properties beg end)))
+    (if (string= str "")
+        (indent-region (point-at-bol) (point-at-eol))
+      ;; (call-interactively 'indent-region)
+      (if singular-commands-alist
+          (singular-completion-do str beg end singular-commands-alist)
+        (message "Completion of Singular commands disabled.")
+        (ding)))))
 #+END_SRC
 
 #+RESULTS:
