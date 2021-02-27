@@ -330,7 +330,7 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
  "s-s"      #'save-buffer
  "s-w"      #'evil-window-next
  "s-c"      #'close-quoted-open-paren-right-or-left
- ;; "s-SPC"    #'brust-cycle-whitespace ;; Use it once I am used to 'g SPC'
+ ;; "s-SPC"    #'brust-cycle-whitespace ;; I am used to 'g SPC'
  "s-h"      #'recenter-top-bottom
  ;; "s-f"      #'flyspell-correct-previous ;; Learning to use z=
  ;; s- motion command
@@ -365,9 +365,10 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
             #'evil-jump-item)
 
  ;; Personal extensions
- "<f9>"     #'mu4e
- "<f10>"    #'magit-status
- "<f5>"     #'counsel-kmacro
+ "<f2>"  #'brust-correct-prev-spelling
+ "<f5>"  #'counsel-kmacro
+ "<f9>"  #'mu4e
+ "<f10>" #'magit-status
  :n "g SPC" #'brust-cycle-whitespace ;; It was unbind
  (:prefix "z"
   :n "j" #'brust-correct-prev-spelling
@@ -564,68 +565,6 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 
 #+RESULTS:
 : close-quoted-open-paren-right-or-left
-
-**** COMMENT New paren
-#+BEGIN_SRC elisp
-
-    (defvar brust-open-paren-last 1 "Number corresponding to last inserted paren by `brust-open-paren-alist'")
-
-    (defvar brust-open-paren-alist '((1 . "(")
-                                     (2 . "[")
-                                     (3 . "{")
-                                     (4 . "<"))
-      "List with open paren to cycle through")
-
-    (defun brust-open-paren-insert (-paren)
-      (insert (cdr (assoc (setq brust-last-open-paren -paren)
-                          brust-open-paren-alist))))
-
-    (defun brust-open-paren-cycle (&optional args)
-      (interactive "P")
-      (if (string= (cdr (assoc brust-last-open-paren
-                               brust-open-paren-alist))
-                   (buffer-substring-no-properties (1- (point)) (point)))
-          (delete-char -1)
-        (setq brust-open-paren-last 0))
-      (brust-open-paren-insert
-       (setq brust-open-paren-last
-             (if (< brust-open-paren-last (length brust-open-paren-alist))
-                 (1+ brust-open-paren-last)
-               1))))
-
-    (defun brust-open-paren-add-more nil
-      "Copy previous char"
-      (interactive)
-      (insert (buffer-substring-no-properties (1- (point)) (point))))
-
-    (defun brust-open-paren-insert-backslash nil
-      "Insert backslash before previous char"
-      (interactive)
-      (save-excursion
-        (forward-char -1)
-        (insert "\\")))
-
-  (defun brust-open-paren-leave-just-backslash nil
-    (interactive)
-    (delete-char -1)
-    (insert "\\"))
-
-  (defun brust-open-paren-ordered-string-of-options nil
-    (cl-loop for xx in brust-open-paren-alist
-             concat (cdr xx)))
-
-  (defhydra brust-open-paren-hydra nil
-    "
-
-    ^ Open paren %(brust-open-paren-ordered-string-of-options): "
-    ("SPC" (brust-open-paren-cycle) "Cycle")
-    ("a" (brust-open-paren-add-more) "Add another")
-    ("b" (brust-open-paren-insert-backslash) "Add backslash")
-    ("q" (brust-open-paren-leave-just-backslash) "Just backslash"))
-#+END_SRC
-
-#+RESULTS:
-: brust-open-paren-hydra/body
 
 *** Customize face at point
     A handy function for customization
@@ -1490,7 +1429,7 @@ Maintaining notes.org
   ;; Fixing 'evil-collection-mu4e', see update in https://github.com/emacs-evil/evil-collection/issues/309
   (defun brust-workaround-fixing-evil-collection-mu4e nil
     (remove-hook 'mu4e-main-mode-hook 'evil-collection-mu4e-update-main-view))
-(remove-hook 'mu4e-main-mode-hook 'evil-collection-mu4e-update-main-view)
+  (remove-hook 'mu4e-main-mode-hook 'evil-collection-mu4e-update-main-view)
   (advice-add 'evil-collection-mu4e-setup :after #'brust-workaround-fixing-evil-collection-mu4e)
 
   (map! :map mu4e-headers-mode-map
@@ -2763,11 +2702,12 @@ Enlarge width of some columns
   ;; automatically annotate highlights
   (setq pdf-annot-activate-created-annotations t
         pdf-view-resize-factor 1.1)
-   ;; faster motion
+  ;; faster motion
   (map!
    :map pdf-view-mode-map
    :n "<"            #'pdf-view-first-page
    :n ">"            #'pdf-view-last-page
+   :n "q"            #'kill-current-buffer
    ;; "C-k"          #'pdf-view-next-page-command
    ;; "C-i"          #'pdf-view-previous-page-command
    ;; "s-SPC"        #'pdf-view-scroll-down-or-previous-page
@@ -2895,11 +2835,11 @@ Enlarge width of some columns
 
 *** Turn grep "writable" buffer
 #+BEGIN_SRC elisp
-  (use-package! wgrep
-    :defer t
-    :config
-    (setq wgrep-auto-save-buffer t
-          wgrep-enable-key "r"))
+(use-package! wgrep
+  :defer t
+  :config
+  (setq wgrep-auto-save-buffer t
+        wgrep-enable-key "r"))
 #+END_SRC
 
 *** Visual regexp

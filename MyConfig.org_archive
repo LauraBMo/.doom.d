@@ -292,3 +292,72 @@ see [[https://github.com/TommyX12/company-tabnine][Tabnine]]
 (setq mode-line-default-help-echo nil
       show-help-function nil)
 #+end_src
+
+* COMMENT New paren
+:PROPERTIES:
+:ARCHIVE_TIME: 2021-02-27 sáb 23:06
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/My functions/Close<->open parents
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+#+BEGIN_SRC elisp
+
+(defvar brust-open-paren-last 1 "Number corresponding to last inserted paren by `brust-open-paren-alist'")
+
+(defvar brust-open-paren-alist '((1 . "(")
+                                 (2 . "[")
+                                 (3 . "{")
+                                 (4 . "<"))
+  "List with open paren to cycle through")
+
+(defun brust-open-paren-insert (-paren)
+  (insert (cdr (assoc (setq brust-last-open-paren -paren)
+                      brust-open-paren-alist))))
+
+(defun brust-open-paren-cycle (&optional args)
+  (interactive "P")
+  (if (string= (cdr (assoc brust-last-open-paren
+                           brust-open-paren-alist))
+               (buffer-substring-no-properties (1- (point)) (point)))
+      (delete-char -1)
+    (setq brust-open-paren-last 0))
+  (brust-open-paren-insert
+   (setq brust-open-paren-last
+         (if (< brust-open-paren-last (length brust-open-paren-alist))
+             (1+ brust-open-paren-last)
+           1))))
+
+(defun brust-open-paren-add-more nil
+  "Copy previous char"
+  (interactive)
+  (insert (buffer-substring-no-properties (1- (point)) (point))))
+
+(defun brust-open-paren-insert-backslash nil
+  "Insert backslash before previous char"
+  (interactive)
+  (save-excursion
+    (forward-char -1)
+    (insert "\\")))
+
+(defun brust-open-paren-leave-just-backslash nil
+  (interactive)
+  (delete-char -1)
+  (insert "\\"))
+
+(defun brust-open-paren-ordered-string-of-options nil
+  (cl-loop for xx in brust-open-paren-alist
+           concat (cdr xx)))
+
+(defhydra brust-open-paren-hydra nil
+  "
+
+    ^ Open paren %(brust-open-paren-ordered-string-of-options): "
+    ("SPC" (brust-open-paren-cycle) "Cycle")
+    ("a" (brust-open-paren-add-more) "Add another")
+    ("b" (brust-open-paren-insert-backslash) "Add backslash")
+    ("q" (brust-open-paren-leave-just-backslash) "Just backslash"))
+#+END_SRC
+
+#+RESULTS:
+: brust-open-paren-hydra/body
+

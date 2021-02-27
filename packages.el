@@ -28,17 +28,16 @@
 (package! eglot-jl :recipe (:host github :repo "non-Jedi/eglot-jl"))
 (package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
 
-
-;; Fancy custom
-;; (package! aggressive-indent) ;; use "= G" in normal mode
-(package! visual-regexp)
-(package! zoom)
+;; Nyans
 (package! nyan-mode)
 (package! zone-nyan)
 
 ;; Miscelaneos
 (package! keyfreq :recipe (:host github :repo "dacap/keyfreq"))
+(package! visual-regexp)
+(package! zoom)
 ;; (package! wc-mode :recipe (:host github :repo "bnbeckwith/wc-mode"))
+;; (package! aggressive-indent) ;; use "= G" in normal mode
 
 ;; Try someday
 ;; (package! evil-tutor)
