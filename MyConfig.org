@@ -21,9 +21,6 @@ I’m rarely happier than when spending an entire day programming my computer
 “You don’t have to like Emacs to like it.”
 -- https://www.gnu.org/software/emacs/manual/html_node/eintr/Emacs-Initialization.html
 
-* ToDos
-** Improve init times of LaTeX mode and External modes
-
 * init.el
 ** Generic settings
 *** Personal data
