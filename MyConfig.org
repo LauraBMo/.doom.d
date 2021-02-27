@@ -1528,6 +1528,42 @@ Bad
   (add-hook! 'emacs-startup-hook #'eglot-jl-init)
   )
 #+end_src
+**** Org ob-julia
+
+;; (require 'ob-julia)
+#+begin_src elisp
+(setq org-babel-julia-write-object-command
+      "begin
+          file = \"%s\"; data = %s; data = isnothing(data) ? \"\" : data;
+          DelimitedFiles.writedlm(file, data, ',')
+       end")
+
+(defvar org-babel-julia-read-object-command "DelimitedFiles.readdlm(\"%s\",',')")
+
+(add-hook 'org-mode-hook (lambda nil
+                           (fset 'org-babel-julia-assign-elisp
+                                 (lambda (name value colnames-p rownames-p)
+                                   "Construct julia code assigning the elisp VALUE to a variable named NAME."
+                                   (if (listp value)
+                                       (let ((max (apply #'max (mapcar #'length (cl-remove-if-not
+                                                                                 #'sequencep value))))
+                                             (min (apply #'min (mapcar #'length (cl-remove-if-not
+                                                                                 #'sequencep value))))
+                                             (transition-file (org-babel-temp-file "julia-import-")))
+                                         ;; ensure VALUE has an orgtbl structure (depth of at least 2)
+                                         (unless (listp (car value)) (setq value (list value)))
+                                         (with-temp-file transition-file
+                                           (insert
+                                            (orgtbl-to-csv value '(:fmt org-babel-julia-quote-csv-field))
+                                            "\n"))
+                                         (let ((file (org-babel-process-file-name transition-file 'noquote))
+                                               (header (if (or (eq (nth 1 value) 'hline) colnames-p)
+                                                           "TRUE" "FALSE"))
+                                               (row-names (if rownames-p "1" "NULL")))
+                                           (if (= max min)
+                                               (format (concat "%s = " org-babel-julia-read-object-command) name file)
+                                             (format (concat "%s = " org-babel-julia-read-object-command) name file))))
+                                     (format "%s = %s" name (org-babel-julia-quote-csv-field value)))))) t)
 #+end_src
 
 **** ad-hoc functions
