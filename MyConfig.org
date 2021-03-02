@@ -904,7 +904,7 @@ commands to work with MangaRock comics
     (brust-wc-save-words))
 #+END_SRC
 
-*** Whitespace cycle
+*** White space cycle
     This is a remake and merge of `cycle-spacing' `delete-blank-lines' and `xah-shrink-whitespaces'.
 #+BEGIN_SRC elisp
   (defun brust-cycle-whitespace nil
@@ -966,6 +966,17 @@ commands to work with MangaRock comics
        the original point position, and the original spacing around point.")
 
 #+END_SRC
+*** White space edit
+#+begin_src elisp
+(defun skip-white-space-forward nil
+  (interactive)
+  (skip-chars-forward  " \t\v\f\n")
+  (point))
+
+(defun delete-white-space (&optional start)
+  (interactive)
+  (delete-region (or start (point)) (skip-white-space-forward)))
+#+end_src
 ** TODO Org mode
 *** Main config
  #+BEGIN_SRC elisp
