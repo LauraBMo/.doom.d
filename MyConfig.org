@@ -2053,7 +2053,8 @@ Bad
 
 #+RESULTS:
 : brust-singular-dynamic-complete
-*** Macaulay2
+*** Macaulay2 M2
+**** Config.
 #+begin_src elisp
 ;; Setup M2.el for autoloading
 ;; add "/usr/share/info" to Info-default-directory-list if it isn't there (it is already there)
@@ -2066,18 +2067,44 @@ Bad
 (autoload 'm2-comint-mode "M2" "Macaulay2 command interpreter mode, name in lower case" t)
 (add-to-list 'auto-mode-alist '("\\.m2\\'" . M2-mode))
 
-(map! (:map M2-mode
-       (:localleader
-        "SPC" #'M2)))
 ;; Uncomment these lines to enable syntax highlighting for the interpreter language
 ;;(autoload 'D-mode "D-mode" "Editing mode for the interpreter language" t)
 ;;(add-to-list 'auto-mode-alist '("\\.dd?\\'" . D-mode))
-
-;; You may comment out the following line with an initial semicolon if you
-;; want to use your f12 key for something else.  However, this action
-;; will be undone the next time you run setup() or setupEmacs().
-;; (global-set-key [ f12 ] 'M2)
 #+end_src
+
+#+RESULTS:
+: brust-M2-indent-buffer
+**** Map
+#+begin_src elisp
+(map! (:map M2-mode-map
+       :n "= Q" #'brust-M2-indent-buffer
+       (:localleader
+        "SPC" #'brust-M2-M2-or-M2-send-to-program
+        "Q" #'brust-M2-indent-buffer)))
+#+end_src
+
+#+RESULTS:
+
+**** Indent buffer
+#+begin_src elisp
+(defun brust-M2-electric-tab-inerit-indentation nil
+  (let ((context (delete-white-space)))
+    (M2-electric-tab)
+    (when (string-match-p "\n" context) (insert context))))
+
+(defun brust-M2-indent-buffer nil
+  (interactive)
+  (brust-buffer-advice-line-by-line 'brust-M2-electric-tab-inerit-indentation))
+#+end_src
+**** M2 or send line
+#+begin_src elisp
+(defun brust-M2-M2-or-M2-send-to-program nil
+  (interactive)
+  (if (get-buffer "*M2*")
+      (call-interactively 'M2-send-to-program)
+    (call-interactively 'M2)))
+#+end_src
+
 ** Build-in modes
 *** Abbrev's
 **** Setting
