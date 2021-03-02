@@ -578,6 +578,17 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
         (message "No face defined at point"))))
 
 #+END_SRC
+*** Delete region advise
+#+begin_src elisp
+(defun brust-return-buffer-substring-advice (orig-fun &rest args)
+  "Same as 'delete-region' but returns the deleted string"
+  (let ((str (apply 'buffer-substring args)))
+    (apply orig-fun args)
+    str))
+
+(advice-add 'delete-region :around #'brust-return-buffer-substring-advice)
+
+#+end_src
 *** Double Capitals
     Convert words in DOuble CApitals to Single Capitals.
     [[https://emacs.stackexchange.com/questions/13970/fixing-double-capitals-as-i-type][From StackExange]]
