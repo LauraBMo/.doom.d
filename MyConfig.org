@@ -643,6 +643,18 @@ Single Capitals as you type."
 #+END_SRC
 
 #+RESULTS:
+*** Line by line
+#+begin_src elisp
+(defun brust-buffer-advice-line-by-line (FUNCTION &rest ARGS)
+  "Executes function FUNCTION, from point-min, and moves forward one line. Repeat until end of buffer."
+  (save-excursion
+    (goto-char (point-min))
+    (while (not (eobp))
+      (apply FUNCTION ARGS)
+      (forward-line +1))))
+#+end_src
+
+#+RESULTS:
 
 *** Macro query
 #+BEGIN_SRC elisp
