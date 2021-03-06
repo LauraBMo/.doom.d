@@ -1,25 +1,32 @@
 #-*- mode: org -*-
-
 #+TITLE=Main config file
 #+STARTUP:overview
 
+#+begin_quote
 (What the world needs (I think) is not
       (a Lisp (with fewer parentheses))
       but (an English (with more.)))
 -- Brian Hayes, http://tinyurl.com/3y9l2kf
+#+end_quote
 
+#+begin_quote
  Emacs is a flexible platform for developing end-user applications
    –unfortunately it is generally perceived as merely a text editor.
 Some people use it specifically for one or two applications.
    https://alhassy.github.io/init/
+#+end_quote
 
+#+begin_quote
 I’m rarely happier than when spending an entire day programming my computer
   to perform automatically a task that would otherwise take me a
   good ten seconds to do by hand.
 -- Douglas Adams
+#+end_quote
 
+#+begin_quote
 “You don’t have to like Emacs to like it.”
 -- https://www.gnu.org/software/emacs/manual/html_node/eintr/Emacs-Initialization.html
+#+end_quote
 
 * init.el
 ** Generic settings
