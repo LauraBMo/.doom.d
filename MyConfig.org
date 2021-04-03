@@ -1534,7 +1534,8 @@ Bad
 
 (after! julia-repl
   (add-hook 'term-mode-hook #'visual-line-mode)
-  (add-hook! 'julia-repl-hook (julia-repl--send-string (concat "include(\"" (expand-file-name "~/.julia/config/startup.jl") "\")")))
+  ;; (add-hook! 'julia-repl-hook (julia-repl--send-string (concat "include(\"" (expand-file-name "~/.julia/config/startup.jl") "\")")))
+  ;; It cause a problem, execute julia-repl--send-string in this hook (outside hook there is no problem, not realted to doom, emacs -q and install julia-repl reproduce it) Actually, not needed, now julia-repl loads startup.jl
   (map! (:map julia-repl-mode-map
          (:localleader
           :desc "line or region"      "SPC" #'julia-repl-send-region-or-line
