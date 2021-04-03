@@ -25,7 +25,7 @@
 ;; From README of julia in Doom
 ;; (package! lsp-julia :recipe (:host github :repo "non-jedi/lsp-julia"))
 (package! maplev :recipe (:host github :repo "JoeRiel/maplev"))
-(package! eglot-jl :recipe (:host github :repo "non-Jedi/eglot-jl"))
+;; (package! eglot-jl :recipe (:host github :repo "non-Jedi/eglot-jl"))
 (package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
 ;; (package! ob-julia :recipe (:host nil :repo "https://git.nixo.xyz/nixo/ob-julia.git"))
 

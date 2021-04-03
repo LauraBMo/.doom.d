@@ -1559,16 +1559,24 @@ Bad
 #+RESULTS:
 **** eglot-jl
 #+begin_src elisp
-(use-package! eglot-jl
-  ;; :when (featurep! +lsp)
-  :defer t
-  :after eglot
-  :preface
-  (setq eglot-connect-timeout 120)
-  ;; (add-hook 'julia-mode-local-vars-hook #'lsp!) ;; Too time consuming, init server when needed
-  (add-hook! 'emacs-startup-hook #'eglot-jl-init)
-  )
+(after! eglot
+  (setq eglot-connect-timeout 120
+        lsp-julia-default-environment "~/.julia/environments/v1.6"
+        eglot-jl-language-server-project "~/.julia/environments/v1.6"
+        eglot-jl-language-server-project eglot-jl-base))
+;; (use-package! eglot-jl
+;;   ;; :when (featurep! +lsp)
+;;   :defer t
+;;   :after eglot
+;;   :preface
+;;   ;; (add-hook 'julia-mode-local-vars-hook #'lsp!) ;; Too time consuming, init server when needed
+;;   (add-hook! 'emacs-startup-hook #'eglot-jl-init)
+;;   )
 #+end_src
+
+#+RESULTS:
+: /home/laury/.emacs.d/.local/straight/build-26.3/eglot-jl/
+
 **** Org ob-julia
 
 ;; (require 'ob-julia)
