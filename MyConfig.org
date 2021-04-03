@@ -13,7 +13,7 @@
  Emacs is a flexible platform for developing end-user applications
    –unfortunately it is generally perceived as merely a text editor.
 Some people use it specifically for one or two applications.
-   https://alhassy.github.io/init/
+-- https://alhassy.github.io/init/
 #+end_quote
 
 #+begin_quote
@@ -985,7 +985,7 @@ commands to work with MangaRock comics
   (delete-region (or start (point)) (skip-white-space-forward)))
 #+end_src
 ** TODO Org mode
-*** Main config
+*** Config
  #+BEGIN_SRC elisp
 (defun brust-org-my-defaults nil
   (setq ;; org-edit-src-auto-save-idle-delay 20
@@ -1094,7 +1094,7 @@ commands to work with MangaRock comics
 
 *** COMMENT Ledgers
     Mainly from [[https://www.reddit.com/r/emacs/comments/8x4xtt/tip_how_i_use_ledger_to_track_my_money/][Reddit discution]]
-**** Main config
+**** Config
 #+BEGIN_SRC elisp
   (use-package! ledger-mode
     :mode ("\\.dat\\'"
@@ -1115,7 +1115,7 @@ commands to work with MangaRock comics
 #+RESULTS:
 : std::ledger::save
 
-**** MyFuns
+**** Functions
 #+BEGIN_SRC elisp
   (defun brust-ledger-add-transaction (&optional -date)
     "Add new transaction using `org-read-date'"
