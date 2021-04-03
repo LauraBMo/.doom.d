@@ -186,23 +186,27 @@
 ;;                               (mu4e-action-retag-message msg "-\\Inbox")
 ;;                               (mu4e~proc-move docid nil "+S-u-N"))))
 
-;; (defvar brust-mu4e-tags-list '() "List of tags to consistently tag my emails. List created from the file `brust-mu4e-tags-list-file`")
+(defvar brust-mu4e-tags-file
+  "~/.doom.d/local/lisp/brusts-mu4e-tags-list.txt"
+  "File with tags to consistently tag my emails.")
 
-(defun brust-list-file-by-lines (-file)
-  (with-temp-buffer
-    (insert-file-contents -file)
-    (split-string (buffer-string) "\n")))
+;; (setq brust-mu4e-tags-file
+;;       "~/.doom.d/local/lisp/brusts-mu4e-tags-list.txt")
+
+(defun brust-mu4e-tags-list nil
+  "Returns list of tags for my emails."
+  (brust-utils-split-file brust-mu4e-tags-file))
+
+(defun brust-mu4e-add-new-tag (tag)
+  "Add `tag' to the list of tags for my email, if it is new."
+  (brust-utils-add-new-string-file tag brust-mu4e-tags-file))
 
 (add-to-list 'mu4e-marks
              '(tag
                :char       "g"
                :prompt     "gtag"
-               :ask-target (lambda () (ivy-read "What tag do you want to add? " (brust-list-file-by-lines "~/.emacs.d/brust-mu4e-tags-list-file.txt")
-                                                :action (lambda (-str) (unless (member -str (brust-list-file-by-lines "~/.emacs.d/brust-mu4e-tags-list-file.txt"))
-                                                                         (with-temp-buffer
-                                                                           (insert-file-contents "~/.emacs.d/brust-mu4e-tags-list-file.txt")
-                                                                           (insert -str "\n")
-                                                                           (write-file "~/.emacs.d/brust-mu4e-tags-list-file.txt"))))))
+               :ask-target (lambda () (ivy-read "What tag do you want to add? " (brust-mu4e-tags-list)
+                                                :action 'brust-mu4e-add-new-tag))
                :show-target (lambda (target) (concat "Tag added " target))
                :action (lambda (docid msg target)
                          (mu4e-action-retag-message msg (concat "+" target)))))
@@ -213,26 +217,12 @@
         (cons "month" "/mathuab/This month")
         (cons "for your information" "/mathuab/FYI")))
 
-(defun brust-flip-cons-list (-list)
-  (cl-loop for -el in -list
-           collect (cons (cdr -el) (car -el))))
-
 (add-to-list 'mu4e-marks
              '(moveUAB
                :char       "A"
                :prompt     "MoveUAB"
-               :ask-target (lambda () (mu4e-read-option "Move message to folder: " brust-mu4e-main-dirs))
-               :show-target (lambda (target) (concat "move to " (cdr (assoc target (brust-flip-cons-list brust-mu4e-main-dirs-UAB)))))
-               :action (lambda (docid msg target)
-                         (mu4e-mark-set 'move target)
-                         (when mu4e-headers-advance-after-mark (mu4e-headers-next)))))
-
-(add-to-list 'mu4e-marks
-             '(mydelete
-               :char       "d"
-               :prompt     "mydelete"
-               :ask-target (lambda () (mu4e-read-option "Move message to folder: " brust-mu4e-main-dirs))
-               :show-target (lambda (target) (concat "move to " (cdr (assoc target (brust-flip-cons-list brust-mu4e-main-dirs-UAB)))))
+               :ask-target (lambda () (mu4e-read-option "Move message to folder: " brust-mu4e-main-dirs-UAB))
+               :show-target (lambda (target) (concat "move to " (cdr (assoc target (brust-utils-swap-list brust-mu4e-main-dirs-UAB)))))
                :action (lambda (docid msg target)
                          (mu4e-mark-set 'move target)
                          (when mu4e-headers-advance-after-mark (mu4e-headers-next)))))
@@ -363,19 +353,15 @@
       '(("/Gmail/INBOX"   . ?g)
         ("/mathuab/INBOX" . ?m)))
 #+end_src
-* Org mu4e
+* COMMENT Org mu4e
 #+begin_src elisp
 ;;store org-mode links to messages
 (require 'org-mu4e)
 ;;store link to message if in header view, not to header query
 (setq org-mu4e-link-query-in-headers-mode nil)
+#+end_src
 
-(push '("e" "Todo email" entry (file+headline "~/Dropbox/Org/my.org" "Work")
-        "* TODO %?\nSCHEDULED: %(org-insert-time-stamp (org-read-date nil t \"+0d\"))\n%a\n")
-      org-capture-templates)
-      #+end_src
-
-* yasnippet for composing emails
+* COMMENT yasnippet for composing emails
 From http://pragmaticemacs.com/category/mu4e/
 
 #+begin_src elisp
