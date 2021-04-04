@@ -996,93 +996,182 @@ commands to work with MangaRock comics
    org-ellipsis " ↴"
    ))
 
-(add-hook 'org-mode-hook #'brust-org-my-defaults t)
+(after! org
+  (add-hook 'org-mode-hook #'brust-org-my-defaults t)
+  (map! :map org-mode-map
+        "<" 'brust-org<
+        (:localleader
+         :desc "Biblio" "B" #'ivy-bibtex-with-local-bibliography)))
  #+END_SRC
 
-*** Pretty headlines
-#+begin_src elisp
-(font-lock-add-keywords            ;; A bit silly but my headers are now
- 'org-mode                         ;; shorter, and that is nice canceled
- (mapcar (lambda (keysymbol)
-           `(,(concat "^\\(\\*\\{" (car keysymbol) "\\}\\) ")
-             (1
-              (progn (compose-region (match-beginning 1) (match-end 1) ,(cdr keysymbol)) nil)
-              append)))
-         '(("1" . "☰")
-           ("2" . "☱")
-           ("3" . "☲")
-           ("4" . "☳")
-           ("5" . "☴")
-           ("6" . "☵")
-           ("7" . "☶")
-           ("8," . "☷"))))
-#+end_src
-*** Hugo ox
-#+begin_src elisp
-(use-package! ox-hugo
-  :after ox)
-#+end_src
-
-*** Maps
-#+begin_src elisp
-  (map! :map org-mode-map "<" 'brust-org<
-        (:localleader
-         :desc "Biblio" "B" #'ivy-bibtex-with-local-bibliography))
-#+end_src
 *** TODO Agenda
 #+begin_src elisp
-(after! org
-  (setq org-agenda-files (quote ("~/Dropbox/Org/" "~/Dropbox/bibliography/notes.org"))
-        org-directory "~/Dropbox/Org/"
-        org-agenda-todo-list-sublevels nil
-        org-deadline-warning-days 3
-        org-agenda-skip-scheduled-if-done 1
-        org-agenda-skip-deadline-if-done 1
-        org-agenda-skip-deadline-if-done 1
-        org-agenda-custom-commands
-        '(("h" "My agenda view"
-           ((agenda "")
-            (todo))))))
+(setq org-agenda-files (quote ("~/Dropbox/Org/" "~/Dropbox/bibliography/notes.org"))
+      org-directory "~/Dropbox/Org/"
+      org-agenda-todo-list-sublevels nil
+      org-deadline-warning-days 3
+      org-agenda-skip-scheduled-if-done 1
+      org-agenda-skip-deadline-if-done 1
+      org-agenda-skip-deadline-if-done 1
+      org-agenda-custom-commands
+      '(("h" "My agenda view"
+         ((agenda "")
+          (todo)))))
 #+end_src
 
-*** TODO Capture
+*** Captures
  #+BEGIN_SRC elisp
-(use-package! org-capture
-  :defer t
-  :after org
-  :init
-  (defvar my/org-ledger-card-template
-    "%(org-read-date) %^{Payee}
-       Expenses:%^{Account}  €%^{Amount}
-       Liabilities:DebidCard:Mediolanum"
-    "Template for devid card transaction with ledger.")
-
-  (defvar my/org-ledger-cash-template
-    "%(org-read-date) * %^{Payee}
-       Expenses:%^{Account}  €%^{Amount}
-       Assets:Cash:Wallet"
-    "Template for cash transaction with ledger.")
-  :config
+(after! org
   (setq org-capture-templates
         (append
-         (when (boundp 'org-capture-templates) org-capture-templates)
-         `(("l" "Ledger")
-           ("lb" "Bank" plain (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y"))),
-            my/org-ledger-card-template
-            :empty-lines 1
-            :immediate-finish t)
-           ("lc" "Cash" plain (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y"))),
-            my/org-ledger-cash-template
-            :empty-lines 1
-            :immediate-finish t)
-           ("o"
-            "TODO respond to email"
+         org-capture-templates
+         `(
+           ;; New Email
+           ("e" "TODO respond to email"
             entry
-            (file YOUR_TODO_FILE.org)
-            "* TODO %^{Description}\n%A\n%?\n")))))
+            (file+headline "~/Dropbox/Org/my.org" "ToDo Miscellaneous")
+            "* TODO %^{Description}\n%A\n%?\n")
+           ;; Ledger
+           (("l" "Ledger")
+            ("lb" "Bank"
+             plain
+             (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y")))
+             ,my/org-ledger-card-template
+             :empty-lines 1
+             :immediate-finish t)
+            ("lc" "Cash"
+             plain
+             (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y")))
+             ,my/org-ledger-cash-template
+             :empty-lines 1
+             :immediate-finish t))
+           ;; Hugo
+           ("h" "Hugo post"
+            entry
+            ;; It is assumed that below file is present in `org-directory'
+            ;; and that it has a "Blog Ideas" heading. It can even be a
+            ;; symlink pointing to the actual location of all-posts.org!
+            (file+olp "my.org" "Blog Ideas")
+            (function org-hugo-new-subtree-post-capture-template))))))
  #+END_SRC
 
  #+RESULTS:
+**** Functions
+***** Hugo
+#+begin_src elisp
+;; Populates only the EXPORT_FILE_NAME property in the inserted headline.
+(defun org-hugo-new-subtree-post-capture-template ()
+  "Returns `org-capture' template string for new Hugo post.
+See `org-capture-templates' for more information."
+  (let* ((title (read-from-minibuffer "Post Title: ")) ;Prompt to enter the post title
+         (fname (org-hugo-slug title)))
+    (mapconcat #'identity
+               `(
+                 ,(concat "* TODO " title)
+                 ":PROPERTIES:"
+                 ,(concat ":EXPORT_FILE_NAME: " fname)
+                 ,(concat ":EXPORT_DATE: " date) ;Enter current date and time
+                 ":END:"
+                 "%?\n")          ;Place the cursor here finally
+               "\n")))
+;; (defun org-hugo-new-subtree-post-capture-template ()
+;;   "Returns `org-capture' template string for new Hugo post.
+;; See `org-capture-templates' for more information."
+;;   (let* ((title (read-from-minibuffer "Post Title: ")) ;Prompt to enter the post title
+;;          (fname (org-hugo-slug title)))
+;;     (mapconcat #'identity
+;;                `(
+;;                  ,(concat "* TODO " title)
+;;                  ":PROPERTIES:"
+;;                  ,(concat ":EXPORT_HUGO_BUNDLE: " fname)
+;;                  ":EXPORT_FILE_NAME: index"
+;;                  ,(concat ":EXPORT_DATE: " date) ;Enter current date and time
+;;                  ":END:"
+;;                  "%?\n")                ;Place the cursor here finally
+;;                "\n")))
+#+end_src
+
+***** Ledger
+#+begin_src elisp
+(defvar my/org-ledger-card-template
+  "%(org-read-date) %^{Payee}
+       Expenses:%^{Account}  €%^{Amount}
+       Liabilities:DebidCard:Mediolanum"
+  "Template for devid card transaction with ledger.")
+
+(defvar my/org-ledger-cash-template
+  "%(org-read-date) * %^{Payee}
+       Expenses:%^{Account}  €%^{Amount}
+       Assets:Cash:Wallet"
+  "Template for cash transaction with ledger.")
+#+end_src
+
+#+RESULTS:
+: my/org-ledger-cash-template
+
+*** Code blocks templates
+**** Delete unwanted
+#+begin_src elisp
+(after! org
+  (setq org-structure-template-alist (delete '("e" . "example") org-structure-template-alist)
+        org-structure-template-alist (delete '("E" . "export") org-structure-template-alist)))
+#+end_src
+
+**** Add mines
+#+begin_src elisp
+(after! org
+  (add-to-list 'org-structure-template-alist
+               '("e" . "src elisp"))
+  (add-to-list 'org-structure-template-alist
+               '("E" . "example"))
+  (add-to-list 'org-structure-template-alist
+               '("b" . "src bash"))
+  (add-to-list 'org-structure-template-alist
+               '("L" . "LaTeX"))
+  ;; Shortcuts for Julia code block headers.
+  ;; Shortcut for "normal" session evaluation with verbatim output:
+  (add-to-list 'org-structure-template-alist
+               '("j" . "src ess-julia :results output :session *julia* :exports both"))
+  ;; Shortcut for inline graphical output within a session:
+  (add-to-list 'org-structure-template-alist
+               '("jfig" . "src ess-julia :results output graphics file :file FILENAME.png :session *julia* :exports both"))
+  ;; Shortcut for well-formatted org table output within a session:
+  (add-to-list 'org-structure-template-alist
+               '("jtab" . "src ess-julia :results value table :session *julia* :exports both :colnames yes")))
+#+end_src
+
+**** Calling
+#+begin_src elisp
+(defun brust-org< nil
+  "Self insert command or expand org-insert-structure-template"
+  (interactive)
+  (if (or (region-active-p) (looking-back "^"))
+      (progn
+        (call-interactively 'org-insert-structure-template)
+        (insert "\n")
+        (backward-char 1))
+    (self-insert-command 1)))
+#+end_src
+
+*** Pretty headlines
+#+begin_src elisp
+(after! org
+  (font-lock-add-keywords            ;; A bit silly but my headers are now
+   'org-mode                         ;; shorter, and that is nice canceled
+   (mapcar (lambda (keysymbol)
+             `(,(concat "^\\(\\*\\{" (car keysymbol) "\\}\\) ")
+               (1
+                (progn (compose-region (match-beginning 1) (match-end 1) ,(cdr keysymbol)) nil)
+                append)))
+           '(("1" . "☰")
+             ("2" . "☱")
+             ("3" . "☲")
+             ("4" . "☳")
+             ("5" . "☴")
+             ("6" . "☵")
+             ("7" . "☶")
+             ("8," . "☷")))))
+#+end_src
 *** COMMENT Pdf links org-pdftools
      Org links for pdfs
 #+begin_src elisp
