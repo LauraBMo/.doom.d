@@ -361,3 +361,263 @@ see [[https://github.com/TommyX12/company-tabnine][Tabnine]]
 #+RESULTS:
 : brust-open-paren-hydra/body
 
+
+* COMMENT Ibuffer
+:PROPERTIES:
+:ARCHIVE_TIME: 2021-04-04 dom 02:13
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/External modes
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+#+BEGIN_SRC elisp
+  (after! ibuffer
+    (define-ibuffer-column lines-h
+      (:name "nºLines" :inline t)
+      ;;(set-buffer (buffer))
+      (brust--number-of-lines-current-buffer))
+      ;; (let ((n (line-number-at-pos (point-max))))
+      ;;   (cond
+      ;;    ((> n 1000000) (format "%7.1fM" (/ n 1000000.0)))
+      ;;    ((> n 1000) (format "%7.1fk" (/ n 1000.0)))
+      ;;    ;;((> n 100) (format "%7.1fh" (/ n 100.0)))
+      ;;    (t (format "%8d" n)))))
+
+    (setq ibuffer-formats
+          ;; Modify the default ibuffer-formats (toggle with `)
+          '((mark modified read-only vc-status-mini " "
+                  (name 30 30 :left :elide)
+                  " "
+                  (lines-h 9 -1 :right)
+                  " "
+                  (mode 16 16 :left :elide)
+                  " "
+                  (vc-status 16 16 :left)
+                  " "
+                  filename-and-process)
+            (mark " " (name 16 -1) " " filename)))
+
+    ;; Switching to ibuffer puts the cursor on the most recent buffer
+    (defadvice ibuffer (around ibuffer-point-to-most-recent activate) ()
+               "Open ibuffer with cursor pointed to most recent buffer name"
+               (let ((recent-buffer-name (buffer-name)))
+                 ad-do-it
+                 (ibuffer-jump-to-buffer recent-buffer-name))))
+
+#+END_SRC
+
+
+* COMMENT Hydra
+:PROPERTIES:
+:ARCHIVE_TIME: 2021-04-04 dom 02:14
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/External modes
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+** COMMENT mu4e
+#+begin_src elisp
+(defhydra hydra-mu4e-headers (:color blue :hint nil)
+  "
+ ^General^   | ^Search^           | _!_: read    | _#_: deferred  | ^Switches^
+-^^----------+-^^-----------------| _?_: unread  | _%_: pattern   |-^^------------------
+_n_: next    | _s_: search        | _r_: refile  | _&_: custom    | _O_: sorting
+_p_: prev    | _S_: edit prev qry | _u_: unmk    | _+_: flag      | _P_: threading
+_]_: n unred | _/_: narrow search | _U_: unmk *  | _-_: unflag    | _Q_: full-search
+_[_: p unred | _b_: search bkmk   | _d_: trash   | _T_: thr       | _V_: skip dups
+_y_: sw view | _B_: edit bkmk     | _D_: delete  | _t_: subthr    | _W_: include-related
+_R_: reply   | _{_: previous qry  | _m_: move    |-^^-------------+-^^------------------
+_C_: compose | _}_: next query    | _a_: action  | _|_: thru shl  | _`_: update, reindex
+_F_: forward | _C-+_: show more   | _A_: mk4actn | _H_: help      | _;_: context-switch
+_o_: org-cap | _C--_: show less   | _*_: *thing  | _q_: quit hdrs | _j_: jump2maildir "
+
+  ;; general
+  ("n" mu4e-headers-next)
+  ("p" mu4e-headers-previous)
+  ("[" mu4e-select-next-unread)
+  ("]" mu4e-select-previous-unread)
+  ("y" mu4e-select-other-view)
+  ("R" mu4e-compose-reply)
+  ("C" mu4e-compose-new)
+  ("F" mu4e-compose-forward)
+  ("o" my/org-capture-mu4e)                  ; differs from built-in
+
+  ;; search
+  ("s" mu4e-headers-search)
+  ("S" mu4e-headers-search-edit)
+  ("/" mu4e-headers-search-narrow)
+  ("b" mu4e-headers-search-bookmark)
+  ("B" mu4e-headers-search-bookmark-edit)
+  ("{" mu4e-headers-query-prev)              ; differs from built-in
+  ("}" mu4e-headers-query-next)              ; differs from built-in
+  ("C-+" mu4e-headers-split-view-grow)
+  ("C--" mu4e-headers-split-view-shrink)
+
+  ;; mark stuff
+  ("!" mu4e-headers-mark-for-read)
+  ("?" mu4e-headers-mark-for-unread)
+  ("r" mu4e-headers-mark-for-refile)
+  ("u" mu4e-headers-mark-for-unmark)
+  ("U" mu4e-mark-unmark-all)
+  ("d" mu4e-headers-mark-for-trash)
+  ("D" mu4e-headers-mark-for-delete)
+  ("m" mu4e-headers-mark-for-move)
+  ("a" mu4e-headers-action)                  ; not really a mark per-se
+  ("A" mu4e-headers-mark-for-action)         ; differs from built-in
+  ("*" mu4e-headers-mark-for-something)
+
+  ("#" mu4e-mark-resolve-deferred-marks)
+  ("%" mu4e-headers-mark-pattern)
+  ("&" mu4e-headers-mark-custom)
+  ("+" mu4e-headers-mark-for-flag)
+  ("-" mu4e-headers-mark-for-unflag)
+  ("t" mu4e-headers-mark-subthread)
+  ("T" mu4e-headers-mark-thread)
+
+  ;; miscellany
+  ("q" mu4e~headers-quit-buffer)
+  ("H" mu4e-display-manual)
+  ("|" mu4e-view-pipe)                       ; does not seem built-in any longer
+
+  ;; switches
+  ("O" mu4e-headers-change-sorting)
+  ("P" mu4e-headers-toggle-threading)
+  ("Q" mu4e-headers-toggle-full-search)
+  ("V" mu4e-headers-toggle-skip-duplicates)
+  ("W" mu4e-headers-toggle-include-related)
+
+  ;; more miscellany
+  ("`" mu4e-update-mail-and-index)           ; differs from built-in
+  (";" mu4e-context-switch)
+  ("j" mu4e~headers-jump-to-maildir)
+
+  ("." nil))
+#+end_src
+
+#+RESULTS:
+: hydra-mu4e-headers/body
+
+** Org block template
+     https://github.com/abo-abo/hydra/wiki/Org-mode-block-templates
+*** Hot expand defun
+#+BEGIN_SRC elisp
+(defun hot-expand (str &optional mod header)
+  "Expand org block template.
+
+    STR is a structure template string recognised by org like <s. MOD is a
+    string with additional parameters to add the begin line of the
+    structure element. HEADER string includes more parameters that are
+    prepended to the element after the #+HEADERS: tag."
+  (let ((-str (if mod (concat str " " mod) str)))
+    (if (region-active-p)
+        (let ((-str-region (buffer-substring (region-beginning) (region-end))))
+          (when header
+            (delete-region (region-beginning) (region-end))
+            (deactivate-mark)
+            (insert "#+HEADERS: " header "\n")
+            (push-mark)
+            (activate-mark t)
+            (insert -str-region))
+          (org-insert-structure-template -str))
+      (when header (insert "#+HEADERS: " header "\n"))
+      (org-insert-structure-template -str)
+      (insert "\n")
+      (backward-char 1))))
+
+;; (setq org-structure-template-alist (eval (car (get 'org-structure-template-alist 'standard-value))))
+;; (require 'org-tempo) ; Required from org 9 onwards for old template expansion
+;; Reset the org-template expnsion system, this is need after upgrading to org 9 for some reason
+
+(defun brust-org< nil
+  "Self insert command or expand hydra of org block templates
+  at the beginning of a line
+  or with region active."
+  (interactive)
+  (if (or (region-active-p) (looking-back "^"))
+      (hydra-org-block-template/body)
+    (self-insert-command 1)))
+#+END_SRC
+
+#+RESULTS:
+: brust-org<
+
+*** Hydra
+#+BEGIN_SRC elisp
+  (defhydra hydra-org-block-template (:color blue :hint nil)
+    "
+     _c_enter  _q_uote     _e_macs-lisp    _L_aTeX:
+     _l_atex   _E_xample   _j_ulia         _i_ndex:
+     _a_scii   _v_erse     _P_erl tangled  _I_NCLUDE:
+     _s_rc     _n_ote      _p_erl          _H_TML:
+     _h_tml    _b_ash      plant_u_ml      _A_SCII:
+    "
+    ("s" (hot-expand "src"))
+    ("E" (hot-expand "example"))
+    ("q" (hot-expand "quote"))
+    ("v" (hot-expand "<v"))
+    ("n" (hot-expand "note"))
+    ("c" (hot-expand "center"))
+    ("l" (hot-expand "export latex"))
+    ("h" (hot-expand "export html"))
+    ("a" (hot-expand "export ascii"))
+    ("L" (hot-expand "LaTeX"))
+    ("i" (hot-expand "index"))
+    ("e" (hot-expand "src" "elisp"))
+    ("j" (hot-expand "src" "ess-julia :session *julia*"))
+    ("b" (hot-expand "src" "bash"))
+    ("p" (hot-expand "src" "perl"))
+    ("u" (hot-expand "src" "plantuml :file CHANGE.png"))
+    ("P" (hot-expand "src" "perl" ":results output :exports both :shebang \"#!/usr/bin/env perl\""))
+    ("I" (hot-expand "INCLUDE"))
+    ("H" (hot-expand "HTML"))
+    ("A" (hot-expand "ASCII"))
+    ("<" self-insert-command "ins")
+    ("o" nil "quit"))
+#+END_SRC
+
+#+RESULTS:
+: hydra-org-block-template/body
+
+** PdfTools
+#+begin_src elisp
+(defhydra hydra-pdftools (:color blue :hint nil)
+        "
+   ╭────────────┐
+   │ PDF Tools │^ ^    ^ ^  ^ ^  Annotations  Search/Link   Do
+   ╭────────────────────────────────────────────────────────────┐
+    History:  ↑ _B_ ↓ _N_ ^ ^    [_al_] list    [_s_] search    [_u_] revert buffer
+    Go to page: [_e_] ^ ^ ^ ^    [_am_] markup  [_o_] outline   [_i_] info
+    Scale reset: [_0_] ^ ^ ^ ^   [_at_] text    [_F_] link      [_d_] dark mode
+    Fit: [_P_], _H_ight, _W_idth [_ad_] delete  [_f_] search link
+
+   --------------------------------------------------------------------------------
+        "
+        ;; ("\\" hydra-master/body "back")
+        ;; ("<ESC>" nil "quit")
+        ("al" pdf-annot-list-annotations)
+        ("ad" pdf-annot-delete)
+        ;; ("aa" pdf-annot-attachment-dired)
+        ("am" pdf-annot-add-markup-annotation)
+        ("at" pdf-annot-add-text-annotation)
+        ;; ("y"  pdf-view-kill-ring-save)
+        ("0" pdf-view-scale-reset)
+        ("H" pdf-view-fit-height-to-window)
+        ("W" pdf-view-fit-width-to-window)
+        ("P" pdf-view-fit-page-to-window)
+        ("d" pdf-view-dark-minor-mode)
+        ;; ("b" pdf-view-set-slice-from-bounding-box)
+        ;; ("r" pdf-view-reset-slice)
+        ("e" pdf-view-goto-page)
+        ("o" pdf-outline)
+        ("s" pdf-occur)
+        ("i" pdf-misc-display-metadata)
+        ("u" pdf-view-revert-buffer)
+        ("F" pdf-links-action-perfom)
+        ("f" pdf-links-isearch-link)
+        ("B" pdf-history-backward :color red)
+        ("N" pdf-history-forward :color red)
+        ("l" image-forward-hscroll :color red)
+        ("h" image-backward-hscroll :color red))
+#+end_src
+
+#+RESULTS:
+: hydra-pdftools/body
+
