@@ -2286,6 +2286,7 @@ Bad
       "<tab>"  #'brust-company-abort-cdlatex-or-yas
       "M-o"    #'counsel-company
       "<left>" #'company-complete-common
+      "<right>" #'brust-company-insert-selection
       "C-j"    #'company-next-page
       "C-k"    #'company-previous-page
       "C-l"    #'company-show-location
@@ -2296,6 +2297,13 @@ Bad
   (company-abort)
   (cond ((fboundp 'cdlatex-tab) (cdlatex-tab))
         ((fboundp 'yas-expand) (yas-expand))))
+
+(defun brust-company-insert-selection nil
+  "Insert the selected candidate and continue company."
+  (interactive)
+  (when (and (company-manual-begin) company-selection)
+    (let ((result (nth company-selection company-candidates)))
+      (company--insert-candidate result))))
 #+END_SRC
 *** Evil mode
 **** Settings
