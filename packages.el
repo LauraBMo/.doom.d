@@ -27,7 +27,8 @@
 (package! maplev :recipe (:host github :repo "JoeRiel/maplev"))
 ;; (package! eglot-jl :recipe (:host github :repo "non-Jedi/eglot-jl"))
 (package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
-;; (package! ob-julia :recipe (:host nil :repo "https://git.nixo.xyz/nixo/ob-julia.git"))
+;; (package! ob-julia :shadow 'ob-julia :recipe (:type git :host nil :repo "https://git.nixo.xyz/nixo/ob-julia.git"))
+(package! ob-ess-julia :shadow 'ob-julia :recipe (:type git :host github :repo "frederic-santos/ob-ess-julia"))
 
 ;; Nyans
 (package! nyan-mode)

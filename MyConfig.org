@@ -1535,6 +1535,7 @@ Bad
 
 (after! julia-repl
   (add-hook 'term-mode-hook #'visual-line-mode)
+  (setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
   ;; (add-hook! 'julia-repl-hook (julia-repl--send-string (concat "include(\"" (expand-file-name "~/.julia/config/startup.jl") "\")")))
   ;; It cause a problem, execute julia-repl--send-string in this hook (outside hook there is no problem, not realted to doom, emacs -q and install julia-repl reproduce it) Actually, not needed, now julia-repl loads startup.jl
   (map! (:map julia-repl-mode-map
@@ -1562,59 +1563,26 @@ Bad
 **** eglot-jl
 #+begin_src elisp
 (after! eglot
-  (setq eglot-connect-timeout 120
-        lsp-julia-default-environment "~/.julia/environments/v1.6"
+  (setq eglot-connect-timeout (* 60 2)
+        ;; To use my LanguageServer and Symbols...
         eglot-jl-language-server-project "~/.julia/environments/v1.6"
-        eglot-jl-language-server-project eglot-jl-base))
-;; (use-package! eglot-jl
-;;   ;; :when (featurep! +lsp)
-;;   :defer t
-;;   :after eglot
-;;   :preface
-;;   ;; (add-hook 'julia-mode-local-vars-hook #'lsp!) ;; Too time consuming, init server when needed
-;;   (add-hook! 'emacs-startup-hook #'eglot-jl-init)
-;;   )
+        ;; To use eglot's LanguageServer and Symbols... (ther is no way to make it work)
+        ;; eglot-jl-language-server-project eglot-jl-base
+        ))
 #+end_src
-
-#+RESULTS:
-: /home/laury/.emacs.d/.local/straight/build-26.3/eglot-jl/
-
-**** Org ob-julia
-
-;; (require 'ob-julia)
+**** ob-ess-julia
 #+begin_src elisp
-(setq org-babel-julia-write-object-command
-      "begin
-          file = \"%s\"; data = %s; data = isnothing(data) ? \"\" : data;
-          DelimitedFiles.writedlm(file, data, ',')
-       end")
-
-(defvar org-babel-julia-read-object-command "DelimitedFiles.readdlm(\"%s\",',')")
-
-(add-hook 'org-mode-hook (lambda nil
-                           (fset 'org-babel-julia-assign-elisp
-                                 (lambda (name value colnames-p rownames-p)
-                                   "Construct julia code assigning the elisp VALUE to a variable named NAME."
-                                   (if (listp value)
-                                       (let ((max (apply #'max (mapcar #'length (cl-remove-if-not
-                                                                                 #'sequencep value))))
-                                             (min (apply #'min (mapcar #'length (cl-remove-if-not
-                                                                                 #'sequencep value))))
-                                             (transition-file (org-babel-temp-file "julia-import-")))
-                                         ;; ensure VALUE has an orgtbl structure (depth of at least 2)
-                                         (unless (listp (car value)) (setq value (list value)))
-                                         (with-temp-file transition-file
-                                           (insert
-                                            (orgtbl-to-csv value '(:fmt org-babel-julia-quote-csv-field))
-                                            "\n"))
-                                         (let ((file (org-babel-process-file-name transition-file 'noquote))
-                                               (header (if (or (eq (nth 1 value) 'hline) colnames-p)
-                                                           "TRUE" "FALSE"))
-                                               (row-names (if rownames-p "1" "NULL")))
-                                           (if (= max min)
-                                               (format (concat "%s = " org-babel-julia-read-object-command) name file)
-                                             (format (concat "%s = " org-babel-julia-read-object-command) name file))))
-                                     (format "%s = %s" name (org-babel-julia-quote-csv-field value)))))) t)
+;; Load ob-ess-julia and dependencies
+(use-package! ob-ess-julia
+  :after org
+  :config
+  ;; Add ess-julia into supported languages:
+  (org-babel-do-load-languages 'org-babel-load-languages
+                               (append org-babel-load-languages
+                                       '((ess-julia . t))))
+  ;; Link this language to ess-julia-mode (although it should be done by default):
+  (setq org-src-lang-modes
+        (append org-src-lang-modes '(("ess-julia" . ess-julia)))))
 #+end_src
 
 **** ad-hoc functions
