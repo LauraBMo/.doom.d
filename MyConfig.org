@@ -988,7 +988,8 @@ commands to work with MangaRock comics
 *** Config
  #+BEGIN_SRC elisp
 (defun brust-org-my-defaults nil
-  (setq ;; org-edit-src-auto-save-idle-delay 20
+  (setq
+   ;; org-edit-src-auto-save-idle-delay 20
    org-cycle-global-at-bob t
    org-return-follows-link t
    org-hide-leading-stars nil
@@ -1141,7 +1142,7 @@ commands to work with MangaRock comics
            (split-string
             (buffer-substring-no-properties (point-at-bol) (point-at-eol))
             "\,")))
-      (switch-to-buffer "ledger-2018.dat")
+      (switch-to-buffer "ledger-2021.dat")
       (brust-ledger-add-transaction
        (brust-from-eur-ame-date (nth 0 -entry)))
       (insert (capitalize (nth 1 -entry))
@@ -1467,11 +1468,11 @@ Maintaining notes.org
   ;; Marking emails for new actions
   (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-mu4e-config.org" "Marks" t)
   (map! (:map mu4e-headers-mode-map
-          "g" #'mu4e-headers-mark-for-tag
-          "A" #'mu4e-headers-mark-for-moveUAB)
+         "g" #'mu4e-headers-mark-for-tag
+         "A" #'mu4e-headers-mark-for-moveUAB)
         (:map mu4e-view-mode-map
-          "g" #'mu4e-headers-mark-for-tag
-          "A" #'mu4e-headers-mark-for-moveUAB))
+         "g" #'mu4e-headers-mark-for-tag
+         "A" #'mu4e-headers-mark-for-moveUAB))
 
   ;; Fixing 'evil-collection-mu4e', see update in https://github.com/emacs-evil/evil-collection/issues/309
   (defun brust-workaround-fixing-evil-collection-mu4e nil
