@@ -336,6 +336,7 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
  ;; s- commands: commands executed several times AND in several distinct modes.
  "s-s"      #'save-buffer
  "s-w"      #'evil-window-next
+ ;; "s-c"      #'close-quoted-open-paren-right-or-left-end-of-line
  "s-c"      #'close-quoted-open-paren-right-or-left
  ;; "s-SPC"    #'brust-cycle-whitespace ;; I am used to 'g SPC'
  "s-h"      #'recenter-top-bottom
@@ -546,32 +547,37 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 #+END_SRC
 **** By right or left
 #+BEGIN_SRC elisp
-  (defun my-texmathp nil
-    (interactive)
-    (when (texmathp)
-      (let ((pnt (point))
-            (p (ignore-errors
-                 (goto-char (cdr texmathp-why))
-                 (sp-forward-sexp 1))))
-        (goto-char pnt)
-        p)))
+(defun my-texmathp nil
+  (interactive)
+  (when (texmathp)
+    (let ((pnt (point))
+          (p (ignore-errors
+               (goto-char (cdr texmathp-why))
+               (sp-forward-sexp 1))))
+      (goto-char pnt)
+      p)))
 
-  (defun close-quoted-open-paren-right-or-left (&optional args)
-    (interactive "P")
-    (or args (setq args 1))
-    (cl-loop repeat args do
-             (if (and (fboundp 'texmathp)
-                      (my-texmathp))
-                 (unless (and (ignore-errors (close-quoted-open-paren-right))
-                              (if (my-texmathp) t (delete-char -2) nil))
-                   (unless (and (ignore-errors (close-quoted-open-paren-left))
-                                (if (my-texmathp) t (delete-char 2) nil))))
-               (unless (ignore-errors (close-quoted-open-paren-right))
-                 (unless (ignore-errors (close-quoted-open-paren-left)))))))
+(defun close-quoted-open-paren-right-or-left (&optional args)
+  (interactive "P")
+  (or args (setq args 1))
+  (cl-loop repeat args do
+           (if (and (fboundp 'texmathp)
+                    (my-texmathp))
+               (unless (and (ignore-errors (close-quoted-open-paren-right))
+                            (if (my-texmathp) t (delete-char -2) nil))
+                 (unless (and (ignore-errors (close-quoted-open-paren-left))
+                              (if (my-texmathp) t (delete-char 2) nil))))
+             (unless (ignore-errors (close-quoted-open-paren-right))
+               (unless (ignore-errors (close-quoted-open-paren-left)))))))
+
+(defun close-quoted-open-paren-right-or-left-end-of-line (&optional args)
+  (interactive "P")
+  (when (not (string= (thing-at-point 'char) " ")) (move-end-of-line 1))
+  (close-quoted-open-paren-right-or-left args))
 #+END_SRC
 
 #+RESULTS:
-: close-quoted-open-paren-right-or-left
+: close-quoted-open-paren-right-or-left-end-of-line
 
 *** Customize face at point
     A handy function for customization
