@@ -1031,7 +1031,7 @@ commands to work with MangaRock comics
             (file+headline "~/Dropbox/Org/my.org" "ToDo Miscellaneous")
             "* TODO %^{Description}\n%A\n%?\n")
            ;; Ledger
-           (("l" "Ledger")
+           ("l" "Ledger")
             ("lb" "Bank"
              plain
              (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y")))
@@ -1043,7 +1043,7 @@ commands to work with MangaRock comics
              (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y")))
              ,my/org-ledger-cash-template
              :empty-lines 1
-             :immediate-finish t))
+             :immediate-finish t)
            ;; Hugo
            ("h" "Hugo post"
             entry
