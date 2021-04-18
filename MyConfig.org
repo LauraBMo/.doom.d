@@ -1017,6 +1017,52 @@ commands to work with MangaRock comics
          ((agenda "")
           (todo)))))
 #+end_src
+*** Exports
+**** LaTeX
+
+#+TITLE: 27 Cubics containing the reciprocal variety
+#+AUTHOR: Laura Brustenga Moncusí
+#+PROPERTY: header-args :eval never-export :cache no
+#+PROPERTY: header-args+ :session *ob-ess-julia* :exports both
+#+LATEX_HEADER: \usemintedstyle{tango}
+#+LATEX_HEADER: \usepackage{polyglossia}
+#+LATEX_HEADER: \setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+#+LATEX_HEADER: \usepackage{unicode-math}
+#+LATEX_HEADER: \renewcommand{\P}{\mathbb{P}} % Projective space
+#+LATEX_HEADER: \renewcommand{\O}{\mathcal{O}}   % Calligraphic E
+#+LATEX_HEADER: \renewcommand{\S}{\mathbb{S}}     % linear space of symmetric matrices
+#+LATEX_HEADER: \newcommand{\Cat}{\mathrm{Cat}}   % Catalecticant matrix
+#+LATEX_HEADER: \newcommand{\PGL}{\mathrm{PGL}}     % Projective general linear group
+#+LATEX_HEADER: \newcommand{\Adj}{\mathrm{Adj}} % Adjugate matrix
+#+OPTIONS: toc:nil
+#+begin_src elisp
+(after! org
+  (setq org-latex-listings 'minted
+        org-latex-packages-alist '(("" "minted"))
+        org-latex-minted-langs '((ess-julia "julia"))
+        org-latex-pdf-process
+        '("lualatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+          "lualatex -shell-escape -interaction nonstopmode -output-directory %o %f")
+        org-latex-minted-options
+        '(("breaklines" "")
+          ;; ("escapeinside" "||")
+          ("linenos" "")
+          ("numbersep" "3pt")
+          ("mathescape" "true")
+          ;; ("gobble" "2")
+          ("frame" "lines")
+          ("framesep" "2mm")
+          ;; ("fontsize" "\small")
+          )))
+#+end_src
+
+#+RESULTS:
+| breaklines |       |
+| linenos    |       |
+| numbersep  | 3pt   |
+| mathescape | true  |
+| frame      | lines |
+| framesep   | 2mm   |
 
 *** Captures
  #+BEGIN_SRC elisp
