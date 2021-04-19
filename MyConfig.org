@@ -1227,13 +1227,15 @@ See `org-capture-templates' for more information."
   ;; Shortcuts for Julia code block headers.
   ;; Shortcut for "normal" session evaluation with verbatim output:
   (add-to-list 'org-structure-template-alist
-               '("j" . "src ess-julia :results output :session *julia* :exports both"))
+               '("j" . "src ess-julia :results output"))
+  (add-to-list 'org-structure-template-alist
+               '("jfull" . "src ess-julia :results output :session *julia* :exports both"))
   ;; Shortcut for inline graphical output within a session:
   (add-to-list 'org-structure-template-alist
-               '("jfig" . "src ess-julia :results output graphics file :file FILENAME.png :session *julia* :exports both"))
+               '("jpic" . "src ess-julia :results output graphics file :file FILENAME.png"))
   ;; Shortcut for well-formatted org table output within a session:
   (add-to-list 'org-structure-template-alist
-               '("jtab" . "src ess-julia :results value table :session *julia* :exports both :colnames yes")))
+               '("jtab" . "src ess-julia :results value table :colnames yes")))
 #+end_src
 
 **** Calling
