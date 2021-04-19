@@ -179,6 +179,85 @@ I’m rarely happier than when spending an entire day programming my computer
 | Google maps       | https://maps.google.com/maps?q=%s                                     |                                |
 
 *** Mode Line
+**** Do not show
+#+begin_src elisp
+(add-hook! 'emacs-startup-hook
+  (setq column-number-mode nil
+        size-indication-mode nil
+        doom-modeline-buffer-encoding nil
+        line-number-mode nil))
+#+end_src
+
+**** Show size: Total number of lines
+***** New face (small and grey)
+#+begin_src elisp
+(make-face 'mode-line-top-line-number)
+
+(set-face-attribute
+ 'mode-line-top-line-number nil
+ :inherit 'mode-line
+ :foreground "gray60" :height 0.7)
+#+end_src
+
+#+RESULTS:
+
+***** Mode line string
+#+begin_src elisp
+(defsubst brust-line-number-mode--string nil
+  "Show current line/buffer total number of lines."
+  (concat (doom-modeline-spc)
+          ;; (:propertize "\[" face mode-line-bars-face)
+          (propertize "%l"
+                      'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive)
+                      'help-echo "Buffer size mouse-1: Display Line and Column Mode Menu"
+                      'mouse-face 'mode-line-highlight
+                      'local-map mode-line-column-line-number-mode-map)
+          (propertize (if brust-line-number-mode-show-total
+                          (concat "/" (brust--number-of-lines-current-buffer))
+                        "")
+                      'face 'mode-line-top-line-number)
+          (doom-modeline-spc)))
+#+end_src
+
+#+RESULTS:
+: brust-line-number-mode--string
+
+***** Minor mode
+#+begin_src elisp
+(define-minor-mode brust-line-number-mode
+  "Toggle line number display in the mode line (Brust Line Number mode).
+With a prefix argument ARG, enable Line Number mode if ARG is
+positive, and disable it otherwise.  If called from Lisp, enable
+the mode if ARG is omitted or nil.
+
+Line numbers do not appear for very large buffers and buffers
+with very long lines; see variables `line-number-display-limit'
+and `line-number-display-limit-width'."
+  :init-value t :global t :group 'mode-line
+  (or global-mode-string (setq global-mode-string '("")))
+  (setq global-mode-string
+        (delete '(:eval (brust-line-number-mode--string)) global-mode-string))
+  (if brust-line-number-mode
+      (unless (member '(:eval (brust-line-number-mode--string)) global-mode-string)
+        (setq global-mode-string
+              (append global-mode-string '((:eval (brust-line-number-mode--string))))))))
+
+(defcustom brust-line-number-mode-show-total t
+  "Show buffer's total number of lines in mode-line"
+  :group 'brust-line-number-mode
+  :type 'bool)
+
+;; (add-hook! 'emacs-startup-hook
+;;   (setq global-mode-string '("" (:eval (brust-line-number-mode--string)) display-time-string)))
+#+end_src
+
+#+RESULTS:
+: brust-line-number-mode-show-total
+***** Activate
+#+begin_src elisp
+(brust-line-number-mode +1)
+#+end_src
+
 **** Display time
 #+begin_src elisp
 (defun brust-kill-date nil
@@ -204,47 +283,6 @@ I’m rarely happier than when spending an entire day programming my computer
 
 #+RESULTS:
 : t
-
-**** Do not show 
-#+begin_src elisp
-(add-hook! 'emacs-startup-hook
-  (setq column-number-mode nil
-        size-indication-mode nil
-        doom-modeline-buffer-encoding nil
-        line-number-mode nil))
-#+end_src
-**** Show size: Total number of lines
-#+begin_src elisp
-
-(make-face 'mode-line-top-line-number)
-(set-face-attribute
- 'mode-line-top-line-number nil
- :inherit 'mode-line
- :foreground "gray60" :height 0.7)
-
-(defsubst brust-doom-modeline--buffer-nlines nil
-  "Show current line/buffer total number of lines."
-  (when nlines-indication-mode
-    (concat (doom-modeline-spc)
-            ;; (:propertize "\[" face mode-line-bars-face)
-            (propertize "%l"
-                        'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive)
-                        'help-echo "Buffer size mouse-1: Display Line and Column Mode Menu"
-                        'mouse-face 'mode-line-highlight
-                        'local-map mode-line-column-line-number-mode-map)
-            (propertize (if (doom-modeline--active)
-                            (concat "/" (brust--number-of-lines-current-buffer))
-                          "")
-                        'face 'mode-line-top-line-number)
-            (doom-modeline-spc))))
-
-(add-hook! 'emacs-startup-hook
-  (setq nlines-indication-mode t
-        global-mode-string '("" (:eval (brust-doom-modeline--buffer-nlines)) display-time-string)))
-#+end_src
-
-#+RESULTS:
-|   | (:eval (brust-doom-modeline--buffer-nlines)) | display-time-string |
 
 **** COMMENT Use buffer-name for buffer name
 #+begin_src elisp
