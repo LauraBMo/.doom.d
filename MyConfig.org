@@ -639,39 +639,52 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 
 **** The function
 #+BEGIN_SRC elisp
+(defun brust-dcaps-to-scaps nil
+  (save-excursion
+    (let ((end (point)))
+      (and (= -3 (skip-syntax-backward "w"))
+           (let (case-fold-search)
+             (looking-at-p "\\b[[:upper:]]\\{2\\}[[:lower:]]"))
+           (capitalize-region (point) end)))))
+
 (defun dcaps-to-scaps nil
   "Convert word in DOuble CApitals to Single Capitals."
   (interactive)
-  (when (and (= ?w (char-syntax (char-before)))
-             (not (and (derived-mode-p 'latex-mode)
-                       (texmathp))))
-    (save-excursion
-      (and (if (called-interactively-p)
-               (skip-syntax-backward "w")
-             (= -3 (skip-syntax-backward "w")))
-           (let (case-fold-search)
-             (looking-at "\\b[[:upper:]]\\{2\\}[[:lower:]]"))
-           (capitalize-word 1)))))
+  (when (= ?w (char-syntax (char-before)))
+    (brust-dcaps-to-scaps)))
 
+(defun dcaps-to-scaps-notinmath nil
+  "Convert word in DOuble CApitals to Single Capitals."
+  (interactive)
+  (when (and (= ?w (char-syntax (char-before)))
+             (not (texmathp)))
+    (brust-dcaps-to-scaps)))
 #+END_SRC
 **** New minor mode
 #+BEGIN_SRC elisp
+(defun brust-dcaps-to-scaps-notinmath-p nil
+  (or (derived-mode-p 'latex-mode)
+      (eq major-mode 'org-mode)))
+
 (define-minor-mode dubcaps-mode
   "Toggle `dubcaps-mode'.  Converts words in DOuble CApitals to
 Single Capitals as you type."
   :init-value nil
   :lighter ("") ;; String to show in mode-line
   (if dubcaps-mode
-      (add-hook 'post-self-insert-hook #'dcaps-to-scaps nil 'local)
-    (remove-hook 'post-self-insert-hook #'dcaps-to-scaps 'local)))
-
-
+      (if (brust-dcaps-to-scaps-notinmath-p)
+          (add-hook 'post-self-insert-hook #'dcaps-to-scaps-notinmath nil 'local)
+        (add-hook 'post-self-insert-hook #'dcaps-to-scaps nil 'local))
+    (remove-hook 'post-self-insert-hook #'dcaps-to-scaps 'local)
+    (remove-hook 'post-self-insert-hook #'dcaps-to-scaps-notinmath 'local)))
 #+END_SRC
+
+
 **** Activation
 #+BEGIN_SRC elisp
 (add-hook 'text-mode-hook #'dubcaps-mode)
-
 #+END_SRC
+
 *** COMMENT Find file sudo
 #+BEGIN_SRC elisp
 (defun find-file-sudofying (FILENAME &optional WILDCARDS)
