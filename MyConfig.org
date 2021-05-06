@@ -1947,7 +1947,8 @@ Bad
 **** Config
 #+BEGIN_SRC elisp
 (setq singular-emacs-home-directory "/usr/share/singular/emacs/")
-(add-load-path! singular-emacs-home-directory)
+;; (add-load-path! singular-emacs-home-directory)
+(cl-pushnew singular-emacs-home-directory load-path :test #'string=)
 (autoload 'singular "singular"
   "Start Singular using default values." t)
 (autoload 'singular-other "singular"
@@ -2268,7 +2269,8 @@ Bad
 ;; Setup M2.el for autoloading
 ;; add "/usr/share/info" to Info-default-directory-list if it isn't there (it is already there)
 ;; (add-to-list 'Info-default-directory-list "/usr/share/info")
-(add-load-path! "/usr/share/emacs/site-lisp/Macaulay2")
+;; (add-load-path! "/usr/share/emacs/site-lisp/Macaulay2/")
+(cl-pushnew  "/usr/share/emacs/site-lisp/Macaulay2/" load-path :test #'string=)
 
 (autoload 'M2             "M2" "Run Macaulay2 in an emacs buffer" t)
 (autoload 'M2-mode        "M2" "Macaulay2 editing mode" t)
@@ -2823,7 +2825,8 @@ Enlarge width of some columns
 **** Load utils
 #+begin_src elisp
 ;; (load "~/.doom.d/local/lisp/prettify-utils/prettify-utils.el" t nil t)
-(add-load-path! "~/.doom.d/local/lisp/prettify-utils/")
+;; (add-load-path! "~/.doom.d/local/lisp/prettify-utils/")
+(cl-pushnew  "~/.doom.d/local/lisp/prettify-utils/" load-path :test #'string=)
 (autoload 'prettify-utils-add-hook "prettify-utils"
   "Add hook to mode defining pretty symbols alist" t)
 #+end_src
