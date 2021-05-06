@@ -1093,7 +1093,8 @@ commands to work with MangaRock comics
 (after! org
   (setq org-latex-listings 'minted
         org-latex-packages-alist '(("" "minted"))
-        org-latex-minted-langs '((ess-julia "julia"))
+        org-latex-minted-langs '((ess-julia "julia")
+                                 (julia-vterm "julia"))
         org-latex-pdf-process
         '("lualatex -shell-escape -interaction nonstopmode -output-directory %o %f"
           "lualatex -shell-escape -interaction nonstopmode -output-directory %o %f")
@@ -1227,15 +1228,16 @@ See `org-capture-templates' for more information."
                '("b" . "src bash"))
   (add-to-list 'org-structure-template-alist
                '("L" . "LaTeX"))
-  ;; Shortcuts for Julia code block headers.
   ;; Shortcut for "normal" session evaluation with verbatim output:
   (add-to-list 'org-structure-template-alist
-               '("j" . "src ess-julia :results output"))
+               '("jj" . "src ess-julia :results output"))
   (add-to-list 'org-structure-template-alist
-               '("jfull" . "src ess-julia :results output :session *julia* :exports both"))
+               '("j" . "src ess-julia :results output :session *julia* :exports both"))
   ;; Shortcut for inline graphical output within a session:
   (add-to-list 'org-structure-template-alist
                '("jpic" . "src ess-julia :results output graphics file :file FILENAME.png"))
+  (add-to-list 'org-structure-template-alist
+               '("jvterm" . "src julia-vterm :session"))
   ;; Shortcut for well-formatted org table output within a session:
   (add-to-list 'org-structure-template-alist
                '("jtab" . "src ess-julia :results value table :colnames yes")))
@@ -1273,6 +1275,46 @@ See `org-capture-templates' for more information."
              ("7" . "☶")
              ("8," . "☷")))))
 #+end_src
+*** ob languages
+**** ob-ess-julia
+#+begin_src elisp
+;; Load ob-ess-julia and dependencies
+(use-package! ob-ess-julia
+  :after org
+  :config
+  ;; Add ess-julia into supported languages:
+  (add-to-list 'org-babel-load-languages '(ess-julia . t))
+  (org-babel-do-load-languages 'org-babel-load-languages org-babel-load-languages)
+  ;; (org-babel-do-load-languages 'org-babel-load-languages
+  ;;                              (append org-babel-load-languages
+  ;;                                      '((ess-julia . t))))
+  ;; Link this language to ess-julia-mode (although it should be done by default):
+  ;; (setq org-src-lang-modes
+  ;;       (append org-src-lang-modes '(("ess-julia" . ess-julia))))
+  (setq org-src-lang-modes
+        (append org-src-lang-modes '(("ess-julia" . "julia"))))
+  )
+#+end_src
+**** ob-julia-vterm
+
+#+begin_src elisp
+;; Load ob-ess-julia and dependencies
+(use-package! ob-julia-vterm
+  :after (org julia-vterm)
+  :config
+  ;; Add ess-julia into supported languages:
+  (add-to-list 'org-babel-load-languages '(julia-vterm . t))
+  (org-babel-do-load-languages 'org-babel-load-languages org-babel-load-languages)
+  (add-to-list 'org-babel-tangle-lang-exts '("julia-vterm" . "jl"))
+  ;; (org-babel-do-load-languages 'org-babel-load-languages
+  ;;                              (append org-babel-load-languages
+  ;;                                      '((ess-julia . t))))
+  ;; Link this language to ess-julia-mode (although it should be done by default):
+  ;; (setq org-src-lang-modes
+  ;;       (append org-src-lang-modes '(("ess-julia" . ess-julia))))
+  )
+#+end_src
+
 *** COMMENT Pdf links org-pdftools
      Org links for pdfs
 #+begin_src elisp
@@ -1352,7 +1394,6 @@ See `org-capture-templates' for more information."
 
 #+RESULTS:
 : std::ledger::save
-
 ** LaTeX mode
 *** AUCTeX
 #+BEGIN_SRC elisp
@@ -1708,7 +1749,7 @@ Bad
   - zero integration with company
   - zero integration with Doom emacs
     see [[https://github.com/tpapp/julia-repl/issues/81][problem with executable]]
-**** Julia mode
+**** Julia repl mode
 #+begin_src elisp
 ;; (require 'julia-mode)
 ;; (require 'julia-repl)
@@ -1723,8 +1764,13 @@ Bad
 ;;  term-char-mode-buffer-read-only nil
 ;;  term-char-mode-point-at-process-mark nil)
 
+;; (after! julia-mode
+;;   (add-hook 'julia-mode-hook #'julia-vterm-mode)
+;;   (remove-hook 'julia-mode-hook #'julia-repl-mode))
+
 (after! julia-repl
-  (add-hook 'term-mode-hook #'visual-line-mode)
+  (julia-repl-set-terminal-backend 'vterm)
+  ;; (add-hook 'term-mode-hook #'visual-line-mode)
   (setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
   ;; treat underscores as word delimiters, see https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#how-do-i-get-motions-to-treat-underscores-as-word-delimiters
   (add-hook! 'julia-mode-hook (modify-syntax-entry ?_ "w"))
@@ -1763,21 +1809,6 @@ Bad
         ;; eglot-jl-language-server-project eglot-jl-base
         ))
 #+end_src
-**** ob-ess-julia
-#+begin_src elisp
-;; Load ob-ess-julia and dependencies
-(use-package! ob-ess-julia
-  :after org
-  :config
-  ;; Add ess-julia into supported languages:
-  (org-babel-do-load-languages 'org-babel-load-languages
-                               (append org-babel-load-languages
-                                       '((ess-julia . t))))
-  ;; Link this language to ess-julia-mode (although it should be done by default):
-  (setq org-src-lang-modes
-        (append org-src-lang-modes '(("ess-julia" . ess-julia)))))
-#+end_src
-
 **** ad-hoc functions
 ***** generic
 #+begin_src elisp
