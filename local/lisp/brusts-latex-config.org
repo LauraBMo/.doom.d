@@ -238,29 +238,41 @@ Defaults
 #+BEGIN_SRC elisp
 (setq font-latex-fontify-sectioning 1.15)
 #+END_SRC
+*** Sub/sup indices
 
-*** Unimportant math LaTeX face (by Endless)
-**** Deface
-#+BEGIN_SRC elisp
+#+begin_src elisp
+(setq font-latex-fontify-script 'multi-level
+      font-latex-fontify-script-max-level 3)
+#+end_src
+
+*** Unimportant math face
+See http://endlessparentheses.com/improving-latex-equations-with-font-lock.html
+    https://emacs.stackexchange.com/questions/38226/font-lock-for-left-and-big-in-auctex
+**** Define face
+
+#+begin_src elisp
 (defface endless/unimportant-latex-face
   '((t :height 0.7
        :inherit font-lock-comment-face))
-  "Face used on less relevant math commands.")
+  "Face used on less relevant math commands."
+  :group 'LaTeX-math)
+#+end_src
 
-#+END_SRC
+**** Set unimportant math LaTeX commands
 
-**** Add font lock to the keywords
-#+BEGIN_SRC elisp
-  (font-lock-add-keywords
-   'latex-mode
-   `((,(rx (or (and "\\" (or (any ",.!;")
-                             (and (or "left" "right"
-                                      "big" "Big")
-                                  symbol-end)))
-               (any "_^")))
-      0 'endless/unimportant-latex-face prepend))
-   'end)
-#+END_SRC
+#+begin_src elisp
+(setq font-latex-user-keyword-classes
+      '(("mathunimportant"
+         ("left" "right"
+          "big" "Big"
+          "bigl" "bigr"
+          "Bigl" "Bigr"
+          "biggl" "biggr"
+          "Biggl" "Biggr"
+          "," "." ";" "!")
+         endless/unimportant-latex-face
+         noarg)))
+#+end_src
 
 ** Compilation
 *** Latexmk
@@ -352,7 +364,7 @@ Defaults
      ))
 #+END_SRC
 
-*** Enviroment
+*** COMMENT Enviroment
 #+BEGIN_SRC elisp
   (defun brust-LaTeX-env (&optional args)
     "Execute LaTex-environment or with argument:
@@ -390,7 +402,7 @@ Defaults
 #+RESULTS:
 : brust-LaTeX-env-change
 
-*** Query replace only in math formlulas
+*** Query replace only in math formulas
     From https://stackoverflow.com/questions/19845598/emacs-regex-replacing-a-string-inside-a-latex-equation 
 #+BEGIN_SRC elisp
   (defun latex-replace-in-math (args)
