@@ -1051,7 +1051,10 @@ commands to work with MangaRock comics
   (map! :map org-mode-map
         "<" 'brust-org<
         (:localleader
-         :desc "Biblio" "B" #'ivy-bibtex-with-local-bibliography)))
+         "SPC" (kbd "C-c C-c")
+         :desc "Babel" "B" org-babel-map
+         :desc "Biblio" "C" #'ivy-bibtex-with-local-bibliography
+         )))
  #+END_SRC
 
 *** TODO Agenda
