@@ -300,21 +300,18 @@ See =doom-unreal-buffer-functions=
 (defvar brust-doom-my-real-buffers
   (list "singular"
         "julia"
+        "M2"
+        "helpful"
         "^[*]Org Src" )
-  "List of my real buffers, please Doom do not diminish them"
-  )
+  "List of my real buffers: please Doom do not diminish them!")
 
-(defun brust-doom-my-real-buffers-p (buf)
-  (let ((real-p nil)
-        (ncheck 0)
-        (bfr-nm (buffer-name buf))
-        (checking))
-    (while (setq checking (nth ncheck brust-doom-my-real-buffers))
-      (if (string-match-p checking bfr-nm)
-          (setq ncheck (1+ (length brust-doom-my-real-buffers))
-                real-p t)
-        (setq ncheck (1+ ncheck))))
-    real-p))
+(defun brust-string-match-p (string regexp &optional START)
+  "Same as `string-match-p' with swap arguments. For testing membership of a string in a list of regexp."
+  (string-match-p regexp string START))
+
+(defun brust-doom-my-real-buffers-p (buffer)
+  "Test whether some regexp in `brust-doom-my-real-buffers' matches buffer's name of `buffer'"
+  (cl-member (buffer-name buffer) brust-doom-my-real-buffers :test #'brust-string-match-p))
 
 (when doom-real-buffer-functions
   (setq doom-real-buffer-functions
