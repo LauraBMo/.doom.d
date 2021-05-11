@@ -1940,7 +1940,7 @@ Bad
 #+RESULTS:
 : brust-pov-ray-compile
 
-*** Singular
+*** TODO Singular
 **** Config
 #+BEGIN_SRC elisp
 (setq singular-emacs-home-directory "/usr/share/singular/emacs/")
