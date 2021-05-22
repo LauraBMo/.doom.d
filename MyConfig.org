@@ -2718,6 +2718,7 @@ Enlarge width of some columns
 #+BEGIN_SRC elisp
 (after! magit
   (setq magit-turn-on-auto-revert-mode nil
+        magit-diff-hide-trailing-cr-characters t
         magit-set-upstream-on-push 'dontask
         magit-completing-read-function 'ivy-completing-read
         magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1
