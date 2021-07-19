@@ -999,11 +999,17 @@ It must be the name of the process (not the name of the buffer).
 The name of a vterm process is hard-coded by =vterm-mode= to "vterm", "vterm<1>",...
 
 #+begin_src elisp
-(defvar-local brust-vterm-process "vterm"
-  "Buffer name where to run vterm commands")
+
+;; (setq-default vterm--process "vterm")
+;; If default is nil I can use it to decide whether a
+;; a buffer has been link to a vterm process.
+
+;; (defvar-local brust-vterm-process "vterm"
+;;   "Buffer name where to run vterm commands")
 
 (defun brust-vterm--eval-string (string)
-  (process-send-string brust-vterm-process string))
+  ;; (process-send-string brust-vterm-process string)
+  (process-send-string vterm--process string))
 
 (defun brust-vterm--eval-buffer-substring (beg end)
   (brust-vterm--eval-string (concat (s-trim (buffer-substring-no-properties beg end)) "\n")))
@@ -1017,7 +1023,7 @@ The name of a vterm process is hard-coded by =vterm-mode= to "vterm", "vterm<1>"
 ;; Run normal-mode to reload local vars
 
 ;; Local Variables:
-;; brust-vterm-process: "vterm"
+;; vterm--process: "vterm"
 ;; End:
 #+end_src
 
