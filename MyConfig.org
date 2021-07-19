@@ -1526,6 +1526,16 @@ See `org-capture-templates' for more information."
           ;; (lang (car block-info))
           (body (nth 1 block-info)))
      (brust-vterm--eval-string (concat body "\n")))))
+
+(defun brust-endless/org-julia-eval-header nil
+  (interactive)
+  (brust-endless/org-eval-eblocks
+   (and (org-copy-subtree)
+        (pop kill-ring))
+   nil
+   nil
+   nil
+   'brust-vterm--eval-buffer-substring))
 #+end_src
 
 #+RESULTS:
@@ -1549,6 +1559,15 @@ See `org-capture-templates' for more information."
   (advice-remove 'brust-org-mode-vterm-send-block 'brust-send-block-launch-new))
 
 (advice-add 'brust-org-mode-vterm-send-block :before 'brust-send-block-launch-new)
+
+(defun brust-send-header-launch-new (&rest arg)
+  (unless vterm--process
+    (if (y-or-n-p "Launch new vterm-julia [y] or link to an existent one [n]")
+        (brust-vterm-julia-launch-and-link)
+      (call-interactively 'brust-vterm-link)))
+  (advice-remove 'brust-endless/org-julia-eval-header 'brust-send-header-launch-new))
+
+(advice-add 'brust-endless/org-julia-eval-header :before 'brust-send-header-launch-new)
 ;; Run normal-mode to reload local vars
 ;; There are the functions brust-org-mode-launch-vterm-julia or ...-link-vterm-julia
 ;; To create and link vterm process and link them to the current org buffer.
