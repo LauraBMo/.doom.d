@@ -405,12 +405,13 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
  ;; :ier "M-i" #'evil-normal-state ;; it was tab-to-tab-stop
  ;; Now I use evil-escape (equivalent to key-chords jk kj) Press them a single key!
 
+ ;; Insert mode
+ :i "C-,"   #'brust-correct-prev-spelling
  ;; Normal mode workarounds (keep it to minimum)
  ;; :n "u"     #'emacs-undo ;; now undo works fine
  :nim "C-e" #'doom/forward-to-last-non-comment-or-eol
  :n "q"     #'kill-current-buffer
  :n "Q"     #'mark-whole-buffer ;; was undefined
- :i "C-,"   #'brust-correct-prev-spelling
  ;; :nvmro "w" #'evil-backward-word-begin
  ;; :nvmro "W" #'evil-backward-WORD-begin
  ;; :n "H"     #'recenter-top-bottom ;; There is no difference with s-h
