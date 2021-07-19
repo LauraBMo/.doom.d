@@ -406,7 +406,7 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
  ;; Now I use evil-escape (equivalent to key-chords jk kj) Press them a single key!
 
  ;; Insert mode
- :i "C-,"   #'brust-correct-prev-spelling
+ :i "C-,"   #'+spell/correct
  ;; Normal mode workarounds (keep it to minimum)
  ;; :n "u"     #'emacs-undo ;; now undo works fine
  :nim "C-e" #'doom/forward-to-last-non-comment-or-eol
@@ -435,7 +435,7 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
             #'evil-jump-item)
 
  ;; Personal extensions
- "<f2>"  #'brust-correct-prev-spelling
+ ;; "<f2>"  #'brust-correct-prev-spelling
  "<f5>"  #'counsel-kmacro
  "<f9>"  #'mu4e
  "<f10>" #'magit-status
