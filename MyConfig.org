@@ -1030,6 +1030,41 @@ The name of a vterm process is hard-coded by =vterm-mode= to "vterm", "vterm<1>"
 #+RESULTS:
 : brust-vterm-eval-line-or-region
 
+*** Launch or link vterm julia
+#+begin_src elisp
+;; This version requires be able to customize vterm process' name.
+;; See branch Allow-custom-process-name in my emacs-libvterm:
+;; https://github.com/LauraBMo/emacs-libvterm/tree/Allow-custom-process-name
+;; (defun brust-org-mode-launch-vterm-julia (&optional buf proc)
+;;   "Launches new instance of vterm in buffer `buf' or `(buffer-name)-vterm.jl' with process name `proc' or `vterm-process', and runs julia in it.
+;;  Sets `brust-vterm-process' to `proc' or `vterm--process' ")
+
+(defun brust-vterm-julia-launch-and-link (&optional buff calle)
+  "Launches new instance of vterm in buffer `buf' or `(buffer-name)-vterm.jl' , and runs julia in it.
+ Sets `vterm--process' in current buffer to the value of `vterm--process' in newly created vterm-mode buffer."
+  (interactive)
+  (save-excursion
+    (let* ((origin-buffer (buffer-name))
+           (buffer (or buff (concat origin-buffer "-vterm.jl"))))
+      (vterm buffer)
+      (process-send-string vterm--process (or calle "julia\n"))
+      (brust-vterm-link buffer origin-buffer))))
+
+(defun brust-vterm-link (buffer &optional origin-buffer)
+  "Sets `vterm--process' in `origin-buffer' or current buffer to the value of `vterm--process' in `buffer'.
+Now, we can use `brust-org-mode-vterm-send-*' functions."
+  (interactive "bProcess' buffer to link with:")
+  (save-excursion
+    (setq origin-buffer (or origin-buffer (buffer-name)))
+    (set-buffer buffer)
+    (let ((proc vterm--process))
+      (set-buffer origin-buffer)
+      (setq vterm--process proc))))
+#+end_src
+
+#+RESULTS:
+: brust-vterm-link
+
 *** Word count
 #+BEGIN_SRC elisp
   (defun brust-wc-get-word-count-list-of-current-project nil
@@ -1165,7 +1200,10 @@ The name of a vterm process is hard-coded by =vterm-mode= to "vterm", "vterm<1>"
          :desc "vterm block" "v" #'brust-org-mode-vterm-send-block
          :desc "Babel" "B" org-babel-map
          :desc "Biblio" "C" #'ivy-bibtex-with-local-bibliography
-         )))
+         (:prefix "j"
+          :desc "launch new vterm.jl" "n" #'brust-vterm-julia-launch-and-link
+          :desc "link vterm" "l" #'brust-vterm-link
+          ))))
  #+END_SRC
 
  #+RESULTS:
