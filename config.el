@@ -70,7 +70,6 @@
 (defvar endless/init.org-message-depth 5
   "What depth of init.org headers to message at startup.")
 
-;; I rename the obious variable to not interfer with possible updates of org-babel.
 ;; I copy it here to avoid loading org-babel ;)
 (defvar brust-endless/org-babel-src-block-regexp
   (concat
@@ -89,7 +88,7 @@
     "emacs-lisp")
   "List of strings for Elisp language")
 
-(defun brust-endless/org-eval-eblocks (µcode &optional µinit µfile-p µheader-depth μtime)
+(defun brust-endless/org-eval-eblocks (µcode &optional µinit µfile-p µheader-depth μfun)
   "Eval the SRC blocks of elisp code in µcode which is the name of a file or a string where are the blocks.
 µfile-p has to be t if µcode is a file and nil otherwise.
 When µcode is a file, if µinit is nil eval whole file, if it is a string, eval just that header and µheader-depth has to be its depth (nil means 1).
@@ -102,7 +101,7 @@ Subtrees under a COMMENTed header are not evaluated."
        µcode))
     (brust-endless/org-eval-eblocks-delete-commented-subtrees)
     (goto-char (point-min))
-    (cl-flet ((funeval (if μtime 'brust-eval-track-time 'brust-eval-message)))
+    (cl-flet ((funeval (or μfun 'eval-region)))
       (let (pheader neblock)
         (while (not (eobp))
           (cond
@@ -112,7 +111,8 @@ Subtrees under a COMMENTed header are not evaluated."
             (message "%s" (match-string 0)))
            ((looking-at brust-endless/org-babel-src-block-regexp)
             ;; (when (memq (match-string 2) brust-endless/org-eblocks-lang)
-            (funeval (match-beginning 5) (match-end 5) pheader neblock)
+            (funeval (match-beginning 5) (match-end 5))
+            (message "%s :: %d" pheader neblock)
             (setq neblock (1+ neblock))
             ;; (goto-char (match-end 5))
             ))
@@ -121,13 +121,10 @@ Subtrees under a COMMENTed header are not evaluated."
     (message "=========== !! Be happy, everything is load !! ===========")
     (message "=========== ================================== ===========")))
 
-(defun brust-eval-track-time (beg end pheader neblock)
-  (let ((sec (car (benchmark-run (eval-region beg end)))))
-    (message "%s :: %d (sec: %.3f)" pheader neblock sec)))
 
-(defun brust-eval-message (beg end pheader neblock)
-  (eval-region beg end)
-  (message "%s :: %d" pheader neblock))
+(defun brust-eval-track-time (beg end)
+  (let ((sec (car (benchmark-run (eval-region beg end)))))
+    (message "(sec: %.3f)" sec)))
 
 (defun brust-endless/org-eval-eblocks-delete-commented-subtrees nil
   (interactive)
