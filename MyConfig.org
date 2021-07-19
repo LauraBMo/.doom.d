@@ -831,56 +831,6 @@ Single Capitals as you type."
 
 #+RESULTS:
 : endless/narrow-or-widen-dwim
-
-*** Org mode eval all elisp src blocks under current header
-#+BEGIN_SRC elisp
-(defun brust-endless/org-eval-current-header nil
-  (interactive)
-  (brust-endless/org-eval-eblocks
-   (and (org-copy-subtree)
-        (pop kill-ring))))
-#+END_SRC
-
-*** Org mode eval julia
-
-#+begin_src elisp
-(defun brust-org-mode-vterm-send-line-or-region nil
-  (interactive)
-  (org-babel-when-in-src-block
-   ;; (let ((lang (org-element-property :language (org-element-context))))
-   ;;   (if (string-match-p "julia" lang)
-   (brust-vterm-eval-line-or-region)
-   ;; (message "Language is not julian")))
-   ))
-
-(defun brust-org-mode-vterm-send-block nil
-  (interactive)
-  (org-babel-when-in-src-block
-   ;; Format block-info = (language body arguments switches name start coderef)
-   (let* ((block-info (org-babel-get-src-block-info t))
-          ;; (lang (car block-info))
-          (body (nth 1 block-info)))
-     (brust-vterm--eval-string (concat body "\n")))))
-
-;; Run normal-mode to reload local vars
-
-;; Local Variables:
-;; brust-vterm-process: "vterm"
-;; End:
-#+end_src
-
-#+RESULTS:
-: brust-org-mode-vterm-send-block
-
-*** Open my org
-#+begin_src elisp
-(defun brust-open-my-org nil
-  (interactive)
-  (find-file (expand-file-name "~/Dropbox/Org/my.org")))
-#+end_src
-
-#+RESULTS:
-: brust-open-my-org
 *** COMMENT PDF From MR to pdf
 commands to work with MangaRock comics
 #+BEGIN_SRC bash
@@ -1545,6 +1495,78 @@ See `org-capture-templates' for more information."
 
 #+RESULTS:
 : std::ledger::save
+*** Defun's
+
+**** Eval all elisp blocks under current header
+#+BEGIN_SRC elisp
+(defun brust-endless/org-eval-current-header nil
+  (interactive)
+  (brust-endless/org-eval-eblocks
+   (and (org-copy-subtree)
+        (pop kill-ring))))
+#+END_SRC
+
+**** Eval julia blocks
+
+#+begin_src elisp
+(defun brust-org-mode-vterm-send-line-or-region nil
+  (interactive)
+  (org-babel-when-in-src-block
+   ;; (let ((lang (org-element-property :language (org-element-context))))
+   ;;   (if (string-match-p "julia" lang)
+   (brust-vterm-eval-line-or-region)
+   ;; (message "Language is not julian")))
+   ))
+
+(defun brust-org-mode-vterm-send-block nil
+  (interactive)
+  (org-babel-when-in-src-block
+   ;; Format block-info = (language body arguments switches name start coderef)
+   (let* ((block-info (org-babel-get-src-block-info t))
+          ;; (lang (car block-info))
+          (body (nth 1 block-info)))
+     (brust-vterm--eval-string (concat body "\n")))))
+#+end_src
+
+#+RESULTS:
+
+**** Eval all julia blocks under current header
+#+begin_src elisp
+(defun brust-send-line-or-region-launch-new (&rest arg)
+  (unless vterm--process
+    (if (y-or-n-p "Launch new vterm-julia [y] or link to an existent one [n]")
+        (brust-vterm-julia-launch-and-link)
+      (call-interactively 'brust-vterm-link)))
+  (advice-remove 'brust-org-mode-vterm-send-line-or-region 'brust-send-line-or-region-launch-new))
+
+(advice-add 'brust-org-mode-vterm-send-line-or-region :before 'brust-send-line-or-region-launch-new)
+
+(defun brust-send-block-launch-new (&rest arg)
+  (unless vterm--process
+    (if (y-or-n-p "Launch new vterm-julia [y] or link to an existent one [n]")
+        (brust-vterm-julia-launch-and-link)
+      (call-interactively 'brust-vterm-link)))
+  (advice-remove 'brust-org-mode-vterm-send-block 'brust-send-block-launch-new))
+
+(advice-add 'brust-org-mode-vterm-send-block :before 'brust-send-block-launch-new)
+;; Run normal-mode to reload local vars
+;; There are the functions brust-org-mode-launch-vterm-julia or ...-link-vterm-julia
+;; To create and link vterm process and link them to the current org buffer.
+
+;; Local Variables:
+;; vterm--process: "vterm"
+;; End:
+#+end_src
+
+**** Open my
+#+begin_src elisp
+(defun brust-open-my-org nil
+  (interactive)
+  (find-file (expand-file-name "~/Dropbox/Org/my.org")))
+#+end_src
+
+#+RESULTS:
+: brust-open-my-org
 ** LaTeX mode
 *** AUCTeX
 #+BEGIN_SRC elisp
