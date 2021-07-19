@@ -2540,6 +2540,27 @@ Bad
   (add-hook 'ediff-keymap-setup-hook #'add-d-to-ediff-mode-map)
   (add-hook 'ediff-prepare-buffer-hook 'ora-ediff-prepare-buffer))
 #+end_src
+*** Eldoc
+#+begin_src elisp
+(setq eldoc-echo-area-use-multiline-p nil)
+#+end_src
+*** High light TODO
+Package to highlight TODO's in comments and so.
+#+begin_src elisp
+(setq hl-todo-highlight-punctuation ":")
+#+end_src
+*** Ispell
+
+#+begin_src elisp
+(setq ispell-highlight-face 'flyspell-incorrect)
+#+end_src
+
+*** Smartparents
+#+begin_src elisp
+(setq sp-highlight-pair-overlay nil
+      sp-highlight-wrap-overlay nil
+      sp-highlight-wrap-tag-overlay nil)
+#+end_src
 *** Tramp
 #+begin_src elisp
 (setq password-cache-expiry nil
@@ -3047,7 +3068,6 @@ Enlarge width of some columns
                 indent)))
     (unless (string= formatted-args "")
       (mapconcat 'identity (list "# Arguments" formatted-args) indent))))
-
 #+end_src
 
 *** Zoom
