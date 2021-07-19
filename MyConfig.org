@@ -114,7 +114,8 @@ Put ='disabled= to =nil=
 #+begin_src elisp
 (setq +doom-dashboard-menu-sections
       '(
-        ("Load workspace" :icon
+        ("Load workspace"
+         :icon
          (all-the-icons-octicon "rocket" :face 'doom-dashboard-menu-title)
          :action +workspace/load)
         ("Email"
@@ -126,16 +127,15 @@ Put ='disabled= to =nil=
         ;; ("Jump to bookmark"
         ;;  :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
         ;;  :action bookmark-jump)
-        ("Open org-agenda" :icon
+        ("Open org-agenda"
+         :icon
          (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
-         :when
-         (fboundp 'org-agenda)
+         :when (fboundp 'org-agenda)
          :action org-agenda)
-        ("Reload last session" :icon
+        ("Reload last session"
+         :icon
          (all-the-icons-octicon "history" :face 'doom-dashboard-menu-title)
-         :when
-         (file-exists-p
-          (expand-file-name persp-auto-save-fname persp-save-dir))
+         :when (file-exists-p (expand-file-name persp-auto-save-fname persp-save-dir))
          :face
          (:inherit
           (doom-dashboard-menu-title bold))
