@@ -49,8 +49,14 @@ I’m rarely happier than when spending an entire day programming my computer
 *** Local Variables
     Set save all local variable and do not query.
 #+BEGIN_SRC elisp
-(setq enable-local-variables :all)
+;; (setq enable-local-variables :all)
+(setq safe-local-variable-values
+      '((brust-vterm-process . "vterm<1>")
+        (brust-vterm-process . "vterm")))
 #+END_SRC
+
+#+RESULTS:
+: :all
 
 *** Killing Emacs with no questions
 #+BEGIN_SRC elisp
