@@ -96,6 +96,12 @@ I’m rarely happier than when spending an entire day programming my computer
  ;; If there is more than one, they won't work right.
  '(highlight ((t (:background "#51afef" :foreground "black" :weight bold)))))
 #+end_src
+*** Enabling
+Put ='disabled= to =nil=
+#+begin_src elisp
+(put 'erase-buffer 'disabled nil)
+#+end_src
+
 ** Doom stuff
 *** Buffer line numbers
 #+begin_src elisp
