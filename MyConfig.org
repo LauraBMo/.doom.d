@@ -118,6 +118,12 @@ Put ='disabled= to =nil=
          :icon
          (all-the-icons-octicon "rocket" :face 'doom-dashboard-menu-title)
          :action +workspace/load)
+        ("Open my org"
+         :icon
+         (all-the-icons-fileicon "org" :face 'doom-dashboard-menu-title)
+         :when (file-exists-p (expand-file-name "~/Dropbox/Org/my.org"))
+         :action brust-open-my-org)
+        ;; :action (lambda nil (open-file (expand-file-name "~/Dropbox/Org/my.org"))))
         ("Email"
          :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
          :action mu4e)
@@ -827,6 +833,15 @@ Single Capitals as you type."
    (and (org-copy-subtree)
         (pop kill-ring))))
 #+END_SRC
+*** Open my org
+#+begin_src elisp
+(defun brust-open-my-org nil
+  (interactive)
+  (find-file (expand-file-name "~/Dropbox/Org/my.org")))
+#+end_src
+
+#+RESULTS:
+: brust-open-my-org
 *** COMMENT PDF From MR to pdf
 commands to work with MangaRock comics
 #+BEGIN_SRC bash
