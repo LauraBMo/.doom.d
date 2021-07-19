@@ -833,6 +833,38 @@ Single Capitals as you type."
    (and (org-copy-subtree)
         (pop kill-ring))))
 #+END_SRC
+
+*** Org mode eval julia
+
+#+begin_src elisp
+(defun brust-org-mode-vterm-send-line-or-region nil
+  (interactive)
+  (org-babel-when-in-src-block
+   ;; (let ((lang (org-element-property :language (org-element-context))))
+   ;;   (if (string-match-p "julia" lang)
+   (brust-vterm-eval-line-or-region)
+   ;; (message "Language is not julian")))
+   ))
+
+(defun brust-org-mode-vterm-send-block nil
+  (interactive)
+  (org-babel-when-in-src-block
+   ;; Format block-info = (language body arguments switches name start coderef)
+   (let* ((block-info (org-babel-get-src-block-info t))
+          ;; (lang (car block-info))
+          (body (nth 1 block-info)))
+     (brust-vterm--eval-string (concat body "\n")))))
+
+;; Run normal-mode to reload local vars
+
+;; Local Variables:
+;; brust-vterm-process: "vterm"
+;; End:
+#+end_src
+
+#+RESULTS:
+: brust-org-mode-vterm-send-block
+
 *** Open my org
 #+begin_src elisp
 (defun brust-open-my-org nil
@@ -1115,11 +1147,15 @@ The name of a vterm process is hard-coded by =vterm-mode= to "vterm", "vterm<1>"
   (map! :map org-mode-map
         "<" 'brust-org<
         (:localleader
-         "SPC" (kbd "C-c C-c")
+         ;; "SPC" (kbd "C-c C-c")
+         :desc "vterm line" "SPC" #'brust-org-mode-vterm-send-line-or-region
+         :desc "vterm block" "v" #'brust-org-mode-vterm-send-block
          :desc "Babel" "B" org-babel-map
          :desc "Biblio" "C" #'ivy-bibtex-with-local-bibliography
          )))
  #+END_SRC
+
+ #+RESULTS:
 
 *** TODO Agenda
 #+begin_src elisp
