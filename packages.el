@@ -28,7 +28,7 @@
 ;; (package! eglot-jl :recipe (:host github :repo "non-Jedi/eglot-jl"))
 (package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
 ;; (package! ob-julia :shadow 'ob-julia :recipe (:type git :host nil :repo "https://git.nixo.xyz/nixo/ob-julia.git"))
-(package! ob-ess-julia :shadow 'ob-julia :recipe (:type git :host github :repo "frederic-santos/ob-ess-julia"))
+(package! ob-ess-julia :recipe (:type git :host github :repo "frederic-santos/ob-ess-julia" :includes (ob-julia)))
 (package! julia-vterm :recipe (:host github :repo "shg/julia-vterm.el")) ;; For ob-vterm-julia
 (package! ob-julia-vterm :recipe (:host github :repo "shg/ob-julia-vterm.el")) ;; For ob-vterm-julia
 
