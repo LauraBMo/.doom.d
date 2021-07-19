@@ -1868,6 +1868,7 @@ Bad
 ;;   (add-hook 'julia-mode-hook #'julia-vterm-mode)
 ;;   (remove-hook 'julia-mode-hook #'julia-repl-mode))
 
+(setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
 (after! julia-repl
   (julia-repl-set-terminal-backend 'vterm)
   ;; (add-hook 'term-mode-hook #'visual-line-mode)
