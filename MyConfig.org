@@ -536,6 +536,10 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
                           (advice-remove ',symbol #',new-function)))
     (advice-add symbol where new-function props)))
 
+;; (defun advice-once (symbol where function &optional props)
+;;     (advice-add function :after `(lambda (&rest _) (advice-remove ',symbol #',function)))
+;;     (advice-add symbol where function props))
+
 ;; (defun eureka nil
 ;;   (interactive)
 ;;   (message "Eureka!"))
@@ -1566,44 +1570,23 @@ See `org-capture-templates' for more information."
 
 #+RESULTS:
 
-**** Eval all julia blocks under current header
-#+begin_src elisp
-(defun brust-send-line-or-region-launch-new (&rest arg)
-  (unless vterm--process
-    (if (y-or-n-p "Launch new vterm-julia [y] or link to an existent one [n]")
-        (brust-vterm-julia-launch-and-link)
-      (call-interactively 'brust-vterm-link)))
-  (advice-remove 'brust-org-mode-vterm-send-line-or-region 'brust-send-line-or-region-launch-new))
+**** Eval julia code, link vterm if needed
 
-(advice-add 'brust-org-mode-vterm-send-line-or-region :before 'brust-send-line-or-region-launch-new)
-
-(defun brust-send-block-launch-new (&rest arg)
-  (unless vterm--process
-    (if (y-or-n-p "Launch new vterm-julia [y] or link to an existent one [n]")
-        (brust-vterm-julia-launch-and-link)
-      (call-interactively 'brust-vterm-link)))
-  (advice-remove 'brust-org-mode-vterm-send-block 'brust-send-block-launch-new))
-
-(advice-add 'brust-org-mode-vterm-send-block :before 'brust-send-block-launch-new)
-
-(defun brust-send-header-launch-new (&rest arg)
-  (unless vterm--process
-    (if (y-or-n-p "Launch new vterm-julia [y] or link to an existent one [n]")
-        (brust-vterm-julia-launch-and-link)
-      (call-interactively 'brust-vterm-link)))
-  (advice-remove 'brust-endless/org-julia-eval-header 'brust-send-header-launch-new))
-
-(advice-add 'brust-endless/org-julia-eval-header :before 'brust-send-header-launch-new)
 ;; Run normal-mode to reload local vars
 ;; There are the functions brust-org-mode-launch-vterm-julia or ...-link-vterm-julia
 ;; To create and link vterm process and link them to the current org buffer.
+
+#+begin_src elisp
+(advice-once 'brust-org-mode-vterm-send-line-or-region :before 'brust-vterm-launch-or-link)
+(advice-once 'brust-org-mode-vterm-send-block :before 'brust-vterm-launch-or-link)
+(advice-once 'brust-endless/org-julia-eval-header :before 'brust-vterm-launch-or-link)
 
 ;; Local Variables:
 ;; vterm--process: "vterm"
 ;; End:
 #+end_src
 
-**** Open my
+**** Open my.org
 #+begin_src elisp
 (defun brust-open-my-org nil
   (interactive)
