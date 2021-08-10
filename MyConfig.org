@@ -1029,6 +1029,13 @@ Now, we can use `brust-org-mode-vterm-send-*' functions."
     (let ((proc vterm--process))
       (set-buffer origin-buffer)
       (setq vterm--process proc))))
+
+(defun brust-vterm-launch-or-link nil
+  (unless vterm--process
+    (if (y-or-n-p "Launch new vterm-julia [y] or link to an existent one [n]")
+        (brust-vterm-julia-launch-and-link)
+      (call-interactively 'brust-vterm-link))))
+
 #+end_src
 
 #+RESULTS:
