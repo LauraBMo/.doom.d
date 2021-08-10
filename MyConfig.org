@@ -523,6 +523,25 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 
 #+RESULTS:
 : brust-pdf-add-blank-pages
+*** Advise once
+
+#+begin_src elisp
+(defun advice-once (symbol where function &optional props)
+  (let ((new-function (intern (concat (symbol-name function) "-advice-once"))))
+    (fset new-function `(lambda (&rest _)
+                          ;; (,function)
+                          ;; (funcall ',function)
+                          ;; (command-execute ',function)
+                          (call-interactively ',function)
+                          (advice-remove ',symbol #',new-function)))
+    (advice-add symbol where new-function props)))
+
+;; (defun eureka nil
+;;   (interactive)
+;;   (message "Eureka!"))
+
+;; (advice-once 'backward-word :before #'eureka)
+#+end_src
 
 *** By five
 #+BEGIN_SRC elisp
