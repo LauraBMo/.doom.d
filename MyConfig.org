@@ -1176,7 +1176,7 @@ Now, we can use `brust-org-mode-vterm-send-*' functions."
          :desc "vterm block" "v" #'brust-org-mode-vterm-send-block
          :desc "Babel" "B" org-babel-map
          :desc "Biblio" "C" #'ivy-bibtex-with-local-bibliography
-         (:prefix "j"
+         (:prefix "j" :desc "vterm.jl"
           :desc "launch new vterm.jl" "n" #'brust-vterm-julia-launch-and-link
           :desc "link vterm" "l" #'brust-vterm-link
           ))))
@@ -1532,7 +1532,7 @@ See `org-capture-templates' for more information."
         (pop kill-ring))))
 #+END_SRC
 
-**** Eval julia blocks
+**** Eval julia code
 
 #+begin_src elisp
 (defun brust-org-mode-vterm-send-line-or-region nil
