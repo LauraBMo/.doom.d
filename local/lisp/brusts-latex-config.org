@@ -778,14 +778,14 @@ There are many defaults that I do not use, this is to clean a bit.
 #+BEGIN_SRC elisp
   (defvar brust-cdlatex-math-mode-snippets
     '(
-      ("clf" nil "\\clf^{r?}" cdlatex-position-cursor nil nil t)
-      ("cls" nil "\\cls^{r?}" cdlatex-position-cursor nil nil t)
-      ("clk" nil "\\clk^{r?}" cdlatex-position-cursor nil nil t)
-      ("clp" nil "\\clpi^{r?}_{}" cdlatex-position-cursor nil nil t)
-      ("clb" nil "\\clb^{r?}_{}" cdlatex-position-cursor nil nil t)
-      ("clx" nil "\\clx^{r?}_{}" cdlatex-position-cursor nil nil t)
-      ("cla" nil "\\clsec^{r?}_{}" cdlatex-position-cursor nil nil t)
-      ("clsk"nil "(\\cls^{r?},\\clk^{r})" cdlatex-position-cursor nil nil t)
+      ;; ("clf" nil "\\clf^{r?}" cdlatex-position-cursor nil nil t)
+      ;; ("cls" nil "\\cls^{r?}" cdlatex-position-cursor nil nil t)
+      ;; ("clk" nil "\\clk^{r?}" cdlatex-position-cursor nil nil t)
+      ;; ("clp" nil "\\clpi^{r?}_{}" cdlatex-position-cursor nil nil t)
+      ;; ("clb" nil "\\clb^{r?}_{}" cdlatex-position-cursor nil nil t)
+      ;; ("clx" nil "\\clx^{r?}_{}" cdlatex-position-cursor nil nil t)
+      ;; ("cla" nil "\\clsec^{r?}_{}" cdlatex-position-cursor nil nil t)
+      ;; ("clsk"nil "(\\cls^{r?},\\clk^{r})" cdlatex-position-cursor nil nil t)
       ("Pic"  "Insert Pic_{}"        "\\Pic_{?}"       cdlatex-position-cursor nil nil t)
       ("adm"  "Insert adm_{}"        "\\adm_{?}"       cdlatex-position-cursor nil nil t)
       ("Div"  "Insert Div_{}"        "\\Div_{?}"       cdlatex-position-cursor nil nil t)
