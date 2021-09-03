@@ -1346,6 +1346,8 @@ See `org-capture-templates' for more information."
 #+begin_src elisp
 (after! org
   (setq org-structure-template-alist (delete '("e" . "example") org-structure-template-alist)
+        ;; org-structure-template-alist (delete '("j" . "src ess-julia :results output :session *julia* :exports both") org-structure-template-alist)
+        ;; org-structure-template-alist (delete '("jj" . "src ess-julia :results output") org-structure-template-alist)
         org-structure-template-alist (delete '("E" . "export") org-structure-template-alist)))
 #+end_src
 
@@ -1362,9 +1364,10 @@ See `org-capture-templates' for more information."
                '("L" . "LaTeX"))
   ;; Shortcut for "normal" session evaluation with verbatim output:
   (add-to-list 'org-structure-template-alist
-               '("jj" . "src ess-julia :results output"))
+               '("jj" . "src julia"))
   (add-to-list 'org-structure-template-alist
-               '("j" . "src ess-julia :results output :session *julia* :exports both"))
+               ;; '("j" . "src ess-julia :results output :session *julia* :exports both"))
+               '("jj" . "src ess-julia :results output"))
   ;; Shortcut for inline graphical output within a session:
   (add-to-list 'org-structure-template-alist
                '("jpic" . "src ess-julia :results output graphics file :file FILENAME.png"))
