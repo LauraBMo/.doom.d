@@ -1363,11 +1363,11 @@ See `org-capture-templates' for more information."
   (add-to-list 'org-structure-template-alist
                '("L" . "LaTeX"))
   ;; Shortcut for "normal" session evaluation with verbatim output:
-  (add-to-list 'org-structure-template-alist
-               '("jj" . "src julia"))
+  ;; (add-to-list 'org-structure-template-alist
+  ;;              '("jj" . "src julia"))
   (add-to-list 'org-structure-template-alist
                ;; '("j" . "src ess-julia :results output :session *julia* :exports both"))
-               '("jj" . "src ess-julia :results output"))
+               '("jj" . "src julia :results output"))
   ;; Shortcut for inline graphical output within a session:
   (add-to-list 'org-structure-template-alist
                '("jpic" . "src ess-julia :results output graphics file :file FILENAME.png"))
