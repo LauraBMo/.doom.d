@@ -1410,8 +1410,8 @@ See `org-capture-templates' for more information."
              ("7" . "☶")
              ("8," . "☷")))))
 #+end_src
-*** ob languages
-**** ob-ess-julia
+*** COMMENT ob languages
+**** COMMENT ob-ess-julia
 #+begin_src elisp
 ;; Load ob-ess-julia and dependencies
 (use-package! ob-ess-julia
@@ -1430,7 +1430,7 @@ See `org-capture-templates' for more information."
         (append org-src-lang-modes '(("ess-julia" . "julia"))))
   )
 #+end_src
-**** ob-julia-vterm
+**** COMMENT ob-julia-vterm
 
 #+begin_src elisp
 ;; Load ob-ess-julia and dependencies
