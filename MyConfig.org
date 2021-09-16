@@ -413,10 +413,11 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
  :n "q"     #'kill-current-buffer
  :n "Q"     #'mark-whole-buffer ;; was undefined
  ;; TODO Take care of org-mode?
- :n "{"     #'evil-backward-sentence-begin
- :n "}"     #'evil-forward-sentence-begin
- :n "("     #'evil-backward-paragraph
- :n ")"     #'evil-forward-paragraph
+ ;; I move by paragraphs more then by sentences
+ :mvn "{"     #'evil-backward-sentence-begin
+ :mvn "}"     #'evil-forward-sentence-begin
+ :mvn "("     #'evil-backward-paragraph
+ :mvn ")"     #'evil-forward-paragraph
 
  ;; :nvmro "w" #'evil-backward-word-begin
  ;; :nvmro "W" #'evil-backward-WORD-begin
