@@ -23,18 +23,17 @@
 
 ;; Programing
 ;; From README of julia in Doom
-;; (package! lsp-julia :recipe (:host github :repo "non-jedi/lsp-julia"))
 (package! maplev :recipe (:host github :repo "JoeRiel/maplev"))
-;; (package! eglot-jl :recipe (:host github :repo "non-Jedi/eglot-jl"))
 (package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
-;;
+
+
 ;; Julia in Org-mode
 ;; Using vterm
 ;; (package! ob-julia-vterm :recipe (:host github :repo "shg/ob-julia-vterm.el")) ;; For ob-vterm-julia
 ;; (package! julia-vterm :recipe (:host github :repo "shg/julia-vterm.el")) ;; For ob-vterm-julia
 ;; Using ess
 ;; (package! ob-ess-julia :recipe (:type git :host github :repo "frederic-santos/ob-ess-julia" :includes (ob-julia)))
-(package! ob-julia :recipe (:type git :host github :repo "nico202/ob-julia"))
+;; (package! ob-julia :recipe (:type git :host github :repo "nico202/ob-julia"))
 
 ;; Nyans
 (package! nyan-mode)
