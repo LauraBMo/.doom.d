@@ -1415,7 +1415,7 @@ See `org-capture-templates' for more information."
              ("7" . "☶")
              ("8," . "☷")))))
 #+end_src
-*** COMMENT ob languages
+*** ob languages
 **** COMMENT ob-ess-julia
 #+begin_src elisp
 ;; Load ob-ess-julia and dependencies
@@ -1454,6 +1454,23 @@ See `org-capture-templates' for more information."
   ;;       (append org-src-lang-modes '(("ess-julia" . ess-julia))))
   )
 #+end_src
+**** ob-julia
+#+begin_src elisp
+(use-package! ob-julia
+  :commands org-babel-execute:julia
+  :config
+  (setq org-babel-julia-command-arguments
+        `("--sysimage"
+          ,(when-let ((img "~/.local/lib/julia.so")
+                      (exists? (file-exists-p img)))
+             (expand-file-name img))
+          "--threads"
+          ,(number-to-string (- (doom-system-cpus) 2))
+          "--banner=no")))
+#+end_src
+
+#+RESULTS:
+: t
 
 *** COMMENT Pdf links org-pdftools
      Org links for pdfs
