@@ -444,12 +444,16 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
  (:prefix "z"
   :n "j" #'brust-correct-prev-spelling
   :n "k" #'brust-correct-prev-spelling)
+ ;; Binding for buffers
+ (:map doom-leader-buffer-map
+  :mvn :desc "ibuf workspace" "i" #'+ibuffer/open-for-current-workspace
+  :mvn :desc "ibuffer all" "I" #'ibuffer)
  (:leader
   :desc "locleader" "SPC" nil ;; Unbind "SPC SPC"
   :desc "Delete other windows" "w 0" #'delete-other-windows
   ;; :desc "Rotate anticlockwise" "w a" #'rotate-frame-anticlockwise
   ;; :desc "Switch buffer"              "b b" #'ivy-switch-buffer
-
+  ;;
   ;; My global bindings of Laura: functions used everywhere but not so often.
   (:prefix ("l" . "BMO")
    "n"    #'endless/narrow-or-widen-dwim
@@ -561,31 +565,31 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 
 *** Change font size
 #+begin_src elisp
-  (defun zoom-in nil
-    (interactive)
-    (set-face-attribute 'default nil :height (+ (face-attribute 'default :height) 10)))
+(defun zoom-in nil
+  (interactive)
+  (set-face-attribute 'default nil :height (+ (face-attribute 'default :height) 10)))
 
-  (defun zoom-out nil
-    (interactive)
-    (set-face-attribute 'default nil :height (- (face-attribute 'default :height) 10)))
+(defun zoom-out nil
+  (interactive)
+  (set-face-attribute 'default nil :height (- (face-attribute 'default :height) 10)))
 #+end_src
 
 *** Close<->open parents
 **** Parenthesis syntax.
 #+BEGIN_SRC elisp
-  (defconst all-paren-syntax-table
-     (let ((table (make-syntax-table)))
-       (modify-syntax-entry ?{  "(}" table)
-       (modify-syntax-entry ?}  "){" table)
-       (modify-syntax-entry ?\( "()" table)
-       (modify-syntax-entry ?\) ")(" table)
-       (modify-syntax-entry ?\[ "(]" table)
-       (modify-syntax-entry ?\] ")[" table)
-       (modify-syntax-entry ?\\ "'"  table)
-       ;; (modify-syntax-entry ?\< "(>" table)
-       ;; (modify-syntax-entry ?\> ")<" table)
-       table)
-     "A syntax table giving all parenthesis parenthesis syntax.")
+(defconst all-paren-syntax-table
+  (let ((table (make-syntax-table)))
+    (modify-syntax-entry ?{  "(}" table)
+    (modify-syntax-entry ?}  "){" table)
+    (modify-syntax-entry ?\( "()" table)
+    (modify-syntax-entry ?\) ")(" table)
+    (modify-syntax-entry ?\[ "(]" table)
+    (modify-syntax-entry ?\] ")[" table)
+    (modify-syntax-entry ?\\ "'"  table)
+    ;; (modify-syntax-entry ?\< "(>" table)
+    ;; (modify-syntax-entry ?\> ")<" table)
+    table)
+  "A syntax table giving all parenthesis parenthesis syntax.")
 #+END_SRC
 
 **** Generic function
@@ -2701,6 +2705,86 @@ Package to highlight TODO's in comments and so.
 
 #+RESULTS:
 : +spell/correct
+*** Ibuffer
+- [[http://martinowen.net/blog/2010/02/03/tips-for-emacs-ibuffer.html][Blog nice config]]
+
+#+begin_src elisp
+(after! ibuffer
+  ;; ReRedefine size column to display human readable number of line,
+  ;; a humanly understandable measure of size.
+  (define-ibuffer-column size
+    (:name "nºLines"
+     :inline t
+     :header-mouse-map ibuffer-size-header-map)
+    (let ((n (line-number-at-pos (point-max))))
+      (cond
+       ((> n 1000000) (format "%7.1fM" (/ n 1000000.0)))
+       ((> n 1000) (format "%7.1fk" (/ n 1000.0)))
+       ;;((> n 100) (format "%7.1fh" (/ n 100.0)))
+       (t (format "%8d" n)))))
+
+  ;; (setq ibuffer-formats
+  ;;       ;; Modify the default ibuffer-formats (toggle with `)
+  ;;       '((mark modified read-only vc-status-mini " "
+  ;;               (name 30 30 :left :elide)
+  ;;               " "
+  ;;               (size 9 -1 :right)
+  ;;               " "
+  ;;               (mode 16 16 :left :elide)
+  ;;               " "
+  ;;               (vc-status 16 16 :left)
+  ;;               " "
+  ;;               filename-and-process)
+  ;;         (mark " " (name 16 -1) " " filename)))
+
+  (setq ibuffer-saved-filter-groups
+        (list (cons "home"
+                    `((,(concat
+                         (all-the-icons-icon-for-mode 'org-mode :v-adjust -0.05)
+                         " Org")
+                       (or (mode . org-mode)
+                           (name . "Org")
+                           (filename . "Org")))
+                      (,(concat
+                         (all-the-icons-octicon
+                          "file-directory"
+                          :face ibuffer-filter-group-name-face
+                          :v-adjust -0.05)
+                         " Files") (filename . ".*"))
+                      (,(concat
+                         (all-the-icons-icon-for-mode 'dired-mode :v-adjust -0.05)
+                         " Dired")
+                       (mode . dired-mode))
+                      (,(concat
+                         (all-the-icons-icon-for-mode 'vterm-mode :v-adjust -0.05)
+                         " Vterm")
+                       (mode . vterm-mode))
+                      ("Magit" (name . "\*magit"))
+                      ("ERC" (mode . erc-mode))
+                      ("Help" (or (name . "\*Help\*")
+                                  (name . "\*Apropos\*")
+                                  (filename . ".el.gz$")
+                                  (name . "\*info\*")))
+                      ("Doom emacs" (or
+                                     (name . "^\\*scratch\\*$")
+                                     (name . "^\\*doom\\*$")
+                                     (name . "^\\*Messages\\*$")))
+                      ("System" (name . "^\*.*\*$"))
+                      )))
+        ibuffer-sorting-mode 'alphabetic
+        ibuffer-expert t
+        ibuffer-hook nil)
+
+  (add-hook 'ibuffer-hook 'brust-ibuffer-setting)
+
+  (defun brust-ibuffer-setting nil
+    (setq ibuffer-filter-groups (append
+                                 (ibuffer-projectile-generate-filter-groups)
+                                 (cdr (assoc "home" ibuffer-saved-filter-groups)))
+          ibuffer-hidden-filter-groups nil)
+    (ibuffer-update nil t))
+  )
+#+end_src
 
 *** Company
 #+BEGIN_SRC elisp
