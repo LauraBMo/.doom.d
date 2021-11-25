@@ -50,14 +50,18 @@ I’m rarely happier than when spending an entire day programming my computer
     Set save all local variable and do not query.
 #+BEGIN_SRC elisp
 ;; (setq enable-local-variables :all)
-(setq safe-local-variable-values
-      '((brust-vterm-process . "vterm<1>")
-        (brust-vterm-process . "vterm")))
 #+END_SRC
 
 #+RESULTS:
 : :all
 
+*** Buffer line numbers
+#+begin_src elisp
+;; Line numbers are pretty slow all around. The performance boost of
+;; disabling them outweighs the utility of always keeping them on.
+(setq display-line-numbers-type nil)
+;; (global-display-line-numbers-mode -1)
+#+end_src
 *** Killing Emacs with no questions
 #+BEGIN_SRC elisp
 (setq confirm-kill-emacs nil)
@@ -84,7 +88,7 @@ I’m rarely happier than when spending an entire day programming my computer
 
 *** Delete selection on type.
 #+BEGIN_SRC elisp
-(delete-selection-mode +1)
+(delete-selection-mode 1)
 ;; (setq delete-selection-save-to-register 'kill-ring)
 #+END_SRC
 *** Faces
@@ -103,13 +107,6 @@ Put ='disabled= to =nil=
 #+end_src
 
 ** Doom stuff
-*** Buffer line numbers
-#+begin_src elisp
-;; Line numbers are pretty slow all around. The performance boost of
-;; disabling them outweighs the utility of always keeping them on.
-(setq display-line-numbers-type nil)
-;; (global-display-line-numbers-mode -1)
-#+end_src
 *** Dashboard menu
 #+begin_src elisp
 (setq +doom-dashboard-menu-sections
@@ -161,19 +158,6 @@ Put ='disabled= to =nil=
         ;;  :action =irc)))
         ))
 #+end_src
-*** Formater
-#+begin_src elisp
-(setq +format-on-save-enabled-modes
-      '(not emacs-lisp-mode  ; elisp's mechanisms are good enough
-            sql-mode         ; sqlformat is currently broken
-            tex-mode         ; latexindent is broken
-            c-mode
-            latex-mode))
-#+end_src
-
-#+RESULTS:
-| not | emacs-lisp-mode | sql-mode | tex-mode | c-mode | latex-mode |
-
 *** Lookup online
 - Thresauros for synonyms.
 #+begin_src elisp
@@ -318,7 +302,7 @@ and `line-number-display-limit-width'."
 *** TODO Persp
 #+begin_src elisp
 (setq persp-save-dir (expand-file-name "~/.doom.d/local/workspaces/")
-      persp-auto-save-persps-to-their-file-before-kill t)
+      persp-auto-save-persps-to-their-file-before-kill nil)
 ;; persp-save-to-file-by-names
 #+end_src
 *** Real buffers
@@ -2006,7 +1990,8 @@ Bad
   ;; (add-hook! 'julia-repl-hook (julia-repl--send-string (concat "include(\"" (expand-file-name "~/.julia/config/startup.jl") "\")")))
   ;; It cause a problem, execute julia-repl--send-string in this hook (outside hook there is no problem, not realted to doom, emacs -q and install julia-repl reproduce it) Actually, not needed, now julia-repl loads startup.jl
   (map! (:map julia-mode-map
-         :desc "Generate exports"    "x" #'brust-julia-update-exports)
+         (:localleader
+          :desc "Generate exports"    "x" #'brust-julia-update-exports))
         (:map julia-repl-mode-map
          (:localleader
           :desc "line or region"      "SPC" #'julia-repl-send-region-or-line
@@ -2873,6 +2858,22 @@ Do not add single deleted chars to =kill-ring=
 
 #+RESULTS:
 
+*** Formater
+I just want auto format in a few modes.
+#+begin_src elisp
+(add-hook 'julia-mode-hook #'format-all-mode)
+(add-hook 'emacs-lisp-mode-hook #'format-all-mode)
+
+;; (setq +format-on-save-enabled-modes
+;;       '(not emacs-lisp-mode  ; elisp's mechanisms are good enough
+;;             sql-mode         ; sqlformat is currently broken
+;;             tex-mode         ; latexindent is broken
+;;             c-mode
+;;             latex-mode))
+#+end_src
+
+#+RESULTS:
+| not | emacs-lisp-mode | sql-mode | tex-mode | c-mode | latex-mode |
 *** Fuzzi file finder
 **** Main config
 #+begin_src elisp
