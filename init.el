@@ -54,9 +54,10 @@
 
        :editor
        (evil +everywhere)  ; come to the dark side, we have cookies
-       file-templates      ; auto-snippets for empty files
-       fold              ; (nigh) universal code folding
-       (format +onsave)    ; automated prettiness
+       ;; file-templates      ; auto-snippets for empty files
+       ;; fold                ; (nigh) universal code folding
+       format              ; automated prettiness
+       ;; (format +onsave) ; automated prettiness
        ;;god               ; run Emacs commands without modifier keys
        ;;lispy             ; vim for lisp, for people who don't like vim
        ;;multiple-cursors  ; editing in many places at once
@@ -127,7 +128,7 @@
        ;;elm               ; care for a cup of TEA?
        emacs-lisp        ; drown in parentheses
        ;;erlang            ; an elegant language for a more civilized age
-       ess               ; emacs speaks statistics
+       ;; ess               ; emacs speaks statistics
        ;;factor
        ;;faust             ; dsp, but you get to keep your soul
        ;;fsharp            ; ML stands for Microsoft's Language
@@ -146,15 +147,15 @@
        ;; (latex +cdlatex +lsp)  ; writing papers in Emacs has never been so fun
        (latex +cdlatex)  ; writing papers in Emacs has never been so fun
        ;;lean
-       ledger            ; an accounting system in Emacs
+       ;;ledger            ; an accounting system in Emacs
        ;;lua               ; one-based indices? one-based indices
        markdown          ; writing docs for people to ignore
        ;;nim               ; python + lisp at the speed of c
        ;;nix               ; I hereby declare "nix geht mehr!"
        ;;ocaml             ; an objective camel
        (org              ; organize your plain life in plain text
-        +dragndrop       ; drag & drop files/images into org buffers
-        +gnuplot
+        ;; +dragndrop       ; drag & drop files/images into org buffers
+        ;; +gnuplot
         +hugo
         +noter            ; Enables org-noter integration. Keeps notes in sync with a document.
         ;;+jupyter        ; ipython/jupyter support for babel
