@@ -430,8 +430,8 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
   :n "k" #'brust-correct-prev-spelling)
  ;; Binding for buffers
  (:map doom-leader-buffer-map
-  :mvn :desc "ibuf workspace" "i" #'+ibuffer/open-for-current-workspace
-  :mvn :desc "ibuffer all" "I" #'ibuffer)
+  :desc "Ibuffer"     :n "i" #'+ibuffer/open-for-current-workspace
+  :desc "Ibuffer all" :n "I" #'ibuffer)
  (:leader
   :desc "locleader" "SPC" nil ;; Unbind "SPC SPC"
   :desc "Delete other windows" "w 0" #'delete-other-windows
@@ -440,44 +440,19 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
   ;;
   ;; My global bindings of Laura: functions used everywhere but not so often.
   (:prefix ("l" . "BMO")
-   "n"    #'endless/narrow-or-widen-dwim
-   "i"    #'endless/ispell-word-then-abbrev
-   ;; "%"    #'vr/replace
-   "%"    #'vr/query-replace
-   "<f3>" #'kmacro-query-my
-   ;; Zooming in emacs
-   "1"    #'zoom-out ;; enlarge font
-   "2"    #'zoom-in ;; reduce font
-   (:prefix ("a" . "accents")
-    ;; Easy Catala i Castella
-    :desc "Insert ç" "c" (lambda nil (interactive) (insert "ç"))
-    :desc "Insert Ç" "C" (lambda nil (interactive) (insert "Ç"))
-    :desc "Insert ñ" "n" (lambda nil (interactive) (insert "ñ"))
-    :desc "Insert Ñ" "N" (lambda nil (interactive) (insert "Ñ"))
-    :desc "Insert à" "a" (lambda nil (interactive) (insert "à"))
-    :desc "Insert À" "A" (lambda nil (interactive) (insert "À"))
-    :desc "Insert è" "e" (lambda nil (interactive) (insert "è"))
-    :desc "Insert È" "E" (lambda nil (interactive) (insert "È"))
-    :desc "Insert é" "r" (lambda nil (interactive) (insert "é"))
-    :desc "Insert É" "R" (lambda nil (interactive) (insert "É"))
-    :desc "Insert í" "i" (lambda nil (interactive) (insert "í"))
-    :desc "Insert Í" "I" (lambda nil (interactive) (insert "Í"))
-    :desc "Insert ï" "k" (lambda nil (interactive) (insert "ï"))
-    :desc "Insert Ï" "K" (lambda nil (interactive) (insert "Ï"))
-    :desc "Insert ò" "o" (lambda nil (interactive) (insert "ò"))
-    :desc "Insert Ò" "O" (lambda nil (interactive) (insert "Ò"))
-    :desc "Insert ó" "p" (lambda nil (interactive) (insert "ó"))
-    :desc "Insert Ó" "P" (lambda nil (interactive) (insert "Ó"))
-    :desc "Insert ú" "u" (lambda nil (interactive) (insert "ú"))
-    :desc "Insert Ú" "U" (lambda nil (interactive) (insert "Ú"))
-    :desc "Insert ü" "j" (lambda nil (interactive) (insert "ü"))
-    :desc "Insert Ü" "J" (lambda nil (interactive) (insert "Ü"))
-    )))
+   :desc "narrow generic"    "n"    #'endless/narrow-or-widen-dwim
+   :desc "code screenshot"   "p"    #'screenshot
+   :desc "visual rx replace" "%"    #'vr/query-replace
+   :desc "macro insert str"  "<f3>" #'kmacro-query-my
+   :desc "ispell & abbrev"   "i"    #'endless/ispell-word-then-abbrev
+   "1" #'zoom-out ;; enlarge font
+   "2" #'zoom-in ;; reduce font
+   ))
  )
 #+end_src
 
 #+RESULTS:
-| lambda | nil | (interactive) | (insert Ü) |
+: zoom-in
 
 ** My functions
 *** COMMENT Add blank pages to a pdf
