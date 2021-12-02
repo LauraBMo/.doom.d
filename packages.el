@@ -21,6 +21,18 @@
 ;; (package! org-ref) ;; it is way too heavy: it requires helm, helm-bibtex, parsebib, biblio, key-chord, pdf-tool
 
 
+;; Handy tecosaur's packages:
+;; take a screenshot of some code to share
+(package! screenshot
+  :recipe (:host github
+           :repo "tecosaur/screenshot"))
+;; Import any file to org mode
+(package! org-pandoc-import
+  :recipe (:host github
+           :repo "tecosaur/org-pandoc-import"
+           :files ("*.el" "filters" "preprocessors")))
+
+
 ;; Programing
 ;; From README of julia in Doom
 (package! maplev :recipe (:host github :repo "JoeRiel/maplev"))

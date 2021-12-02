@@ -1601,6 +1601,10 @@ See `org-capture-templates' for more information."
 (defun brust-open-my-org nil
   (interactive)
   (find-file (expand-file-name "~/Dropbox/Org/my.org")))
+*** Import other formats
+Use pandoc to import files in .mw, .docs, ...
+#+begin_src elisp
+(use-package! org-pandoc-import :after org)
 #+end_src
 
 #+RESULTS:
@@ -3199,6 +3203,15 @@ Enlarge width of some columns
 ;; ("^\\(\\*\\{6\\}\\) " "☵")
 ;; ("^\\(\\*\\{7\\}\\) " "☶")
 ;; ("^\\(\\*\\{8\\}\\) " "☷"))
+#+end_src
+
+*** Screenshot
+
+Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][screenshot.el]].
+
+#+begin_src elisp
+(use-package! screenshot
+  :commands screenshot)
 #+end_src
 
 *** Surround
