@@ -1959,7 +1959,7 @@ Maintaining notes.org
 : t
 ** Programming
 *** Julia mode
-**** Intro
+**** TODO Intro [update]
 julia-mode is just for editing .jl files (every other julia related mode uses it for this propose).
 
 ESS julia provides ESS[julia] mode to edit .jl files, which uses julia-mode for syntaxis.
@@ -1985,6 +1985,7 @@ Bad
   - zero integration with company
   - zero integration with Doom emacs
     see [[https://github.com/tpapp/julia-repl/issues/81][problem with executable]]
+
 **** Julia repl mode
 #+begin_src elisp
 ;; (require 'julia-mode)
