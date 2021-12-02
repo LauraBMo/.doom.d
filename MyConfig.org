@@ -843,6 +843,15 @@ Single Capitals as you type."
 
 #+RESULTS:
 : endless/narrow-or-widen-dwim
+*** Open my.org
+#+begin_src elisp
+(defun brust-open-my-org nil
+  (interactive)
+  (find-file (expand-file-name "~/Dropbox/Org/my.org")))
+#+end_src
+
+#+RESULTS:
+: brust-open-my-org
 *** COMMENT PDF From MR to pdf
 commands to work with MangaRock comics
 #+BEGIN_SRC bash
@@ -954,46 +963,10 @@ commands to work with MangaRock comics
 
 #+RESULTS:
 : brust--number-of-lines-current-buffer
-
-*** Vterm line or region
-Use buffer-local var `brust-vterm-process` to determine where to evaluate.
-It must be the name of the process (not the name of the buffer).
-The name of a vterm process is hard-coded by =vterm-mode= to "vterm", "vterm<1>",...
-
+*** Vterm launch and send
+**** Launch or link vterm julia
 #+begin_src elisp
-
-;; (setq-default vterm--process "vterm")
-;; If default is nil I can use it to decide whether a
-;; a buffer has been link to a vterm process.
-
-;; (defvar-local brust-vterm-process "vterm"
-;;   "Buffer name where to run vterm commands")
-
-(defun brust-vterm--eval-string (string)
-  ;; (process-send-string brust-vterm-process string)
-  (process-send-string vterm--process string))
-
-(defun brust-vterm--eval-buffer-substring (beg end)
-  (brust-vterm--eval-string (concat (s-trim (buffer-substring-no-properties beg end)) "\n")))
-
-(defun brust-vterm-eval-line-or-region nil
-  (interactive)
-  (if (use-region-p)
-      (brust-vterm--eval-buffer-substring (region-beginning) (region-end))
-    (brust-vterm--eval-buffer-substring (line-beginning-position) (line-end-position))))
-
-;; Run normal-mode to reload local vars
-
-;; Local Variables:
-;; vterm--process: "vterm"
-;; End:
-#+end_src
-
-#+RESULTS:
-: brust-vterm-eval-line-or-region
-
-*** Launch or link vterm julia
-#+begin_src elisp
+;;;;;;;;;;;;;;;; That's old
 ;; This version requires be able to customize vterm process' name.
 ;; See branch Allow-custom-process-name in my emacs-libvterm:
 ;; https://github.com/LauraBMo/emacs-libvterm/tree/Allow-custom-process-name
@@ -1001,41 +974,50 @@ The name of a vterm process is hard-coded by =vterm-mode= to "vterm", "vterm<1>"
 ;;   "Launches new instance of vterm in buffer `buf' or `(buffer-name)-vterm.jl' with process name `proc' or `vterm-process', and runs julia in it.
 ;;  Sets `brust-vterm-process' to `proc' or `vterm--process' ")
 
-(defun brust-vterm-julia-launch-and-link (&optional buff calle)
-  "Launches new instance of vterm in buffer `buf' or `(buffer-name)-vterm.jl' , and runs julia in it.
- Sets `vterm--process' in current buffer to the value of `vterm--process' in newly created vterm-mode buffer."
-  (interactive)
+(defun brust-vterm--link (proc-buffer origin-buffer)
+  "Copies the value of the local variable `vterm--process' from buffer `proc-buffer' to buffer `origin-buffer'. Then, in `origin-buffer' we can use such a process to execute code in terminal."
   (save-excursion
-    (let* ((origin-buffer (buffer-name))
-           (buffer (or buff (concat origin-buffer "-vterm.jl"))))
-      (vterm buffer)
-      (process-send-string vterm--process (or calle "julia\n"))
-      (brust-vterm-link buffer origin-buffer))))
-
-(defun brust-vterm-link (buffer &optional origin-buffer)
-  "Sets `vterm--process' in `origin-buffer' or current buffer to the value of `vterm--process' in `buffer'.
-Now, we can use `brust-org-mode-vterm-send-*' functions."
-  (interactive "bProcess' buffer to link with:")
-  (save-excursion
-    (setq origin-buffer (or origin-buffer (buffer-name)))
-    (set-buffer buffer)
+    (set-buffer proc-buffer)
     (let ((proc vterm--process))
       (set-buffer origin-buffer)
-      (setq vterm--process proc))))
+      (setq-local vterm--process proc))))
 
-(defun brust-vterm-launch-or-link nil
-  (interactive)
-  (unless vterm--process
-    (if (y-or-n-p "Launch new vterm-julia [y] or link to an existent one [n]")
-        (brust-vterm-julia-launch-and-link)
-      (call-interactively 'brust-vterm-link))))
-
+(defun brust-vterm--launch-and-link (origin-buffer sufix)
+  "Launches a new instance of vterm in buffer `origin-buffer-sufix' and links its process to `origin-buffer'."
+  (save-excursion
+    (let ((proc-buffer (concat origin-buffer sufix)))
+      (vterm proc-buffer)
+      (brust-vterm--link proc-buffer origin-buffer))))
 #+end_src
 
 #+RESULTS:
-: brust-vterm-link
+: brust-vterm-link-or-launch-and-link
 
-*** Word count
+**** Send line or region
+#+begin_src elisp
+(defun brust-vterm--eval-string (string &optional paste-p)
+  (with-current-buffer (process-buffer vterm--process)
+    (vterm-send-string string paste-p)))
+
+(defun brust-vterm--eval-buffer-substring (beg end &optional paste-p)
+  (brust-vterm--eval-string (concat (s-trim (buffer-substring-no-properties beg end)) "\n") paste-p))
+
+(defun brust-vterm--eval-region nil
+  (brust-vterm--eval-buffer-substring (region-beginning) (region-end) 1))
+
+(defun brust-vterm--eval-line nil
+  (brust-vterm--eval-buffer-substring (line-beginning-position) (line-end-position)))
+
+;; Run normal-mode to reload local vars
+;; Local Variables:
+;; vterm--process: "vterm"
+;; End:
+#+end_src
+
+#+RESULTS:
+: brust-vterm--eval-line
+
+*** COMMENT Word count
 #+BEGIN_SRC elisp
   (defun brust-wc-get-word-count-list-of-current-project nil
     (let ((project-master (expand-file-name (TeX-master-file t nil t))))
@@ -1166,14 +1148,11 @@ Now, we can use `brust-org-mode-vterm-send-*' functions."
         "<" 'brust-org<
         (:localleader
          ;; "SPC" (kbd "C-c C-c")
-         :desc "vterm line" "SPC" #'brust-org-mode-vterm-send-line-or-region
-         :desc "vterm block" "v" #'brust-org-mode-vterm-send-block
+         :desc "vterm-julia send" "SPC" #'brust-org-mode-vterm-julia-send-region-or-block
+         :desc "vterm-julia launch new" "v" #'brust-org-mode-vterm-julia-link-or-launch-and-link
          :desc "Babel" "B" org-babel-map
          :desc "Biblio" "C" #'ivy-bibtex-with-local-bibliography
-         (:prefix "j" :desc "vterm.jl"
-          :desc "launch new vterm.jl" "n" #'brust-vterm-julia-launch-and-link
-          :desc "link vterm" "l" #'brust-vterm-link
-          ))))
+          )))
  #+END_SRC
 
  #+RESULTS:
@@ -1535,40 +1514,77 @@ See `org-capture-templates' for more information."
 
 #+RESULTS:
 : std::ledger::save
-*** Defun's
-
-**** Eval all elisp blocks under current header
-#+BEGIN_SRC elisp
-(defun brust-endless/org-eval-current-header nil
-  (interactive)
-  (brust-endless/org-eval-eblocks
-   (and (org-copy-subtree)
-        (pop kill-ring))))
-#+END_SRC
-
-**** Eval julia code
-
+*** Eval julia code in vterm
+**** Launch/link a julia process
 #+begin_src elisp
-(defun brust-org-mode-vterm-send-line-or-region nil
+(defun brust-org-mode-vterm-julia--launch-and-link nil
+  (brust-vterm--launch-and-link (buffer-name) "-vjulia")
+  (brust-vterm--eval-string "julia\n"))
+
+(defun brust-org-mode-vterm-julia-link-or-launch-and-link nil
+  (interactive)
+  (if (y-or-n-p "Link buffer to a julia process [y] or launch and link a new one [n]")
+      (brust-vterm--link
+       (ivy-read "Process' buffer to link with: " #'internal-complete-buffer
+                 :keymap ivy-switch-buffer-map
+                 :preselect (buffer-name (other-buffer (current-buffer)))
+                 :matcher #'ivy--switch-buffer-matcher
+                 :caller 'ivy-switch-buffer)
+       (buffer-name))
+    (brust-org-mode-vterm-julia--launch-and-link)))
+
+(defun brust-org-mode-vterm-julia--ensure-julia-process nil
+  ;; When process is not alive, always launch a new one without asking.
+  ;; If I wanted to link (unlikely), I can kill the new process and
+  ;; call brust-..-link-or-launch-and-link.
+  ;; (unless (process-live-p vterm--process) (brust-org-mode-vterm-julia-link-or-launch-and-link))
+  (unless (process-live-p vterm--process) (brust-org-mode-vterm-julia--launch-and-link)))
+#+end_src
+
+#+RESULTS:
+: brust-org-mode-vterm-julia-link-or-launch-and-link
+
+**** Send region or line
+#+begin_src elisp
+(defun brust-org-mode-vterm-julia-send-region-or-line nil
   (interactive)
   (org-babel-when-in-src-block
-   ;; (let ((lang (org-element-property :language (org-element-context))))
-   ;;   (if (string-match-p "julia" lang)
-   (brust-vterm-eval-line-or-region)
-   ;; (message "Language is not julian")))
-   ))
+   (brust-org-mode-vterm-julia--ensure-julia-process)
+   (if (use-region-p)
+       (brust-vterm--eval-region)
+     (brust-vterm--eval-line))))
+#+end_src
 
-(defun brust-org-mode-vterm-send-block nil
+#+RESULTS:
+: brust-org-mode-vterm-julia-send-region-or-line
+
+**** Send region or block
+#+begin_src elisp
+(defun brust-org-mode-vterm-julia--eval-block nil
+  ;; Format block-info = (language body arguments switches name start coderef)
+  (let* ((block-info (org-babel-get-src-block-info t))
+         ;; (lang (car block-info))
+         (body (nth 1 block-info)))
+    (brust-vterm--eval-string (concat body "\n") 1)))
+
+(defun brust-org-mode-vterm-julia-send-region-or-block nil
   (interactive)
   (org-babel-when-in-src-block
-   ;; Format block-info = (language body arguments switches name start coderef)
-   (let* ((block-info (org-babel-get-src-block-info t))
-          ;; (lang (car block-info))
-          (body (nth 1 block-info)))
-     (brust-vterm--eval-string (concat body "\n")))))
+   (brust-org-mode-vterm-julia--ensure-julia-process)
+   (if (use-region-p)
+       (brust-vterm--eval-region)
+     (brust-org-mode-vterm-julia--eval-block))))
+#+end_src
 
+#+RESULTS:
+: brust-org-mode-vterm-send-region-or-block
+
+**** Eval all blocks under current header
+#+BEGIN_SRC elisp
+;; Julia blocks
 (defun brust-endless/org-julia-eval-header nil
   (interactive)
+  (brust-org-mode-vterm-julia--ensure-julia-process)
   (brust-endless/org-eval-eblocks
    (and (org-copy-subtree)
         (pop kill-ring))
@@ -1576,11 +1592,15 @@ See `org-capture-templates' for more information."
    nil
    nil
    'brust-vterm--eval-buffer-substring))
-#+end_src
+#+END_SRC
 
 #+RESULTS:
+: brust-endless/org-julia-eval-header
 
-**** Eval julia code, link vterm if needed
+**** COMMENT Eval julia code, link vterm if needed
+
+It is a good idea, but it is better to always check whether a process is linked or not.
+So, we skip manual linking when restarting...
 
 ;; Run normal-mode to reload local vars
 ;; There are the functions brust-org-mode-launch-vterm-julia or ...-link-vterm-julia
@@ -1595,20 +1615,21 @@ See `org-capture-templates' for more information."
 ;; vterm--process: "vterm"
 ;; End:
 #+end_src
-
-**** Open my.org
+*** Eval elisp blocks
 #+begin_src elisp
-(defun brust-open-my-org nil
+;; Elisp blocks
+(defun brust-endless/org-eval-current-header nil
   (interactive)
-  (find-file (expand-file-name "~/Dropbox/Org/my.org")))
+  (brust-endless/org-eval-eblocks
+   (and (org-copy-subtree)
+        (pop kill-ring))))
+#+end_src
 *** Import other formats
 Use pandoc to import files in .mw, .docs, ...
 #+begin_src elisp
 (use-package! org-pandoc-import :after org)
 #+end_src
 
-#+RESULTS:
-: brust-open-my-org
 ** LaTeX mode
 *** AUCTeX
 #+BEGIN_SRC elisp
