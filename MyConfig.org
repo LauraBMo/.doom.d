@@ -961,12 +961,12 @@ commands to work with MangaRock comics
   "Launches a new instance of vterm in buffer `origin-buffer-sufix' and links its process to `origin-buffer'."
   (save-excursion
     (let ((proc-buffer (concat origin-buffer sufix)))
-      (vterm proc-buffer)
+      (vterm-other-window proc-buffer)
       (brust-vterm--link proc-buffer origin-buffer))))
 #+end_src
 
 #+RESULTS:
-: brust-vterm-link-or-launch-and-link
+: brust-vterm--launch-and-link
 
 **** Send line or region
 #+begin_src elisp
@@ -1533,44 +1533,50 @@ See `org-capture-templates' for more information."
 #+RESULTS:
 : brust-org-mode-vterm-julia-send-region-or-line
 
-**** Send region or block
+**** Send region or block or header
 #+begin_src elisp
 (defun brust-org-mode-vterm-julia--eval-block nil
-  ;; Format block-info = (language body arguments switches name start coderef)
-  (let* ((block-info (org-babel-get-src-block-info t))
-         ;; (lang (car block-info))
-         (body (nth 1 block-info)))
-    (brust-vterm--eval-string (concat body "\n") 1)))
+  (org-babel-when-in-src-block
+   ;; Format block-info = (language body arguments switches name start coderef)
+   (let* ((block-info (org-babel-get-src-block-info t))
+          ;; (lang (car block-info))
+          (body (nth 1 block-info)))
+     (brust-vterm--eval-string (concat body "\n") 1))))
 
 (defun brust-org-mode-vterm-julia-send-region-or-block nil
   (interactive)
-  (org-babel-when-in-src-block
-   (brust-org-mode-vterm-julia--ensure-julia-process)
-   (if (use-region-p)
-       (brust-vterm--eval-region)
-     (brust-org-mode-vterm-julia--eval-block))))
+  (brust-org-mode-vterm-julia--ensure-julia-process)
+  (cond ((use-region-p) (brust-vterm--eval-region))
+        ((org-at-heading-p) (brust-endless/org-julia--eval-header))
+        (t (brust-org-mode-vterm-julia--eval-block))))
 #+end_src
 
 #+RESULTS:
-: brust-org-mode-vterm-send-region-or-block
+: brust-org-mode-vterm-julia-send-region-or-block
 
 **** Eval all blocks under current header
 #+BEGIN_SRC elisp
 ;; Julia blocks
-(defun brust-endless/org-julia-eval-header nil
-  (interactive)
-  (brust-org-mode-vterm-julia--ensure-julia-process)
-  (brust-endless/org-eval-eblocks
-   (and (org-copy-subtree)
-        (pop kill-ring))
-   nil
-   nil
-   nil
-   'brust-vterm--eval-buffer-substring))
+(defun brust-endless/org-julia--eval-header nil
+  (save-excursion
+    (org-narrow-to-subtree)
+    ;; (brust-endless/org-eval-eblocks-delete-commented-subtrees)
+    ;; (goto-char (point-min))
+    (while (not (eobp))
+      (when (looking-at brust-endless/org-babel-src-block-regexp)
+        (brust-vterm--eval-buffer-substring (match-beginning 5) (match-end 5) 1))
+      (forward-line +1))
+    (widen)))
+
+;; (brust-endless/org-eval-eblocks
+;;  nil
+;;  nil
+;;  nil
+;;  'brust-vterm--eval-buffer-substring))
 #+END_SRC
 
 #+RESULTS:
-: brust-endless/org-julia-eval-header
+: brust-endless/org-julia--eval-header
 
 **** COMMENT Eval julia code, link vterm if needed
 
