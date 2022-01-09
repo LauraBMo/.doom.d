@@ -1750,14 +1750,19 @@ Getting bibtex entries from crossref and much more.
   (setq bibtex-completion-fallback-options
         (append
          '(("MathSciNet                                (bibretrive.el)"
-            . (lambda (search-expression) (bibretrieve))))
-         bibtex-completion-fallback-options)))
+            . (lambda (search-expression) (bibretrieve)))
+           ("Download                                  (scihub.el)"
+            . (lambda (search-expression) (scihub))))
+           bibtex-completion-fallback-options)))
 #+end_src
+
 **** COMMENT MathSciNet backend
+
 Problem: MathSciNet uses author title... not a "everywhere" query.
 The package bibretrive is a mess, but it works.
-To unify engines: Added action to "ivy-bibtex" to look for MathSciNet using bibretrive
+To unify engines: Added action "Fallback options" to "ivy-bibtex" to look for MathSciNet using bibretrive
 Once it is done, add the correspnding entrie to =bibtex-completion-fallback-options=
+
 #+begin_src elisp
 (defun biblio-crossref-backend (command &optional arg &rest more)
   "A CrossRef backend for biblio.el.
@@ -1805,16 +1810,16 @@ COMMAND, ARG, MORE: See `biblio-backends'."
 #+end_src
 
 *** Bibretrive
-Getting bib entries from MathSciNet
+Getting bib entries from MathSciNet or arxiv
 #+BEGIN_SRC elisp
 ;; See https://github.com/pzorin/bibretrieve
 (use-package! bibretrieve
-  :after latex
+  :commands bibretrieve
   :config
   (setq bibretrieve-prompt-for-bibtex-file nil ;; use defaul bib file
         bibretrieve-backends '(("msn" . 10) ("arxiv" . 5))))
 #+END_SRC
-*** TODO Sci hub
+
 *** Ivy-bibtex
 Insert cite links and open pdf
 #+begin_src elisp
@@ -1831,12 +1836,11 @@ Insert cite links and open pdf
             :filter-return 'reverse)
 #+end_src
 
-*** ox-bibtex
+*** COMMENT ox-bibtex
 Maintaining notes.org
 #+begin_src elisp
 (after! org
-  (require 'ox-bibtex)
-  )
+  (require 'ox-bibtex))
 #+end_src
 
 ** COMMENT Mu4e
@@ -3254,7 +3258,19 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
 
 #+begin_src elisp
 (use-package! screenshot
-  :commands screenshot)
+  :commands screenshot
+  :config
+  (load-file (locate-library "screenshot.elc")))
+#+end_src
+
+*** Scihub
+
+#+begin_src elisp
+(use-package! scihub
+ :init
+ (setq scihub-download-directory "~/Dropbox/bibliography/pdf/"
+       scihub-open-after-download t
+       scihub-fetch-domain 'scihub-fetch-domains-lovescihub))
 #+end_src
 
 *** Surround
@@ -3322,7 +3338,7 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
   :commands (vr/replace vr/query-replace))
 #+END_SRC
 
-*** Yassnippets
+*** COMMENT Yassnippets
 **** jasnippets
 #+begin_src elisp
 ;; for functions
@@ -3369,4 +3385,3 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
 
 #+RESULTS:
 | brust-zoom-on |
-
