@@ -2020,7 +2020,7 @@ Bad
 #+end_src
 
 #+RESULTS:
-**** eglot-jl
+**** COMMENT eglot-jl
 #+begin_src elisp
 (after! eglot
   ;; (defun brust-lsp-ask-before-activating nil
@@ -2032,7 +2032,7 @@ Bad
   ;; (advice-add 'lsp! :before-while #'brust-lsp-ask-before-activating)
 
   (setq eglot-connect-timeout (* 60 2)
-        lsp-julia-default-environment "~/.julia/environments/v1.6"
+        lsp-julia-default-environment "~/.julia/environments/v1.7"
         eglot-jl-julia-command "~/src/julia/bin/julia"
         ;; Activate LSP server when I want to
         julia-mode-local-vars-hook nil ;; To use my LanguageServer and Symbols...
@@ -2041,6 +2041,23 @@ Bad
         eglot-jl-language-server-project eglot-jl-base
         ))
 #+end_src
+**** LSP mode
+
+Run =doom build= to make it work (no idea why...)
+
+#+begin_src elisp
+(use-package! lsp-julia
+  :after lsp
+  :config
+  (setq lsp-julia-package-dir nil
+        ;; lsp-julia-default-environment "~/.julia/environments/v1.7"
+        ;; lsp-enable-folding t
+        lsp-julia-lint-nothingcomp nil ;; Do not check for nothing === something
+        lsp-julia-format-indents nil
+        lsp-julia-format-calls t
+        ))
+#+end_src
+
 **** ad-hoc functions
 ***** generic
 #+begin_src elisp
@@ -2865,7 +2882,7 @@ Do not add single deleted chars to =kill-ring=
 
 #+RESULTS:
 
-*** Formater
+*** COMMENT Formater
 I just want auto format in a few modes.
 #+begin_src elisp
 (add-hook 'julia-mode-hook #'format-all-mode)
@@ -3064,6 +3081,29 @@ Enlarge width of some columns
 
 #+RESULTS:
 : keyfreq
+*** LSP mode
+[[https://github.com/emacs-lsp/lsp-mode/blob/2d41848dde2fdcb1a85546302c4b842a12a68ef9/docs/tutorials/how-to-turn-off.md][How to turn off futures]]
+**** LSP ui
+
+This package contains all the higher level UI modules of =lsp-mode=, like =flycheck= support and code lenses.
+
+#+begin_src elisp
+(use-package! lsp-ui
+  :after lsp
+  :hook (lsp-mode . lsp-ui-mode)
+  :config
+  (setq lsp-ui-sideline-enable t)
+  (setq lsp-ui-sideline-show-hover nil)
+  (setq lsp-ui-doc-position 'bottom)
+  (lsp-ui-doc-show))
+#+end_src
+**** LSP treemacs
+
+#+begin_src elisp
+(use-package! lsp-treemacs
+  :after lsp
+  :commands lsp-treemacs-errors-list)
+#+end_src
 
 *** Magit
     For a git and github integration with emacs!
