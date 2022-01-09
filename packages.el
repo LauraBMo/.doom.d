@@ -34,8 +34,9 @@
 
 
 ;; Programing
-;; From README of julia in Doom
+;; Edit Maple .mpl files
 (package! maplev :recipe (:host github :repo "JoeRiel/maplev"))
+;; Edit POV-ray files
 (package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
 
 
