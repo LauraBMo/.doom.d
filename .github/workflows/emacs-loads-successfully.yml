@@ -49,4 +49,4 @@ jobs:
         run: |
           # mv ~/.emacs.d/ ~/.emacs.d.old/ ## emacs is not initialized yet
           git clone --depth 1 https://github.com/hlissner/doom-emacs ~/.emacs.d
-          ~/.emacs.d/bin/doom install
+          ~/.emacs.d/bin/doom install --no-env --no-fonts
