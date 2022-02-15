@@ -47,6 +47,6 @@ jobs:
 
       - name: Get Doom
         run: |
-          mv ~/.emacs.d/ ~/.emacs.d.old/
+          # mv ~/.emacs.d/ ~/.emacs.d.old/ ## emacs is not initialized yet
           git clone --depth 1 https://github.com/hlissner/doom-emacs ~/.emacs.d
           ~/.emacs.d/bin/doom install
