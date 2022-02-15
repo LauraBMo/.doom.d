@@ -47,7 +47,7 @@ jobs:
 
       - name: Local Doom
         run: |
-          cp ~/work/.doom.d/.doom.d/ ~/.doom.d
+          cp -ar ~/work/.doom.d/.doom.d/ ~/.doom.d
 
       - name: Get Doom
         run: |
