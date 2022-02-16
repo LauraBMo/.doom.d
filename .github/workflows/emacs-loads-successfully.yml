@@ -28,7 +28,7 @@ jobs:
         uses: purcell/setup-emacs@v3.0
         with:
           # The version of Emacs to install, e.g. "24.3", or "snapshot" for a recent development version.
-          version: 27.1 # optional
+          version: 27.2 # optional
 
       # Runs a single command using the runners shell
       # - name: Run a one-line script
@@ -40,29 +40,26 @@ jobs:
       #    echo Add other actions to build,
       #    echo test, and deploy your project.
 
-      - name: where am I and what is here
+      - name: Where am I, What is here
         run: |
           pwd
-          ls
+          ls -a
 
-      - name: Local Doom
-        run: |
-          cp -ar ~/work/.doom.d/.doom.d/ ~/.doom.d
+      - name: My Doom config
+        run: cp -ar ~/work/.doom.d/.doom.d/ ~/.doom.d
 
-      - name: Get Doom
+      - name: Get and install Doom
         run: |
-          # mv ~/.emacs.d/ ~/.emacs.d.old/ ## emacs is not initialized yet
           git clone --depth 1 https://github.com/hlissner/doom-emacs ~/.emacs.d
           ~/.emacs.d/bin/doom install --no-env --no-fonts
-
-      - name: Sync local Doom
-        run: ~/.emacs.d/bin/doom sync
+          ~/.emacs.d/bin/doom sync
 
       - name: Attempting startup...
-        run: time emacs -nw -batch --eval='(let
-                                ((user-emacs-directory default-directory))
+        run: time emacs -nw --batch --eval='(let
+                                ((url-show-status nil))
                               (message "Default directory:")
                               (message default-directory)
-                              (setq url-show-status nil)
+                              (message "User Emacs directory:")
+                              (message user-emacs-directory)
                               (load-file "~/.emacs.d/init.el")
                               (message "\n 🤤 Startup Successful! 🤩"))'
