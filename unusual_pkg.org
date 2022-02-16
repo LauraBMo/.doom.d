@@ -1,0 +1,521 @@
+#-*- mode: org -*-
+#+TITLE=Unusual packages
+#+STARTUP:overview
+
+Load each with =brust-endless/org-eval-current-header=
+
+** Maxima
+*** Load-path
+#+BEGIN_SRC elisp
+(push "/usr/share/emacs/site-lisp/maxima/" load-path)
+
+#+END_SRC
+*** Auto-load
+#+BEGIN_SRC elisp
+(autoload 'maxima-mode "maxima" "Maxima mode" t)
+(autoload 'maxima "maxima" "Maxima interaction" t)
+(autoload 'imaxima "imaxima" "Frontend for maxima with Image support" t)
+;(autoload 'imath-mode "imath" "Imath mode for math formula input" t)
+;(autoload 'imath "imath" "Interactive Math mode" t)
+;(autoload 'imath-mode "imath" "Interactive Math mode" t);;
+
+#+END_SRC
+*** Auto-mode
+#+BEGIN_SRC elisp
+(add-to-list 'auto-mode-alist '("\\.ma[cx]" . maxima-mode))
+
+#+END_SRC
+*** Config:
+**** COMMENT setq
+#+BEGIN_SRC elisp
+  (setq imaxima-fnt-size "huge"
+        ;;  imaxima-latex-preamble "\\usepackage{concrete}\\usepackage{euler}"
+        imaxima-use-maxima-mode-flag t
+        maxima-save-input-history t
+        ;; maxima-use-full-color-in-process-buffer t
+        maxima-minibuffer-2d t
+        imaxima-pt-size 12)
+
+#+END_SRC
+**** COMMENT An advice
+     For a correct use of imaxima.
+#+BEGIN_SRC elisp
+(defadvice maxima-send-region (before maxima-start-imaxima first)
+  "Ensures that imaxima is running and the correct flag is set."
+  (setq imaxima-use-maxima-mode-flag t)
+  (unless (get-buffer "*maxima*")
+    (with-temp-buffer (imaxima))))
+(ad-activate 'maxima-send-region)
+
+#+END_SRC
+*** Keybindings
+**** COMMENT Maxima
+#+BEGIN_SRC elisp
+(defun customize-maxima-mode nil
+  (interactive)
+  (local-set-key (kbd "TAB") 'maxima-complete)
+  (local-set-key (kbd "C-2") 'AcMe-new-parameter))
+
+(add-hook 'maxima-mode-hook 'customize-maxima-mode)
+
+#+END_SRC
+**** COMMENT iMaxima
+#+BEGIN_SRC elisp
+(defun customize-imaxima nil
+ "For the imaxima buffer"
+  (interactive)
+  (local-set-key (kbd "TAB") 'maxima-complete)
+  (local-set-key (kbd "<f6>") 'transpose-buffers))
+(add-hook 'imaxima-startup-hook 'customize-imaxima)
+
+#+END_SRC
+*** DeFuns AcMe
+**** COMMENT AcMe-max-to-xml
+#+BEGIN_SRC elisp
+(defun AcMe-max-to-xml (xmlFileName); pNumber)
+  "Convert standard maxima file to xml, you need an xml template.
+   This function only changes the math content of the xml file.
+   The xml template doesn't need to have the same number of parameters that
+   your code, but must have some parameter defined.
+   In your .max file, each parameter must be enclosed between the lines <parameter> and <end code>
+   and the solution between <solution> and <end code>"
+ (interactive (list (read-file-name "Path to the .xml \"tamplete\":"))); (read-number "Number of parameters:")))
+ (let (maxbuffer xmlbuffer (xmlpos1 1) (xmlpos2 1) (maxpos1 1) (maxpos2 1) (i 1))
+   (setq maxbuffer (buffer-name))
+   (find-file xmlFileName)
+   (setq xmlbuffer (buffer-name))
+   (goto-char 1)
+(if (y-or-n-p "Erase the parameters of the .xml?")
+    (progn
+      (re-search-forward "<parameters>") (forward-line) (setq xmlpos1 (line-beginning-position))
+      (re-search-forward "</parameters>") (forward-line -1); (setq xmlpos2 (line-end-position))
+      (delete-region xmlpos1 (line-end-position))
+      (set-buffer maxbuffer)
+   (goto-char 1)
+   (while (re-search-forward "<parameter>" nil t)
+     (forward-line) (setq maxpos1 (line-beginning-position))
+     (re-search-forward "<end code>") (forward-line -1) (setq maxpos2 (line-end-position))
+     (set-buffer xmlbuffer)
+     (insert (concat "                       <parameter>
+         <number>" (number-to-string i) "</number>
+         <type>calculated</type>
+         <value>
+            <program>2</program>
+            <mathCode>
+
+            </mathCode>
+         </value>
+      </parameter>\n"))
+     (re-search-backward "<mathCode>") (forward-line)
+     (insert-buffer-substring-no-properties maxbuffer maxpos1 maxpos2)
+     (set-buffer maxbuffer)
+     (setq i (+ i 1))))
+  (progn
+    (set-buffer maxbuffer)
+    (goto-char 1)
+    (while (re-search-forward "<parameter>" nil t)
+     (forward-line) (setq maxpos1 (line-beginning-position))
+     (re-search-forward "<end code>") (forward-line -1) (setq maxpos2 (line-end-position))
+     (set-buffer xmlbuffer)
+     (re-search-forward "<mathCode>") (forward-line) (setq xmlpos1 (line-beginning-position))
+     (re-search-forward "</mathCode>") (forward-line -1); (setq xmlpos2 (line-end-position))
+     (delete-region xmlpos1 (line-end-position))
+     (insert-buffer-substring-no-properties maxbuffer maxpos1 maxpos2)
+     (set-buffer maxbuffer) )))
+   (set-buffer xmlbuffer)
+   (goto-char 1)
+   (set-buffer maxbuffer)
+   (goto-char 1)
+   (while (search-forward "<solution>" nil t)
+     (forward-line) (setq maxpos1 (line-beginning-position))
+     (search-forward "<end code>") (forward-line -1) (setq maxpos2 (line-end-position))
+     (set-buffer xmlbuffer)
+   (re-search-forward "<solution>")
+   (re-search-forward "<text>") (forward-line) (setq xmlpos1 (line-beginning-position))
+   (re-search-forward "</text>") (forward-line -1) ;(setq xmlpos2 (line-end-position))
+   (delete-region xmlpos1 (line-end-position))
+   (insert-buffer-substring-no-properties maxbuffer maxpos1 maxpos2)
+   (set-buffer maxbuffer))
+   (set-buffer xmlbuffer) (save-buffer)
+   (if (y-or-n-p "Kill .xml buffer?") (kill-buffer xmlbuffer) ())))
+
+#+END_SRC
+**** COMMENT AcMe-xml-to-max
+#+BEGIN_SRC elisp
+  (defun AcMe-xml-to-max (maxFileName); pNumber)
+    "Convert AcMe standard .xml file to a maxima file with the conventions to the reverse convertion.
+     Any content of the .max file is deleted. Puts the solution on top."
+    (interactive (list (read-file-name "Path to the .max file:"))); (read-number "Number of parameters:")))
+    (let (maxbuffer xmlbuffer (xmlpos1 1) (xmlpos2 1) (maxpos1 1) (maxpos2 1) maxStr moreLines (i 1))
+      (setq xmlbuffer (buffer-name))
+      (find-file maxFileName)
+      (setq maxbuffer (buffer-name))
+      (if (y-or-n-p "Erase the file .max?") (erase-buffer) (goto-char 1))
+      (set-buffer xmlbuffer)
+      (goto-char 1)
+      (while (re-search-forward "<solution>" nil t)
+        (re-search-forward "<text>") (forward-line) (setq xmlpos1 (line-beginning-position))
+        (re-search-forward "</text>") (forward-line -1) (setq xmlpos2 (line-end-position))
+        (set-buffer maxbuffer)
+        (insert "/************ <solution> <"(number-to-string i)">***************/\n")
+        (insert-buffer-substring-no-properties xmlbuffer xmlpos1 xmlpos2)
+        (insert "\n/********* <end code> solution <"(number-to-string i)"> *************/\n\n\n\n")
+        (set-buffer xmlbuffer)
+        (setq i (+ i 1)))
+      (goto-char 1)
+      (setq i 1)
+      (while (re-search-forward "<mathCode>" nil t)
+                 ;      (goto-char 1) (re-serch-forward (concat "<number>"(number-to-string i)"</number>"))
+        (forward-line) (setq xmlpos1 (line-beginning-position))
+        (re-search-forward "</mathCode>") (forward-line -1) (setq xmlpos2 (line-end-position))
+        (setq maxStr (buffer-substring-no-properties xmlpos1 xmlpos2))
+        (set-buffer maxbuffer)
+        (insert (concat "/******** <parameter> <" (number-to-string i) ">  ****************/\n" maxStr
+              "\n/*********** <end code> parameter <"(number-to-string i)"> ***************/\n\n\n\n"))
+        (setq i (+ 1 i))
+        (set-buffer xmlbuffer))
+      (set-buffer maxbuffer)
+      (goto-char 1)
+      (setq moreLines t)
+      (while moreLines
+        (setq maxStr (buffer-substring-no-properties (line-beginning-position) (line-end-position))
+              maxStr (replace-regexp-in-string "\&quot;" "\"" maxStr)
+              maxStr (replace-regexp-in-string "\&gt;" ">" maxStr)
+              maxStr (replace-regexp-in-string "\&lt;" "<" maxStr))
+        (insert (s-trim maxStr))
+        (delete-region (point) (line-end-position))
+        (setq moreLines (= 0 (forward-line 1))))
+      (save-buffer)
+    (if (y-or-n-p "Kill .xml buffer?") (kill-buffer xmlbuffer) ())))
+
+#+END_SRC
+**** COMMENT AcMe-new-parameter
+#+BEGIN_SRC elisp
+(defun AcMe-new-parameter (paramater_num)
+  "Example function taking a prefix arg, or reading a number if no prefix arg"
+  (interactive
+   (if (and current-prefix-arg (not (consp current-prefix-arg)))
+       (list (prefix-numeric-value current-prefix-arg))
+     (list (read-number "Paramater number: "))))
+  (let ((char 1))
+    (insert (concat "/******** <parameter> <" (number-to-string paramater_num) ">  ****************/\n"))
+    (setq char (point))
+    (insert (concat "\n valor_calcul : $\nvalor_visual :  $\nprint(\"#\",valor_visual,\"#\",valor_calcul,\"#\")$\n/*********** <end code> parameter <"(number-to-string paramater_num)"> ***************/\n\n\n\n"))
+    (goto-char char)))
+
+
+#+END_SRC
+** Yanki
+#+BEGIN_SRC elisp
+  (setq auto-mode-alist
+        (append '(("\\.yanki\\'"    . Yanki-mode)
+                  ("\\.yanki-b\\'"  . Yanki-build-mode))
+                auto-mode-alist))
+  (with-temp-buffer
+    (insert-file-contents "~/.emacs.d/Yanki/Yanki-mode.el")
+    (eval-buffer))
+
+#+END_SRC
+
+** Table org duplicates into columns
+  #+BEGIN_SRC elisp
+      (defun brust-org-table-delete-duplicates-by-current-column (args)
+        (interactive "P")
+        (unless (org-at-table-p) (user-error "No table at point"))
+        (org-table-align)          ; Make sure we have everything we need.
+        (narrow-to-region (org-table-begin) (org-table-end))
+        (let ((nn (current-column)) (lines (line-number-at-pos (point-max))) (str (brust-org-table-field)))
+          (while (not (eobp))
+            (delete-matching-lines str)
+            (brust-down-vertically nn)
+            (setq str (brust-org-table-field)))
+          (message "I've deleted %d lines." (- lines (line-number-at-pos (point-max))))
+          (widen)))
+
+
+  (defun brust-down-vertically (nn)
+    (interactive "nColumn number:")
+        (ignore-errors
+          (forward-line 1)
+          (forward-char nn)))
+
+  (defun brust-down-vertically nil
+    (interactive)
+    (ignore-errors
+      (goto-char (+ (1- (line-end-position)) (current-column)))))
+
+
+      (defun brust-org-table-field nil
+        (let ((n0 (point)))
+          (org-forward-sentence)
+          (s-trim (buffer-substring-no-properties n0 (point)))))
+
+  (defun brust-org-table-leave-only-Si nil
+      (interactive)
+      (unless (org-at-table-p) (user-error "No table at point"))
+      (org-table-align)          ; Make sure we have everything we need.
+      (narrow-to-region (org-table-begin) (org-table-end))
+      (let ((nn (current-column)) (lines (line-number-at-pos (point-max))))
+          (while (not (eobp))
+            (unless (looking-at-p "S[ií] ")
+              (message "%s" (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
+              (delete-region (line-beginning-position) (line-end-position)))
+            (brust-down-vertically nn))
+      (message "The table has %d lines." (- lines (line-number-at-pos (point-max)))))
+      (widen))
+
+    (defun brust-org-table-count-lines nil
+      (interactive)
+      (unless (org-at-table-p) (user-error "No table at point"))
+      (org-table-align)          ; Make sure we have everything we need.
+      (narrow-to-region (org-table-begin) (org-table-end))
+      (message "The table has %d lines."  (line-number-at-pos (point-max)))
+      (widen))
+
+#+END_SRC
+
+** My-dictionary
+#+BEGIN_SRC elisp
+  (global-set-key (kbd "<C-M-return>") 'brust-my-dictionary-edit-an-entry)
+
+  (global-set-key (kbd "<s-return>") 'brust-my-dictionary-new-entry)
+
+  (defvar brust-my-dictionary-dir "Directory where is the dictionary")
+
+  (setq brust-my-dictionary-dir "~/Dropbox/English/My-dictionary/")
+
+  (defun brust-my-dictionary-open-an-entry (header)
+    (let ((TeX-master t))
+      (find-file (concat brust-my-dictionary-dir
+                       "sections/"
+                       (capitalize (substring header 0 1))
+                       "/"
+                       (replace-regexp-in-string "[ ]" "-" header)
+                       ".tex"))))
+
+    (defun brust-my-dictionary-new-entry (header)
+      (interactive (list
+                    (read-string "Give me the header:")))
+      (brust-my-dictionary-open-an-entry header)
+      (erase-buffer)
+      (insert-file-contents (concat brust-my-dictionary-dir "tamplate-new-entry.tex"))
+      (goto-char (point-min))
+      (search-forward "entry{}{}{}{}" nil t)
+      (backward-char 7)
+      (insert header)
+      (forward-char 2)
+      (save-buffer))
+
+  (defun brust-my-dictionary-edit-an-entry (header)
+    (interactive
+     (list
+      (headlong-with
+       (completing-read
+        "Give me the entry to edit:"
+        (cl-remove-duplicates
+         (mapcar (lambda (x) (replace-regexp-in-string "[-]" " " (file-name-base x)))
+                 (directory-files-recursively (concat brust-my-dictionary-dir "sections") ".+[.]tex"))
+         :test (lambda (x y) (string= x y)))
+        nil t))))
+    (brust-my-dictionary-open-an-entry header))
+
+  ;; From abo-abo, his headlong.el
+  (defmacro headlong-with (&rest forms)
+    "Execute FORMS with completion headlong."
+    `(if (window-minibuffer-p)
+         (user-error "Already in minibuffer")
+       (let ((minibuffer-local-must-match-map headlong-minibuffer-map)
+             (completing-read-function 'completing-read-default))
+         ,@forms)))
+
+  (defvar headlong-minibuffer-map
+    (let ((map (copy-keymap minibuffer-local-must-match-map)))
+      (define-key map [remap self-insert-command] 'headlong-self-insert-complete-and-exit)
+      (define-key map "\C-i" (lambda nil
+                               (interactive)
+                               (minibuffer-complete)
+                               (minibuffer-completion-help)))
+      map)
+    "Keymap for headlong minibuffer completion.")
+
+  (defun headlong-self-insert-complete-and-exit (n)
+    "Insert the character you type and try to complete.
+                                               If this results in:
+                                               - zero candidates: remove char and show completions
+                                               - one candidate: immediately exit the minibuffer.
+                                               N is passed to `self-insert-command'."
+    (interactive "p")
+    (self-insert-command n)
+    (let ((candidates (completion-all-sorted-completions)))
+      (cond
+       ((null candidates)
+        (backward-delete-char-untabify 1)
+        (minibuffer-complete))
+       ((eq 1 (safe-length candidates))
+        (minibuffer-complete-and-exit)))))
+
+  (defun headlong-bookmark-jump (bookmark)
+    "Jump to BOOKMARK headlong."
+    (interactive
+     (list (headlong-with
+            (completing-read "Jump to bookmark: " bookmark-alist nil t))))
+    (ignore-errors
+      (bookmark-jump bookmark)))
+
+  ;; end abo-abo.
+
+#+END_SRC
+
+#+RESULTS:
+: headlong-bookmark-jump
+
+** Teaching
+   From Excel save the table in csv format into /"tmp/my-table.csv"/ using {tab} as separators.
+   Eval =C-c C-c=:
+#+BEGIN_SRC elisp
+  (find-file (concat temporary-file-directory "new-notes.org"))
+  (insert "#+NAME: alumnes\n")
+  (org-table-import (concat temporary-file-directory "my-table.csv") nil)
+  (goto-char (point-max))
+  (insert "\n\n")
+#+END_SRC
+
+  And copy the following subtree =C-c C-x M-w= under the table and eval the code.
+
+*** Teaching functions
+#+BEGIN_SRC elisp :command export :var data=alumnes
+(require 's)
+
+(defvar brust-mark-column "Column number (starting from 1) where to insert marks (hard-code)")
+(defvar brust-niu-column "Column number (starting from 1) where nius are (hard-code)")
+(defvar brust-whatever-to-comma-p "It has to be a string or nil. If it is nil do nothing, if not, then replace whatever string or char using as separator into its value")
+(defvar brust-time-if-there-was-a-mark "Time in seconds to wait for an acction if the studen had a mark")
+;;  (defvar brust-marks-let-line-highlight-p "t doen't turn down the highlighted line between NIUs")
+(defvar brust-do-visible-bell-p)
+
+(setq brust-whatever-to-comma-p ",")
+(setq brust-mark-column 4)
+(setq brust-niu-column 1)
+(setq brust-time-if-there-was-a-mark 0)
+;;  (setq brust-marks-let-line-highlight-p t)
+(setq brust-do-visible-bell-p t)
+
+(global-set-key (kbd "<s-return>") 'brust-call-niu-insert-mark)
+
+(defvar brust-niu-list "List with nius (autoload)")
+(defvar brust-marks-hist "The history of inserted marks (auxiliar)")
+(setq brust-marks-hist '("5"))
+
+
+;; From abo-abo, his headlong.el
+(defmacro headlong-with (&rest forms)
+  "Execute FORMS with completion headlong."
+  `(if (window-minibuffer-p)
+       (user-error "Already in minibuffer")
+     (let ((minibuffer-local-must-match-map headlong-minibuffer-map)
+           (completing-read-function 'completing-read-default))
+       ,@forms)))
+
+(defvar headlong-minibuffer-map
+  (let ((map (copy-keymap minibuffer-local-must-match-map)))
+    (define-key map [remap self-insert-command] 'headlong-self-insert-complete-and-exit)
+    (define-key map "\C-i" (lambda nil
+                             (interactive)
+                             (minibuffer-complete)
+                             (minibuffer-completion-help)))
+    map)
+  "Keymap for headlong minibuffer completion.")
+
+(defun headlong-self-insert-complete-and-exit (n)
+  "Insert the character you type and try to complete.
+                                           If this results in:
+                                           - zero candidates: remove char and show completions
+                                           - one candidate: immediately exit the minibuffer.
+                                           N is passed to `self-insert-command'."
+  (interactive "p")
+  (self-insert-command n)
+  (let ((candidates (completion-all-sorted-completions)))
+    (cond
+     ((null candidates)
+      (backward-delete-char-untabify 1)
+      (minibuffer-complete))
+     ((eq 1 (safe-length candidates))
+      (minibuffer-complete-and-exit)))))
+
+(defun headlong-bookmark-jump (bookmark)
+  "Jump to BOOKMARK headlong."
+  (interactive
+   (list (headlong-with
+          (completing-read "Jump to bookmark: " bookmark-alist nil t))))
+  (ignore-errors
+    (bookmark-jump bookmark)))
+;; end abo-abo.
+
+(defun string-reverse (str)
+  "Reverse the str where str is a string"
+  (apply #'string
+         (reverse
+          (string-to-list str))))
+
+(defun number-to-string-reverse (num)
+  "Reverse the num where num is a number"
+  (string-reverse
+   (number-to-string num)))
+
+(setq brust-niu-list
+      (mapcar 'number-to-string-reverse
+              (cl-remove-if-not 'numberp
+                                (mapcar '(lambda (x) (nth (1- brust-niu-column) x))
+                                        data))))
+
+(defun brust-do-visible-bell nil
+  (and brust-do-visible-bell-p
+       (let ((visible-bell t))
+         (ding))))
+
+(defun brust-replace-whatever-into-comma (str)
+  (if (and brust-whatever-to-comma-p (string-match-p "[^0-9]" str))
+      (let ((number (split-string str "[^0-9]+")))
+        (concat (if (string= "" (car number)) "0" (car number))
+                brust-whatever-to-comma-p
+                (if (string= "" (car (cdr number))) "0" (car (cdr number)))))
+    str))
+
+(defun brust-search-new-niu (NIU)
+  (unless (org-at-table-p) (user-error "No table at point"))
+  (org-table-align)          ; Make sure we have everything we need.
+  (narrow-to-region (org-table-begin) (org-table-end))
+  (goto-char (point-min))
+  (let ((p (if (search-forward NIU nil t)
+               (hl-line-mode 1)
+             nil)))
+    (widen)
+    p))
+
+(defun brust-call-niu-insert-mark nil
+  (interactive)
+  (hl-line-mode 0)
+  (let ((NIU (string-reverse
+              (headlong-with
+               (completing-read "Insert NIU: "
+                                brust-niu-list nil t)))))
+    (brust-do-visible-bell)
+    (if (brust-search-new-niu NIU)
+        (let ((old-mark (s-trim (org-table-get-field brust-mark-column))))
+          (when (or (s-blank? old-mark)
+                    (y-or-n-p-with-timeout
+                     (format "This stundent had the mark %s. Continue? (default yes)" old-mark)
+                     brust-time-if-there-was-a-mark
+                     t))
+            (org-table-get-field brust-mark-column
+                                 (brust-replace-whatever-into-comma
+                                  (read-string "Enter mark:" nil 'brust-marks-hist)))
+            (org-table-align)))
+      (user-error "Error: NIU %d is in the list but not in the table!! (Reload all)" niu))))
+
+(advice-add 'brust-call-niu-insert-mark :after #'brust-call-niu-insert-mark)
+#+END_SRC
+
+#+RESULTS:
+: brust-call-niu-insert-mark
+
