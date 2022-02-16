@@ -6,10 +6,10 @@ name: Emacs Loads Successfully
 
 # Controls when the action will run.
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
+  # Triggers the workflow on push or pull request events
   push:
 
- # Allows you to run this workflow manually from the Actions tab
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -40,13 +40,13 @@ jobs:
       #    echo Add other actions to build,
       #    echo test, and deploy your project.
 
-      - name: Where am I, What is here
-        run: |
-          pwd
-          ls -a
+      # - name: Where am I, What is here
+      #   run: |
+      #     pwd
+      #     ls -a
 
       - name: My Doom config
-        run: cp -ar ~/work/.doom.d/.doom.d/ ~/.doom.d
+        run: cp -ar $(pwd) ~/.doom.d
 
       - name: Get and install Doom
         run: |
@@ -57,9 +57,9 @@ jobs:
       - name: Attempting startup...
         run: time emacs -nw --batch --eval='(let
                                 ((url-show-status nil))
-                              (message "Default directory:")
-                              (message default-directory)
-                              (message "User Emacs directory:")
-                              (message user-emacs-directory)
+                              # (message "Default directory:")
+                              # (message default-directory)
+                              # (message "User Emacs directory:")
+                              # (message user-emacs-directory)
                               (load-file "~/.emacs.d/init.el")
                               (message "\n 🤤 Startup Successful! 🤩"))'
