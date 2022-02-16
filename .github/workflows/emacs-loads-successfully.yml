@@ -55,11 +55,6 @@ jobs:
           ~/.emacs.d/bin/doom sync
 
       - name: Attempting startup...
-        run: time emacs -nw --batch --eval='(let
-                                ((url-show-status nil))
-                              # (message "Default directory:")
-                              # (message default-directory)
-                              # (message "User Emacs directory:")
-                              # (message user-emacs-directory)
-                              (load-file "~/.emacs.d/init.el")
-                              (message "\n 🤤 Startup Successful! 🤩"))'
+        run: time emacs -nw --batch --eval='(let ((url-show-status nil))
+                                             (load-file "~/.emacs.d/init.el")
+                                             (message "\n 🤤 Startup Successful! 🤩"))'
