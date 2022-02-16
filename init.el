@@ -71,7 +71,8 @@
        (dired +icons)      ; making dired pretty [functional]
        electric            ; smarter, keyword-based electric-indent
        (ibuffer +icons)    ; interactive buffer management
-       ;;undo              ; persistent, smarter undo for your inevitable mistakes
+       ;; See https://github.com/hlissner/doom-emacs/issues/4135
+       undo                ; persistent, smarter undo for your inevitable mistakes
        vc                  ; version-control and Emacs, sitting in a tree
 
        :term
