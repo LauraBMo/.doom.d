@@ -12,6 +12,8 @@
 ;; LaTeX stuff
 (package! bratex :recipe (:host github :repo "sbrisard/bratex"))
 ;; Biblatex
+;; Biblio is not working for crossref any more...
+;; (package! org-ref) ;; But this is not working either
 (package! bibretrieve) ;; For MAthSciNet references
 (package! biblio) ;; For all the others, mostly Crossref, ....
 (package! ivy-bibtex) ;; For inserting cites
@@ -19,7 +21,6 @@
 (package! scihub :recipe (:host github :repo "emacs-pe/scihub.el"))
 ;; (package! lsp-latex :recipe (:host github :repo "ROCKTAKEY/lsp-latex"))
 ;; (package! org-ref) ;; it is way too heavy: it requires helm, helm-bibtex, parsebib, biblio, key-chord, pdf-tool
-
 
 ;; Handy tecosaur's packages:
 ;; take a screenshot of some code to share

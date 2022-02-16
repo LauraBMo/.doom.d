@@ -1610,6 +1610,36 @@ Use pandoc to import files in .mw, .docs, ...
 #+begin_src elisp
 (use-package! org-pandoc-import :after org)
 #+end_src
+*** COMMENT Org Ref
+#+begin_src elisp
+(use-package! org-ref
+
+  ;; this bit is highly recommended: make sure Org-ref is loaded after Org
+  :after org
+
+  ;; Put any Org-ref commands here that you would like to be auto loaded:
+  ;; you'll be able to call these commands before the package is actually loaded.
+  :commands
+  (org-ref-cite-hydra/body
+   org-ref-bibtex-hydra/body)
+
+  ;; if you don't need any autoloaded commands, you'll need the following
+  ;; :defer t
+
+  ;; This initialization bit puts the `orhc-bibtex-cache-file` into `~/.doom/.local/cache/orhc-bibtex-cache
+  ;; Not strictly required, but Org-ref will pollute your home directory otherwise, creating the cache file in ~/.orhc-bibtex-cache
+  :init
+  (let ((cache-dir (concat doom-cache-dir "org-ref")))
+    (unless (file-exists-p cache-dir)
+      (make-directory cache-dir t))
+    (setq orhc-bibtex-cache-file (concat cache-dir "/orhc-bibtex-cache"))))
+
+(use-package! doi-utils
+  :after org
+  :commands (crossref-add-bibtex-entry doi-utils-add-entry-from-crossref-query)
+  :config
+  (setq doi-utils-download-pdf nil))
+#+end_src
 
 ** LaTeX mode
 *** AUCTeX
