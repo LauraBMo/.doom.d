@@ -59,4 +59,8 @@ jobs:
         run: ~/.emacs.d/bin/doom sync
 
       - name: Attempting startup...
-        run: time emacs -nw
+        run: time emacs -nw -batch --eval='(let
+                                ((user-emacs-directory default-directory))
+                              (message "Default directory" )
+                              (message default-directory)
+                              (setq url-show-status nil))'
