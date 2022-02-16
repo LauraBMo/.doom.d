@@ -2572,16 +2572,14 @@ Run =doom build= to make it work (no idea why...)
 *** Abbrev's
 **** Setting
 #+BEGIN_SRC elisp
-  (setq pre-abbrev-expand-hook (quote (ignore))
-        abbrev-file-name "~/Dropbox/config/abbrev-def.el"
-        save-abbrevs 'silently)
+(setq pre-abbrev-expand-hook (quote (ignore))
+      save-abbrevs 'silently)
+(when (file-exists-p "~/Dropbox/config/abbrev-def.el")
+  (setq abbrev-file-name "~/Dropbox/config/abbrev-def.el"))
 
-  (setq-default abbrev-mode t)
-
-  (quietly-read-abbrev-file)
+(setq-default abbrev-mode t)
+(add-hook 'after-init-hook #'quietly-read-abbrev-file)
 #+END_SRC
-
-#+RESULTS:
 
 **** COMMENT Endless ispell & abbrev
      It comes from [[http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html][Ispell and abbrev]], to find the misspelled work plain =ispell= is used, I adapted it to use =flyspell=, now I just get words which are underlined as misspelled (red curvi line under the word).
