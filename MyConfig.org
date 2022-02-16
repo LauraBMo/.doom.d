@@ -1976,12 +1976,11 @@ Bad
 ;; (require 'julia-mode)
 ;; (require 'julia-repl)
 ;; (add-hook 'julia-mode-hook 'julia-repl-mode) ;; always use minor mode
-(setq julia-repl-executable-records
-      `(;; (default "julia")
-        (master ,(expand-file-name (concat "~/src/julia/"
-                                           (if (member "bin" (directory-files "~/src/julia"))
-                                               "bin/")
-                                           "julia"))))) ; in the executable path
+(when (file-exists-p "~/src/julia/bin/julia")
+  (setq julia-repl-executable-records
+        `(;; (default "julia")
+          (master ,(expand-file-name "~/src/julia/bin/julia")))))
+
 ;; (setq
 ;;  term-char-mode-buffer-read-only nil
 ;;  term-char-mode-point-at-process-mark nil)
