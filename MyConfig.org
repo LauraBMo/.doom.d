@@ -720,7 +720,7 @@ Single Capitals as you type."
 #+RESULTS:
 *** Line by line
 #+begin_src elisp
-(defun brust-buffer-advice-line-by-line (FUNCTION &rest ARGS)
+(defun brust-apply-function-line-by-line (FUNCTION &rest ARGS)
   "Executes function FUNCTION, from point-min, and moves forward one line. Repeat until end of buffer."
   (save-excursion
     (goto-char (point-min))
@@ -2587,7 +2587,7 @@ Run =doom build= to make it work (no idea why...)
 
 (defun brust-M2-indent-buffer nil
   (interactive)
-  (brust-buffer-advice-line-by-line 'brust-M2-electric-tab-inerit-indentation))
+  (brust-apply-function-line-by-line 'brust-M2-electric-tab-inerit-indentation))
 #+end_src
 **** M2 or send line
 #+begin_src elisp
