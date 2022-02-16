@@ -61,6 +61,8 @@ jobs:
       - name: Attempting startup...
         run: time emacs -nw -batch --eval='(let
                                 ((user-emacs-directory default-directory))
-                              (message "Default directory" )
+                              (message "Default directory:")
                               (message default-directory)
-                              (setq url-show-status nil))'
+                              (setq url-show-status nil)
+                              (load-file "~/.emacs.d/init.el")
+                              (message "\n 🤤 Startup Successful! 🤩"))'
