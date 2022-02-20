@@ -621,3 +621,16 @@ _o_: org-cap | _C--_: show less   | _*_: *thing  | _q_: quit hdrs | _j_: jump2ma
 #+RESULTS:
 : hydra-pdftools/body
 
+
+* COMMENT Smartparents
+:PROPERTIES:
+:ARCHIVE_TIME: 2022-02-21 lun 00:31
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/Build-in modes
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+#+begin_src elisp
+(setq sp-highlight-pair-overlay nil
+      sp-highlight-wrap-overlay nil
+      sp-highlight-wrap-tag-overlay nil)
+#+end_src

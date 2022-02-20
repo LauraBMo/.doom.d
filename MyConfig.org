@@ -2735,12 +2735,6 @@ Package to highlight TODO's in comments and so.
 (setq ispell-highlight-face 'flyspell-incorrect)
 #+end_src
 
-*** Smartparents
-#+begin_src elisp
-(setq sp-highlight-pair-overlay nil
-      sp-highlight-wrap-overlay nil
-      sp-highlight-wrap-tag-overlay nil)
-#+end_src
 *** Tramp
 #+begin_src elisp
 (setq password-cache-expiry nil
