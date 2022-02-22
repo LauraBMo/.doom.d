@@ -2946,28 +2946,23 @@ I just want auto format in a few modes.
 | not | emacs-lisp-mode | sql-mode | tex-mode | c-mode | latex-mode |
 *** Fuzzi file finder
 **** Main config
+
 #+begin_src elisp
 (after! counsel
   (advice-add 'counsel-fzf :around #'brust-counsel-fzf-advice-add-hide-files)
 
-  (map!
-   (:leader
-     (:prefix "f"
-       (:prefix ("z" . "Fuzzy find")
+  (map! (:leader (:prefix "f" (:prefix ("z" . "Fuzzy find")
          :desc "Current dir" "z" #'counsel-fzf
-         :desc "Drobox"      "d" #'brust-counsel-fzf-dropbox
-         :desc "grep git"    "g" #'fzf-git-grep
-         :desc "Home"        "h" #'brust-counsel-fzf-home
-         :desc "Select dir"  "s" #'brust-counsel-fzf-dir
-         :desc ".emacs.d"    "e" #'brust-counsel-fzf-emacsd)))))
+         :desc "Select dir"  "s" #'brust-counsel-fzf-dir)))))
 #+end_src
 
 #+RESULTS:
-: brust-counsel-fzf-emacsd
+: counsel-fzf
 
 **** Advice counsel-fzf to include hidden files
-;; Install ag with:
-;; sudo apt install silversearcher-ag
+
+Install =ag= with: =sudo apt install silversearcher-ag=.
+
 #+begin_src elisp
 (defun brust-counsel-fzf-advice-add-hide-files (orig-fun &rest args)
   (if current-prefix-arg
@@ -2983,51 +2978,38 @@ I just want auto format in a few modes.
 
 #+end_src
 
-#+RESULTS:
-: brust-counsel-fzf-advice-add-hide-files
-
 **** Workaround for jumping to specific dirs
 #+begin_src elisp
 (defun brust-counsel-fzf-dir nil
   "fzf find file selecting a directory"
   (interactive)
-  (let ((μdir (read-directory-name "Directory: ")))
-    (counsel-fzf
-     nil
-     μdir
-     (concat "fzf in " μdir ": "))))
+  (let ((μdir (brust-ivy-read-directory-name)))
+    (counsel-fzf nil μdir (concat "fzf in " μdir ": "))))
 
-(defun brust-counsel-fzf-home nil
-  "fzf find file in home"
-  (interactive)
-  (counsel-fzf
-   nil
-   "~"
-   "fzf in Home: "))
+(defvar brust-counsel-fzf-default-dirs-alist
+  '(("~" . "Home")
+    ("~/Dropbox" . "Dropbox")
+    ("~/.emacs.d" . "emacs.d")
+    ("~/.doom.d" . ".doom.d"))
+  "Cons list of `(dir . name)' to auto-create fzf searches in.")
 
-(defun brust-counsel-fzf-emacsd nil
-  "fzf find file in .emacs.d"
-  (interactive)
-  (counsel-fzf
-   nil
-   "~/.emacs.d"
-   "fzf in .emacs.d: "))
-
-(defun brust-counsel-fzf-dropbox nil
-  "fzf find file in Dropbox"
-  (interactive)
-  (counsel-fzf
-   nil
-   "~/Dropbox"
-   "fzf in Dropbox: "))
+(cl-loop for dirname in brust-counsel-fzf-default-dirs-alist do
+         ;; (message "dir %s, name %s" (car dirname) (cdr dirname))
+         (let* ((dir (car dirname))
+                (name (cdr dirname))
+                (bind (downcase (substring name 0 1)))
+                (fun-name (intern (format "brust-counsel-fzf-%s" (downcase name)))))
+           ;; (message "dir %s, name %s" dir name)
+           (fset fun-name
+                 `(lambda nil (interactive)
+                    (counsel-fzf nil ,dir ,(format "fzf in %s: " name))))
+           (map! (:leader (:prefix "f" (:prefix "z"
+                                        :desc name bind fun-name))))))
 #+end_src
-
-#+RESULTS:
-: brust-counsel-fzf-dropbox
 
 *** Ivy
 **** General ivy
-    - Learn ivy-bibtex
+
 #+BEGIN_SRC elisp
 (after! ivy
   (setq ivy-use-virtual-buffers t
