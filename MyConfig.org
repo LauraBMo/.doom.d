@@ -718,6 +718,27 @@ Single Capitals as you type."
 #+END_SRC
 
 #+RESULTS:
+*** Ivy read directory
+#+begin_src elisp
+(defun brust-ivy-read-directory-name (&optional initial-input action initial-directory)
+  "Select a directory using `ivy-read'."
+  (interactive)
+  (let ((default-directory (or initial-directory
+                               (if (eq major-mode 'dired-mode)
+                                   (dired-current-directory)
+                                 default-directory))))
+    (ivy-read "Directory " #'read-file-name-internal
+              :matcher #'counsel--find-file-matcher
+              :predicate #'file-directory-p
+              :initial-input initial-input
+              :action action
+              :preselect (counsel--preselect-file)
+              :require-match 'confirm-after-completion
+              :history 'file-name-history
+              :keymap counsel-find-file-map
+              :caller 'brust-ivy-read-directory-name)))
+#+end_src
+
 *** Line by line
 #+begin_src elisp
 (defun brust-apply-function-line-by-line (FUNCTION &rest ARGS)
