@@ -3312,7 +3312,8 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
  :init
  (setq scihub-download-directory "~/Dropbox/bibliography/pdf/"
        scihub-open-after-download t
-       scihub-fetch-domain 'scihub-fetch-domains-lovescihub))
+       scihub-fetch-domain 'scihub-fetch-domains-lovescihub
+       scihub-homepage "https://sci-hub.se"))
 #+end_src
 
 *** Surround
