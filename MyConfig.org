@@ -2897,6 +2897,7 @@ Package to highlight TODO's in comments and so.
     (let ((result (nth company-selection company-candidates)))
       (company--insert-candidate result))))
 #+END_SRC
+
 *** Evil mode
 **** Settings
 #+BEGIN_SRC elisp
@@ -2910,14 +2911,13 @@ Package to highlight TODO's in comments and so.
       ;; cursor is allowed to move one character past the end of the line
       evil-move-beyond-eol t
       evil-vsplit-window-right t)
-(global-evil-visualstar-mode)
+(global-evil-visualstar-mode +1)
 #+END_SRC
 
-#+RESULTS:
-: t
 **** Del char
 Do not add single deleted chars to =kill-ring=
 [[https://github.com/syl20bnr/spacemacs/issues/6977]]
+
 #+begin_src elisp
 (defun bb/evil-delete--black-hole-register (orig-fn beg end &optional type _ &rest args)
   (apply orig-fn beg end type ?_ args))
