@@ -19,7 +19,7 @@
     ;; (my-LaTeX-mode-chords)
     (brust-embrace-LaTeX-mode-hook)
     ;; (brust-wc-save-words)
-    (setq LaTeX-clean-intermediate-suffixes ;; here the variable will be load and modified by sure
+    (setq LaTeX-clean-intermediate-suffixes ;; here the variable will be load and modified for sure
           (append LaTeX-clean-intermediate-suffixes
                   (list
                    "-blx"
@@ -80,7 +80,7 @@
 
 #+RESULTS:
 : brust-list-with-colon
-** Snipped Yasnippet Headers
+** Snipped cdlatex Headers
 #+begin_src elisp
   (defun brust-LaTeX-set-header (-header)
     (interactive
