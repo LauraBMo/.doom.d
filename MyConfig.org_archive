@@ -634,3 +634,92 @@ _o_: org-cap | _C--_: show less   | _*_: *thing  | _q_: quit hdrs | _j_: jump2ma
       sp-highlight-wrap-overlay nil
       sp-highlight-wrap-tag-overlay nil)
 #+end_src
+
+* COMMENT Yassnippets
+:PROPERTIES:
+:ARCHIVE_TIME: 2022-02-22 mar 12:45
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/External modes
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+** jasnippets
+#+begin_src elisp
+;; for functions
+(defun julia-split-args (arg-string)
+  "Split a julia argument string into ((name, default)..) tuples"
+  (mapcar (lambda (x)
+             (split-string x "[[:blank:]]*=[[:blank:]]*" t))
+          (split-string arg-string "[[:blank:]]*[,;][[:blank:]]*" t)))
+
+(defun julia-args-to-docstring ()
+  "return docstring format for the julia arguments in yas-text"
+  (let* ((indent (concat "\n" (make-string (current-column) 32)))
+         (args (julia-split-args yas-text))
+         (max-len (if args (apply 'max (mapcar (lambda (x) (length (nth 0 x))) args)) 0))
+         (formatted-args (mapconcat
+                          (lambda (x)
+                            (concat "- " (nth 0 x) (make-string (- max-len (length (nth 0 x))) ? ) " : "
+                                    (if (nth 1 x) (concat "\(default " (nth 1 x) "\)"))))
+                          args
+                          indent)))
+    (unless (string= formatted-args "")
+      (mapconcat 'identity (list "# Arguments" formatted-args) indent))))
+#+end_src
+
+
+* COMMENT Surround
+:PROPERTIES:
+:ARCHIVE_TIME: 2022-02-23 mié 09:11
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/External modes
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+#+begin_src elisp
+(setq-default
+ evil-surround-pairs-alist
+ '((?\( . ("(" . ")"))
+   (?\[ . ("[" . "]"))
+   (?\{ . ("{" . "}"))
+   (?< . ("<" . ">"))
+
+   (?\) . ("\\(" . "\\)"))
+   (?\] . ("\\[\n" . "\n\\]"))
+   ;; (?\) . ("(" . ")"))
+   ;; (?\] . ("[" . "]"))
+   ;; (?\} . ("{" . "}"))
+
+   ;; (?# . ("#{" . "}"))
+   ;; (?b . ("(" . ")"))
+   ;; (?B . ("{" . "}"))
+   (?t . evil-surround-read-tag)
+   (?> . evil-surround-read-tag)
+   (?f . evil-surround-function)))
+
+;; this macro was copied from here: https://stackoverflow.com/a/22418983/4921402
+(defmacro define-and-bind-quoted-text-object (name key start-regex end-regex)
+  (let ((inner-name (make-symbol (concat "evil-inner-" name)))
+        (outer-name (make-symbol (concat "evil-a-" name))))
+    `(progn
+       (evil-define-text-object ,inner-name (count &optional beg end type)
+         (evil-select-paren ,start-regex ,end-regex beg end type count nil))
+       (evil-define-text-object ,outer-name (count &optional beg end type)
+         (evil-select-paren ,start-regex ,end-regex beg end type count t))
+       (define-key evil-inner-text-objects-map ,key #',inner-name)
+       (define-key evil-outer-text-objects-map ,key #',outer-name))))
+
+(define-and-bind-quoted-text-object "dollar" "$" "\\$" "\\$") ;; sometimes your have to escape the regex
+(define-and-bind-quoted-text-object "ddollar" "r" "\\$\\$" "\\$\\$") ;; sometimes your have to escape the regex
+(define-and-bind-quoted-text-object "inmath" ")" "\\\\(" "\\\\)")
+(define-and-bind-quoted-text-object "dismath" "]" "\\\\[" "\\\\]")
+
+(defun brust-embrace-LaTeX-mode-hook ()
+  (dolist (lst '((?= "\\verb|" . "|")
+                 (?~ "\\texttt{" . "}")
+                 (?/ "\\emph{" . "}")
+                 (?* "\\textbf{" . "}")))
+    (embrace-add-pair (car lst) (cadr lst) (cddr lst))))
+#+end_src
+
+#+RESULTS:
+: brust-embrace-LaTeX-mode-hook
+

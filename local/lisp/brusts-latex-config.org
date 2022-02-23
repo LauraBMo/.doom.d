@@ -17,7 +17,7 @@
     ;; (add-hook 'TeX-update-style-hook ;; ;; #'rainbow-delimiters-mode-enable)
     ;; (LaTeX-mode-hook-company-setup)
     ;; (my-LaTeX-mode-chords)
-    (brust-embrace-LaTeX-mode-hook)
+    ;; (brust-embrace-LaTeX-mode-hook)
     ;; (brust-wc-save-words)
     (setq LaTeX-clean-intermediate-suffixes ;; here the variable will be load and modified for sure
           (append LaTeX-clean-intermediate-suffixes
