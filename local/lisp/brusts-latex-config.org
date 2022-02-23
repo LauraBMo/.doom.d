@@ -1227,7 +1227,8 @@ There are many defaults that I do not use, this is to clean a bit.
 |  96 | ()                                  |
 |  39 | (\prime)                            |
 
-** Adaptation to my style
+** COMMENT Adaptation to my style
+
 #+BEGIN_SRC elisp
 ;; (defadvice cdlatex-sub-superscript (around not-add-dollar activate)
 ;;   (if (texmathp) ad-do-it
