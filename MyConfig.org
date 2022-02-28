@@ -354,10 +354,19 @@ See =doom-unreal-buffer-functions=
 #+end_src
 
 ** TODO Handy Doom
-*** File templates
+*** TODO File templates
 Add my own templates for LaTeX, Singular, Julia... Looks pretty handy :)
 Copy folder module in local to .emacs.d (I'm making your live easier)
 #+begin_src elisp
+;; +file-templates-dir
+
+;; It is run once when upgrading or syncing doom (when .emacs.d/module/ folder might be modified).
+;; cp -r ~/.doom.d/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates
+;; alias doom-sync='~/.emacs.d/bin/doom sync && \
+;;     cp -r ~/.doom.d/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates && \
+;;     echo > Templates sync'
+;; alias doom-up='~/.emacs.d/bin/doom upgrade && doom-sync'
+
 (set-file-template! "[.]sing" :trigger "__sing" :mode 'c++-mode)
 (set-file-template! "[.]tex" :trigger "__tex" :mode 'latex-mode)
 #+end_src
