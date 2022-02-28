@@ -101,7 +101,7 @@ I’m rarely happier than when spending an entire day programming my computer
  '(highlight ((t (:background "#51afef" :foreground "black" :weight bold)))))
 #+end_src
 *** Enabling
-Put ='disabled= to =nil=
+Enable some functions.
 #+begin_src elisp
 (put 'erase-buffer 'disabled nil)
 #+end_src
@@ -236,8 +236,8 @@ Put ='disabled= to =nil=
 ***** Minor mode
 #+begin_src elisp
 (define-minor-mode brust-line-number-mode
-  "Toggle line number display in the mode line (Brust Line Number mode).
-With a prefix argument ARG, enable Line Number mode if ARG is
+  "Toggle show current and total number line in the mode line (Brust Line Number mode).
+With a prefix argument ARG, enable it if ARG is
 positive, and disable it otherwise.  If called from Lisp, enable
 the mode if ARG is omitted or nil.
 
@@ -262,8 +262,6 @@ and `line-number-display-limit-width'."
 ;;   (setq global-mode-string '("" (:eval (brust-line-number-mode--string)) display-time-string)))
 #+end_src
 
-#+RESULTS:
-: brust-line-number-mode-show-total
 ***** Activate
 #+begin_src elisp
 (brust-line-number-mode +1)
@@ -291,9 +289,6 @@ and `line-number-display-limit-width'."
   (setq display-time-default-load-average nil)
   (display-time-mode +1))
 #+end_src
-
-#+RESULTS:
-: t
 
 **** COMMENT Use buffer-name for buffer name
 #+begin_src elisp
@@ -340,7 +335,8 @@ See =doom-unreal-buffer-functions=
 : lisp-interaction-mode
 
 *** Visual fill mode
-    It is like visual line mode but breaks the lines at =fill-column=
+    It is like visual line mode but breaks the lines at =fill-column=.
+
 #+begin_src elisp
 ;; For visual-fill-mode see https://github.com/hlissner/doom-emacs/pull/1906/files
 (setq +word-wrap-extra-indent 'single
@@ -439,8 +435,8 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
   :n "k" #'brust-correct-prev-spelling)
  ;; Binding for buffers
  (:map doom-leader-buffer-map
-  :desc "Ibuffer"     :n "i" #'+ibuffer/open-for-current-workspace
-  :desc "Ibuffer all" :n "I" #'ibuffer)
+  ;; :desc "Ibuffer"     :n "i" #'+ibuffer/open-for-current-workspace
+  :desc "Ibuffer all" :n "i" #'ibuffer)
  (:leader
   :desc "locleader" "SPC" nil ;; Unbind "SPC SPC"
   :desc "Delete other windows" "w 0" #'delete-other-windows
@@ -523,13 +519,8 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 *** By five
 #+BEGIN_SRC elisp
   (defun brust-by-five (-function args)
-    (funcall-interactively -function (if (numberp args)
-                                         (* 5 args)
-                                       5)))
+    (funcall-interactively -function (if (numberp args) (* 5 args) 5)))
 #+END_SRC
-
-#+RESULTS:
-: brust-by-five
 
 *** Change font size
 #+begin_src elisp
@@ -638,7 +629,9 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 : close-quoted-open-paren-right-or-left-end-of-line
 
 *** Customize face at point
-    A handy function for customization
+
+    A handy function for customization (from Singular web page).
+
 #+BEGIN_SRC elisp
   (defun customize-face-at-point nil
     "Customize face which point is at."
@@ -706,27 +699,11 @@ Single Capitals as you type."
     (remove-hook 'post-self-insert-hook #'dcaps-to-scaps-notinmath 'local)))
 #+END_SRC
 
-
 **** Activation
 #+BEGIN_SRC elisp
 (add-hook 'text-mode-hook #'dubcaps-mode)
 #+END_SRC
 
-*** COMMENT Find file sudo
-#+BEGIN_SRC elisp
-(defun find-file-sudofying (FILENAME &optional WILDCARDS)
-  "Find file as root if necessary."
-  (when (and
-         buffer-file-name
-         (not (file-writable-p buffer-file-name))
-         ;; (called-interactively-p "any")
-         (y-or-n-p "File not writable. Open it as root?"))
-    (find-alternate-file (concat "/sudo:root@localhost:" buffer-file-name))))
-
-(advice-add 'find-file :after #'find-file-sudofying)
-#+END_SRC
-
-#+RESULTS:
 *** Ivy read directory
 #+begin_src elisp
 (defun brust-ivy-read-directory-name (&optional initial-input action initial-directory)
@@ -749,6 +726,7 @@ Single Capitals as you type."
 #+end_src
 
 *** Line by line
+
 #+begin_src elisp
 (defun brust-apply-function-line-by-line (FUNCTION &rest ARGS)
   "Executes function FUNCTION, from point-min, and moves forward one line. Repeat until end of buffer."
@@ -758,8 +736,6 @@ Single Capitals as you type."
       (apply FUNCTION ARGS)
       (forward-line +1))))
 #+end_src
-
-#+RESULTS:
 
 *** Macro query
 #+BEGIN_SRC elisp
@@ -948,9 +924,6 @@ commands to work with MangaRock comics
     (+spell/correct)))
 #+end_src
 
-#+RESULTS:
-: brust-correct-prev-spelling
-
 *** Total number of lines
 #+begin_src elisp
 (defsubst brust--number-of-lines-current-buffer nil
@@ -1019,8 +992,6 @@ commands to work with MangaRock comics
 ;; End:
 #+end_src
 
-#+RESULTS:
-: brust-vterm--eval-line
 
 *** COMMENT Word count
 #+BEGIN_SRC elisp
@@ -1159,8 +1130,6 @@ commands to work with MangaRock comics
          :desc "Biblio" "C" #'ivy-bibtex-with-local-bibliography
           )))
  #+END_SRC
-
- #+RESULTS:
 
 *** TODO Agenda
 #+begin_src elisp
@@ -1546,9 +1515,6 @@ See `org-capture-templates' for more information."
   (unless (process-live-p vterm--process) (brust-org-mode-vterm-julia--launch-and-link)))
 #+end_src
 
-#+RESULTS:
-: brust-org-mode-vterm-julia-link-or-launch-and-link
-
 **** Send region or line
 #+begin_src elisp
 (defun brust-org-mode-vterm-julia-send-region-or-line nil
@@ -1559,9 +1525,6 @@ See `org-capture-templates' for more information."
        (brust-vterm--eval-region)
      (brust-vterm--eval-line))))
 #+end_src
-
-#+RESULTS:
-: brust-org-mode-vterm-julia-send-region-or-line
 
 **** Send region or block or header
 #+begin_src elisp
@@ -1580,9 +1543,6 @@ See `org-capture-templates' for more information."
         ((org-at-heading-p) (brust-endless/org-julia--eval-header))
         (t (brust-org-mode-vterm-julia--eval-block))))
 #+end_src
-
-#+RESULTS:
-: brust-org-mode-vterm-julia-send-region-or-block
 
 **** Eval all blocks under current header
 #+BEGIN_SRC elisp
@@ -2156,6 +2116,7 @@ Run =doom build= to make it work (no idea why...)
 : brust--julia-input-delete
 
 ***** Send common functions
+
 #+begin_src elisp
 (defun brust-julia--add-function (-fun)
   ;; (move-end-of-line 1)
@@ -2196,8 +2157,6 @@ Run =doom build= to make it work (no idea why...)
          (buffer-string))))))
 #+end_src
 
-#+RESULTS:
-: brust-julia-close-send-line
 ***** Generate 'exports'
 #+begin_src elisp
 (defun brust-julia-update-exports nil
@@ -2638,7 +2597,7 @@ Run =doom build= to make it work (no idea why...)
   (setq abbrev-file-name "~/Dropbox/config/abbrev-def.el"))
 
 (setq-default abbrev-mode t)
-(add-hook 'after-init-hook #'quietly-read-abbrev-file)
+(add-hook 'emacs-startup-hook #'quietly-read-abbrev-file)
 #+END_SRC
 
 **** COMMENT Endless ispell & abbrev
@@ -2784,7 +2743,7 @@ Package to highlight TODO's in comments and so.
       (epa-decrypt-file file -temp-file)
       (delete-file -temp-file))))
 
-;; (add-hook! 'after-init-hook (brust-decrypt "~/.authinfo.gpg"))
+;; (add-hook! 'emacs-startup-hook (brust-decrypt "~/.authinfo.gpg"))
 #+end_src
 
 #+RESULTS:
@@ -2953,7 +2912,7 @@ I just want auto format in a few modes.
 
 #+RESULTS:
 | not | emacs-lisp-mode | sql-mode | tex-mode | c-mode | latex-mode |
-*** Fuzzi file finder
+*** FZF Fuzzi file finder
 **** Main config
 
 #+begin_src elisp
@@ -2968,7 +2927,7 @@ I just want auto format in a few modes.
 #+RESULTS:
 : counsel-fzf
 
-**** Advice counsel-fzf to include hidden files
+**** Advice to include hidden files
 
 Install =ag= with: =sudo apt install silversearcher-ag=.
 
@@ -2984,7 +2943,6 @@ Install =ag= with: =sudo apt install silversearcher-ag=.
              (counsel-fzf-cmd (concat "ag " ag-args " | fzf -f \"%s\"")))
         (apply orig-fun args))
     (apply orig-fun args)))
-
 #+end_src
 
 **** Workaround for jumping to specific dirs

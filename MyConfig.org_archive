@@ -723,3 +723,25 @@ _o_: org-cap | _C--_: show less   | _*_: *thing  | _q_: quit hdrs | _j_: jump2ma
 #+RESULTS:
 : brust-embrace-LaTeX-mode-hook
 
+
+* COMMENT Find file sudo
+:PROPERTIES:
+:ARCHIVE_TIME: 2022-02-24 jue 23:31
+:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
+:ARCHIVE_OLPATH: init.el/My functions
+:ARCHIVE_CATEGORY: MyConfig
+:END:
+#+BEGIN_SRC elisp
+(defun find-file-sudofying (FILENAME &optional WILDCARDS)
+  "Find file as root if necessary."
+  (when (and
+         buffer-file-name
+         (not (file-writable-p buffer-file-name))
+         ;; (called-interactively-p "any")
+         (y-or-n-p "File not writable. Open it as root?"))
+    (find-alternate-file (concat "/sudo:root@localhost:" buffer-file-name))))
+
+(advice-add 'find-file :after #'find-file-sudofying)
+#+END_SRC
+
+#+RESULTS:
