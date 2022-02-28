@@ -35,10 +35,11 @@ I’m rarely happier than when spending an entire day programming my computer
 (setq user-full-name "Laura Brustenga i Moncusí"
       user-mail-address "laurea987@gmail.com")
 #+END_SRC
-*** Scratch message
+*** Scratch buffer
 #+BEGIN_SRC elisp
   ;; (setq initial-scratch-message ";;;;;;;;;;;;; Bon Dia!!!! ;;;;;;;;;;;;;;;;\n\n\n")
-  (setq initial-scratch-message ";; ╔═╗┌─┐┬─┐┌─┐┌┬┐┌─┐┬ ┬\n;; ╚═╗│  ├┬┘├─┤ │ │  ├─┤\n;; ╚═╝└─┘┴└─┴ ┴ ┴ └─┘┴ ┴\n")
+  (setq initial-scratch-message ";; ╔═╗┌─┐┬─┐┌─┐┌┬┐┌─┐┬ ┬\n;; ╚═╗│  ├┬┘├─┤ │ │  ├─┤\n;; ╚═╝└─┘┴└─┴ ┴ ┴ └─┘┴ ┴\n"
+        doom-scratch-initial-major-mode 'lisp-interaction-mode)
 #+END_SRC
 *** European agenda.
 #+BEGIN_SRC elisp
@@ -311,14 +312,6 @@ Not so unreal buffers, they are useful.
 #+begin_src elisp
 (setq doom-unreal-buffer-functions '(minibufferp))
 #+end_src
-
-*** Scratch mode
-#+begin_src elisp
-(setq doom-scratch-initial-major-mode 'lisp-interaction-mode)
-#+end_src
-
-#+RESULTS:
-: lisp-interaction-mode
 
 *** Visual fill mode
     It is like visual line mode but breaks the lines at =fill-column=.
@@ -1769,7 +1762,7 @@ Getting bib entries from MathSciNet or arxiv
 ;; See https://github.com/pzorin/bibretrieve
 (use-package! bibretrieve
   :commands bibretrieve
-  :config
+  :init
   (setq bibretrieve-prompt-for-bibtex-file nil ;; use defaul bib file
         bibretrieve-backends '(("msn" . 10) ("arxiv" . 5))))
 #+END_SRC
@@ -1781,7 +1774,8 @@ Insert cite links and open pdf
       bibtex-completion-additional-search-fields '(keywords tags)
       bibtex-completion-pdf-extension '(".pdf" ".djvu")
       ivy-bibtex-default-action 'ivy-bibtex-insert-citation
-      bibtex-completion-pdf-field "file" ;; pdf assoc a bib entry by field "file = {/path/to/article.pdf;:/path2...}"
+      ;; bibtex-completion-pdf-field "file" ;; pdf assoc a bib entry by field "file =
+      ;; {/path/to/article.pdf;:/path2...}"
       bibtex-completion-display-formats
       '((t . "${author:25} ${year:4} ${title:*} ${=has-pdf=:1} ${keywords:10} ${=type=:3}")))
 
