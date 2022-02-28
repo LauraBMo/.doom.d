@@ -106,44 +106,13 @@ Enable some functions.
 (put 'erase-buffer 'disabled nil)
 #+end_src
 
-*** Lookup online
-- Thresauros for synonyms.
-#+begin_src elisp
-(setq +lookup-provider-url-alist
-      '(;; ("Doom Emacs issues" "https://github.com/hlissner/doom-emacs/issues?q=is%%3Aissue+%s")
-        ("Google"            +lookup--online-backend-google "https://google.com/search?q=%s")
-        ("Wikipedia"         "https://wikipedia.org/search-redirect.php?language=en&go=Go&search=%s")
-        ("Singular Manual"   "https://www.google.com/search?q=site:www.singular.uni-kl.de+%s")
-        ("Project Gutenberg" "http://www.gutenberg.org/ebooks/search/?query=%s")
-        ;; ("DuckDuckGo"        +lookup--online-backend-duckduckgo "https://duckduckgo.com/?q=%s")
-        ("DevDocs.io"        "https://devdocs.io/#q=%s")
-        ("StackOverflow"     "https://stackoverflow.com/search?q=%s")
-        ("Github"            "https://github.com/search?ref=simplesearch&q=%s")
-        ("Youtube"           "https://youtube.com/results?aq=f&oq=&search_query=%s")
-        ("Wolfram alpha"     "https://wolframalpha.com/input/?i=%s")
-        ("Google images"     "https://www.google.com/images?q=%s")
-        ("Google maps"       "https://maps.google.com/maps?q=%s")
-        ))
-#+end_src
-
-#+RESULTS:
-| Google            | +lookup--online-backend-google                                        | https://google.com/search?q=%s |
-| Wikipedia         | https://wikipedia.org/search-redirect.php?language=en&go=Go&search=%s |                                |
-| Singular Manual   | https://www.google.com/search?q=site:www.singular.uni-kl.de+%s        |                                |
-| Project Gutenberg | http://www.gutenberg.org/ebooks/search/?query=%s                      |                                |
-| DevDocs.io        | https://devdocs.io/#q=%s                                              |                                |
-| StackOverflow     | https://stackoverflow.com/search?q=%s                                 |                                |
-| Youtube           | https://youtube.com/results?aq=f&oq=&search_query=%s                  |                                |
-| Google images     | https://www.google.com/images?q=%s                                    |                                |
-| Google maps       | https://maps.google.com/maps?q=%s                                     |                                |
-
 *** Mode Line
 **** Do not show
 #+begin_src elisp
 (add-hook! 'emacs-startup-hook
   (setq column-number-mode nil
         size-indication-mode nil
-        doom-modeline-buffer-encoding nil
+        ;; doom-modeline-buffer-encoding nil
         line-number-mode nil))
 #+end_src
 
@@ -174,7 +143,10 @@ Enable some functions.
           (propertize (if brust-line-number-mode-show-total
                           (concat "/" (brust--number-of-lines-current-buffer))
                         "")
-                      'face 'mode-line-top-line-number)
+                      'face 'mode-line-top-line-number
+                      'help-echo "Buffer size mouse-1: Display Line and Column Mode Menu"
+                      ;; 'mouse-face 'mode-line-highlight
+                      'local-map mode-line-column-line-number-mode-map)
           (doom-modeline-spc)))
 #+end_src
 
@@ -183,6 +155,13 @@ Enable some functions.
 
 ***** Minor mode
 #+begin_src elisp
+(defgroup brust-line-number-mode nil "Show current and total number line.")
+
+(defcustom brust-line-number-mode-show-total t
+  "Show buffer's total number of lines in mode-line"
+  :group 'brust-line-number-mode
+  :type 'bool)
+
 (define-minor-mode brust-line-number-mode
   "Toggle show current and total number line in the mode line (Brust Line Number mode).
 With a prefix argument ARG, enable it if ARG is
@@ -192,7 +171,7 @@ the mode if ARG is omitted or nil.
 Line numbers do not appear for very large buffers and buffers
 with very long lines; see variables `line-number-display-limit'
 and `line-number-display-limit-width'."
-  :init-value t :global t :group 'mode-line
+  :init-value t :global t :group 'brust-line-number-mode
   (or global-mode-string (setq global-mode-string '("")))
   (setq global-mode-string
         (delete '(:eval (brust-line-number-mode--string)) global-mode-string))
@@ -201,18 +180,13 @@ and `line-number-display-limit-width'."
         (setq global-mode-string
               (append global-mode-string '((:eval (brust-line-number-mode--string))))))))
 
-(defcustom brust-line-number-mode-show-total t
-  "Show buffer's total number of lines in mode-line"
-  :group 'brust-line-number-mode
-  :type 'bool)
-
 ;; (add-hook! 'emacs-startup-hook
 ;;   (setq global-mode-string '("" (:eval (brust-line-number-mode--string)) display-time-string)))
 #+end_src
 
 ***** Activate
 #+begin_src elisp
-(brust-line-number-mode +1)
+(add-hook! 'emacs-startup-hook (brust-line-number-mode +1))
 #+end_src
 
 **** Display time
@@ -225,15 +199,20 @@ and `line-number-display-limit-width'."
   (interactive)
   (message (format-time-string "w%Wd%j %A, %e %B %Y, (%e/%m/%Y - %R %Z) -- %s" (current-time))))
 
+(defvar mode-line-display-time-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mode-line mouse-1] #'brust-message-date)
+    (define-key map [mode-line mouse-3] #'brust-kill-date)
+    map) "\
+Keymap to show or kill current date.")
+
 ;; Time format
 (add-hook! 'emacs-startup-hook
   (customize-set-variable 'display-time-string-forms
                           '((propertize (concat " " 12-hours ":" minutes am-pm " ")
                                         'face 'mode-line
                                         'help-echo "Current date: mouse 1 show, mouse 3 kill"
-                                        'keymap '(mode-line keymap
-                                                            (mouse-3 . brust-kill-date)
-                                                            (mouse-1 . brust-message-date)))))
+                                        'local-map mode-line-display-time-mode-map)))
   (setq display-time-default-load-average nil)
   (display-time-mode +1))
 #+end_src
@@ -299,35 +278,38 @@ and `line-number-display-limit-width'."
         ;;  :action =irc)))
         ))
 #+end_src
+*** Lookup online
+- Thresauros for synonyms.
+#+begin_src elisp
+(setq +lookup-provider-url-alist
+      '(;; ("Doom Emacs issues" "https://github.com/hlissner/doom-emacs/issues?q=is%%3Aissue+%s")
+        ("Google"            +lookup--online-backend-google "https://google.com/search?q=%s")
+        ("Wikipedia"         "https://wikipedia.org/search-redirect.php?language=en&go=Go&search=%s")
+        ("Singular Manual"   "https://www.google.com/search?q=site:www.singular.uni-kl.de+%s")
+        ("Project Gutenberg" "http://www.gutenberg.org/ebooks/search/?query=%s")
+        ;; ("DuckDuckGo"        +lookup--online-backend-duckduckgo "https://duckduckgo.com/?q=%s")
+        ("DevDocs.io"        "https://devdocs.io/#q=%s")
+        ("StackOverflow"     "https://stackoverflow.com/search?q=%s")
+        ("Github"            "https://github.com/search?ref=simplesearch&q=%s")
+        ("Youtube"           "https://youtube.com/results?aq=f&oq=&search_query=%s")
+        ("Wolfram alpha"     "https://wolframalpha.com/input/?i=%s")
+        ("Google images"     "https://www.google.com/images?q=%s")
+        ("Google maps"       "https://maps.google.com/maps?q=%s")
+        ))
+#+end_src
+
+*** TODO COMMENT Persp
 #+begin_src elisp
 (setq persp-save-dir (expand-file-name "~/.doom.d/local/workspaces/")
-      persp-auto-save-persps-to-their-file-before-kill nil)
+      persp-auto-save-persps-to-their-file-before-kill t)
 ;; persp-save-to-file-by-names
 #+end_src
 *** Real buffers
-See =doom-unreal-buffer-functions=
+
+Not so unreal buffers, they are useful.
+
 #+begin_src elisp
-(defvar brust-doom-my-real-buffers
-  (list "singular"
-        "julia"
-        "M2"
-        "helpful"
-        "^[*]Org Src" )
-  "List of my real buffers: please Doom do not diminish them!")
-
-(defun brust-string-match-p (string regexp &optional START)
-  "Same as `string-match-p' with swap arguments. For testing membership of a string in a list of regexp."
-  (string-match-p regexp string START))
-
-(defun brust-doom-my-real-buffers-p (buffer)
-  "Test whether some regexp in `brust-doom-my-real-buffers' matches buffer's name of `buffer'"
-  (cl-member (buffer-name buffer) brust-doom-my-real-buffers :test #'brust-string-match-p))
-
-(when doom-real-buffer-functions
-  (setq doom-real-buffer-functions
-        (append
-         doom-real-buffer-functions
-         '(brust-doom-my-real-buffers-p))))
+(setq doom-unreal-buffer-functions '(minibufferp))
 #+end_src
 
 *** Scratch mode
@@ -502,22 +484,9 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 (defun advice-once (symbol where function &optional props)
   (let ((new-function (intern (concat (symbol-name function) "-advice-once"))))
     (fset new-function `(lambda (&rest _)
-                          ;; (,function)
-                          ;; (funcall ',function)
-                          ;; (command-execute ',function)
                           (call-interactively ',function)
                           (advice-remove ',symbol #',new-function)))
     (advice-add symbol where new-function props)))
-
-;; (defun advice-once (symbol where function &optional props)
-;;     (advice-add function :after `(lambda (&rest _) (advice-remove ',symbol #',function)))
-;;     (advice-add symbol where function props))
-
-;; (defun eureka nil
-;;   (interactive)
-;;   (message "Eureka!"))
-
-;; (advice-once 'backward-word :before #'eureka)
 #+end_src
 
 *** By five
@@ -655,8 +624,17 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
     str))
 
 (advice-add 'delete-region :around #'brust-return-buffer-substring-advice)
-
 #+end_src
+
+*** Directory's subdirectories list
+#+begin_src elisp
+(defun brust-directory-subdirectories (DIRECTORY &optional NOSORT COUNT)
+  (let ((all-files (directory-files DIRECTORY nil directory-files-no-dot-files-regexp NOSORT COUNT)))
+    (cl-loop for file in all-files
+             when (file-directory-p (concat DIRECTORY file))
+             collect file)))
+#+end_src
+
 *** Double Capitals
     Convert words in DOuble CApitals to Single Capitals.
     [[https://emacs.stackexchange.com/questions/13970/fixing-double-capitals-as-i-type][From StackExange]]
@@ -943,39 +921,8 @@ commands to work with MangaRock comics
       (t (format "%8d" n))))))
 #+end_src
 
-#+RESULTS:
-: brust--number-of-lines-current-buffer
-*** Vterm launch and send
-**** Launch or link vterm julia
-#+begin_src elisp
-;;;;;;;;;;;;;;;; That's old
-;; This version requires be able to customize vterm process' name.
-;; See branch Allow-custom-process-name in my emacs-libvterm:
-;; https://github.com/LauraBMo/emacs-libvterm/tree/Allow-custom-process-name
-;; (defun brust-org-mode-launch-vterm-julia (&optional buf proc)
-;;   "Launches new instance of vterm in buffer `buf' or `(buffer-name)-vterm.jl' with process name `proc' or `vterm-process', and runs julia in it.
-;;  Sets `brust-vterm-process' to `proc' or `vterm--process' ")
-
-(defun brust-vterm--link (proc-buffer origin-buffer)
-  "Copies the value of the local variable `vterm--process' from buffer `proc-buffer' to buffer `origin-buffer'. Then, in `origin-buffer' we can use such a process to execute code in terminal."
-  (save-excursion
-    (set-buffer proc-buffer)
-    (let ((proc vterm--process))
-      (set-buffer origin-buffer)
-      (setq-local vterm--process proc))))
-
-(defun brust-vterm--launch-and-link (origin-buffer sufix)
-  "Launches a new instance of vterm in buffer `origin-buffer-sufix' and links its process to `origin-buffer'."
-  (save-excursion
-    (let ((proc-buffer (concat origin-buffer sufix)))
-      (vterm-other-window proc-buffer)
-      (brust-vterm--link proc-buffer origin-buffer))))
-#+end_src
-
-#+RESULTS:
-: brust-vterm--launch-and-link
-
-**** Send line or region
+*** Vterm
+**** Eval line or region
 #+begin_src elisp
 (defun brust-vterm--eval-string (string &optional paste-p)
   (with-current-buffer (process-buffer vterm--process)
@@ -989,13 +936,26 @@ commands to work with MangaRock comics
 
 (defun brust-vterm--eval-line nil
   (brust-vterm--eval-buffer-substring (line-beginning-position) (line-end-position)))
-
-;; Run normal-mode to reload local vars
-;; Local Variables:
-;; vterm--process: "vterm"
-;; End:
 #+end_src
 
+**** Launch or link a vterm buffer
+#+begin_src elisp
+(defun brust-vterm--link (proc-buffer origin-buffer)
+  "Copies the value of the local variable `vterm--process' from buffer `proc-buffer' to buffer `origin-buffer'.
+Then, in `origin-buffer' we can use such a process to execute code in terminal via ."
+  (save-excursion
+    (set-buffer proc-buffer)
+    (let ((proc vterm--process))
+      (set-buffer origin-buffer)
+      (setq-local vterm--process proc))))
+
+(defun brust-vterm--launch-and-link (origin-buffer sufix)
+  "Launches a new instance of vterm in buffer `origin-buffer-sufix' and links its process to `origin-buffer'."
+  (save-excursion
+    (let ((proc-buffer (concat origin-buffer sufix)))
+      (vterm-other-window proc-buffer)
+      (brust-vterm--link proc-buffer origin-buffer))))
+#+end_src
 
 *** COMMENT Word count
 #+BEGIN_SRC elisp
@@ -1315,13 +1275,13 @@ See `org-capture-templates' for more information."
                ;; '("j" . "src ess-julia :results output :session *julia* :exports both"))
                '("jj" . "src julia :results output"))
   ;; Shortcut for inline graphical output within a session:
-  (add-to-list 'org-structure-template-alist
-               '("jpic" . "src ess-julia :results output graphics file :file FILENAME.png"))
+  ;; (add-to-list 'org-structure-template-alist
+  ;;              '("jpic" . "src ess-julia :results output graphics file :file FILENAME.png"))
   (add-to-list 'org-structure-template-alist
                '("jvterm" . "src julia-vterm :session"))
   ;; Shortcut for well-formatted org table output within a session:
   (add-to-list 'org-structure-template-alist
-               '("jtab" . "src ess-julia :results value table :colnames yes")))
+               '("jtab" . "src julia :results value table :colnames yes")))
 #+end_src
 
 **** < insert template
@@ -1340,13 +1300,17 @@ See `org-capture-templates' for more information."
 *** Pretty headlines
 #+begin_src elisp
 (after! org
+  (defun brust-org-mode-pretty-headers (keysymbol)
+    (let ((key (car keysymbol))
+          (symbol (cdr keysymbol)))
+      `(,(format "^\\(\\*\\{%s\\}\\) " key)
+        (1
+         (progn (compose-region (match-beginning 1) (match-end 1) ,symbol) nil)
+         append))))
+
   (font-lock-add-keywords            ;; A bit silly but my headers are now
    'org-mode                         ;; shorter, and that is nice canceled
-   (mapcar (lambda (keysymbol)
-             `(,(concat "^\\(\\*\\{" (car keysymbol) "\\}\\) ")
-               (1
-                (progn (compose-region (match-beginning 1) (match-end 1) ,(cdr keysymbol)) nil)
-                append)))
+   (mapcar #'brust-org-mode-pretty-headers
            '(("1" . "☰")
              ("2" . "☱")
              ("3" . "☲")
@@ -1492,31 +1456,15 @@ See `org-capture-templates' for more information."
 
 #+RESULTS:
 : std::ledger::save
-*** Eval julia code in vterm
-**** Launch/link a julia process
+*** Eval julia code blocks in vterm
+**** Ensure a running julia process is linked
 #+begin_src elisp
-(defun brust-org-mode-vterm-julia--launch-and-link nil
-  (brust-vterm--launch-and-link (buffer-name) "-vjulia")
-  (brust-vterm--eval-string "julia\n"))
-
-(defun brust-org-mode-vterm-julia-link-or-launch-and-link nil
-  (interactive)
-  (if (y-or-n-p "Link buffer to a julia process [y] or launch and link a new one [n]")
-      (brust-vterm--link
-       (ivy-read "Process' buffer to link with: " #'internal-complete-buffer
-                 :keymap ivy-switch-buffer-map
-                 :preselect (buffer-name (other-buffer (current-buffer)))
-                 :matcher #'ivy--switch-buffer-matcher
-                 :caller 'ivy-switch-buffer)
-       (buffer-name))
-    (brust-org-mode-vterm-julia--launch-and-link)))
-
 (defun brust-org-mode-vterm-julia--ensure-julia-process nil
   ;; When process is not alive, always launch a new one without asking.
   ;; If I wanted to link (unlikely), I can kill the new process and
   ;; call brust-..-link-or-launch-and-link.
-  ;; (unless (process-live-p vterm--process) (brust-org-mode-vterm-julia-link-or-launch-and-link))
-  (unless (process-live-p vterm--process) (brust-org-mode-vterm-julia--launch-and-link)))
+  ;; (unless (process-live-p vterm--process) (brust-julia--link-or-launch-and-link-vterm))
+  (unless (process-live-p vterm--process) (brust-julia--launch-and-link-vterm)))
 #+end_src
 
 **** Send region or line
@@ -1572,24 +1520,6 @@ See `org-capture-templates' for more information."
 #+RESULTS:
 : brust-endless/org-julia--eval-header
 
-**** COMMENT Eval julia code, link vterm if needed
-
-It is a good idea, but it is better to always check whether a process is linked or not.
-So, we skip manual linking when restarting...
-
-;; Run normal-mode to reload local vars
-;; There are the functions brust-org-mode-launch-vterm-julia or ...-link-vterm-julia
-;; To create and link vterm process and link them to the current org buffer.
-
-#+begin_src elisp
-(advice-once 'brust-org-mode-vterm-send-line-or-region :before 'brust-vterm-launch-or-link)
-(advice-once 'brust-org-mode-vterm-send-block :before 'brust-vterm-launch-or-link)
-(advice-once 'brust-endless/org-julia-eval-header :before 'brust-vterm-launch-or-link)
-
-;; Local Variables:
-;; vterm--process: "vterm"
-;; End:
-#+end_src
 *** Eval elisp blocks
 #+begin_src elisp
 ;; Elisp blocks
@@ -1997,29 +1927,23 @@ Bad
 
 **** Julia repl mode
 #+begin_src elisp
-;; (require 'julia-mode)
-;; (require 'julia-repl)
-;; (add-hook 'julia-mode-hook 'julia-repl-mode) ;; always use minor mode
-(when (file-exists-p "~/src/julia/bin/julia")
-  (setq julia-repl-executable-records
-        `(;; (default "julia")
-          (master ,(expand-file-name "~/src/julia/bin/julia")))))
+;; (setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
 
-;; (setq
-;;  term-char-mode-buffer-read-only nil
-;;  term-char-mode-point-at-process-mark nil)
+;; `ob-julia' needs this variable to be defined, but it's defined in
+;; `ess-custom', which won't be available if you're using :lang julia and not
+;; :lang ess.
+(defvar inferior-julia-program-name (or (executable-find "julia") "julia"))
 
-;; (after! julia-mode
-;;   (add-hook 'julia-mode-hook #'julia-vterm-mode)
-;;   (remove-hook 'julia-mode-hook #'julia-repl-mode))
-
-(setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
 (after! julia-repl
   (julia-repl-set-terminal-backend 'vterm)
   ;; (add-hook 'term-mode-hook #'visual-line-mode)
-  (setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
+  ;; (setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
   ;; treat underscores as word delimiters, see https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#how-do-i-get-motions-to-treat-underscores-as-word-delimiters
   (add-hook! 'julia-mode-hook (modify-syntax-entry ?_ "w"))
+  (when (executable-find "julia")
+    (setq julia-repl-executable-records
+          `(;; (default "julia")
+            (master ,(executable-find "julia")))))
 
   ;; (add-hook! 'julia-repl-hook (julia-repl--send-string (concat "include(\"" (expand-file-name "~/.julia/config/startup.jl") "\")")))
   ;; It cause a problem, execute julia-repl--send-string in this hook (outside hook there is no problem, not realted to doom, emacs -q and install julia-repl reproduce it) Actually, not needed, now julia-repl loads startup.jl
@@ -2036,14 +1960,9 @@ Bad
           :desc "Call \\@edit"        "e" #'julia-repl-edit
           :desc "Send buffer"         "b" #'julia-repl-send-buffer
           :desc "Methods symbol"      "m" #'julia-repl-list-methods))
-        (:map term-raw-map
-         "C-RET" #'brust-julia-close-send-line
-         (:desc "BMO local" :prefix "C-c l"
-          :desc "Clear buffer" "d" #'comint-clear-buffer
-          :desc "Send typeof"  "t" #'brust-julia-send-typeof
-          :desc "Send eltype"  "e" #'brust-julia-send-eltype
-          :desc "Send size"    "s" #'brust-julia-send-size
-          :desc "Close and send line" "c" #'brust-julia-close-send-line))))
+        (:map vterm-mode-map
+         :prefix "C-c"
+         :desc "Clear buffer" "d" #'comint-clear-buffer)))
 #+end_src
 
 #+RESULTS:
@@ -2086,7 +2005,27 @@ Run =doom build= to make it work (no idea why...)
 #+end_src
 
 **** ad-hoc functions
-***** generic
+***** Launch or link a julia process in vterm buffer
+
+#+begin_src elisp
+(defun brust-julia--launch-and-link-vterm nil
+  (brust-vterm--launch-and-link (buffer-name) "--vjulia")
+  (brust-vterm--eval-string "julia\n"))
+
+(defun brust-julia--link-or-launch-and-link-vterm nil
+  (interactive)
+  (if (y-or-n-p "Link buffer to a julia process [y] or launch and link a new one [n]")
+      (brust-vterm--link
+       (ivy-read "Process' buffer to link with: " #'internal-complete-buffer
+                 :keymap ivy-switch-buffer-map
+                 :preselect (buffer-name (other-buffer (current-buffer)))
+                 :matcher #'ivy--switch-buffer-matcher
+                 :caller 'ivy-switch-buffer)
+       (buffer-name))
+    (brust-julia--launch-and-link-vterm)))
+#+end_src
+
+***** Input manipulation
 #+begin_src elisp
 (defun brust--julia-input-bounds nil
   (save-excursion
@@ -2104,16 +2043,11 @@ Run =doom build= to make it work (no idea why...)
     -str))
 
 (defun brust--julia-input-delete nil
+  (interactive)
   (let* ((-bounds (brust--julia-input-bounds))
          (N (- (cdr -bounds) (car -bounds))))
     (dotimes (i N) (term-send-left))
     (dotimes (i N) (term-send-del))))
-
-;; (defun singpolyma/term-insert-literal (key)
-;;     "Take a keypress and insert it literally into a terminal."
-;;     (interactive "cPress key:")
-;;     (message "%s" (format "%c" key))
-;;     )
 #+end_src
 
 #+RESULTS:
@@ -2129,36 +2063,27 @@ Run =doom build= to make it work (no idea why...)
     (brust--julia-input-delete)
     (julia-repl--send-string (concat -fun "(" input ")"))))
 
-(defun brust-julia-send-typeof nil
-  (interactive)
-  (brust-julia--add-function "typeof"))
+(defvar brust-julia-add-function-alist
+  '("typeof"
+    "eltype"
+    "size")
+  "\
+List if julia functions names to define wrap for.")
 
-(defun brust-julia-send-eltype nil
-  (interactive)
-  (brust-julia--add-function "eltype"))
-
-(defun brust-julia-send-size nil
-  (interactive)
-  (brust-julia--add-function "size"))
-#+end_src
-
-#+RESULTS:
-: brust-julia-send-eltype
-
-***** Close line
-#+begin_src elisp
-(defun brust-julia-close-send-line nil
-  (interactive)
-  (let ((input (brust--julia-input-string)))
-    (if (string= input "")
-        (term-send-raw)
-      (brust--julia-input-delete)
-      (julia-repl--send-string
-       (with-temp-buffer
-         (insert input)
-         (goto-char (point-max))
-         (close-all-open-paren-right)
-         (buffer-string))))))
+(after! vterm
+  (cl-loop for fun in brust-julia-add-function-alist do
+           ;; (message "dir %s, name %s" (car dirname) (cdr dirname))
+           (let ((fun-name (intern (format "brust-julia-send-%s" fun)))
+                 (desc (concat "Sent wrap for " fun))
+                 (bind (downcase (substring fun 0 1))))
+             ;; (message "dir %s, name %s" dir name)
+             (fset fun-name
+                   `(lambda nil (interactive)
+                      (brust-julia--add-function ,fun)))
+             (map! (:map vterm-mode-map
+                    (:prefix "C-c"
+                     (:prefix ("f" . "Wrap fun")
+                      :desc desc bind fun-name)))))))
 #+end_src
 
 ***** Generate 'exports'
