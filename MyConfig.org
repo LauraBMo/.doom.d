@@ -106,58 +106,6 @@ Enable some functions.
 (put 'erase-buffer 'disabled nil)
 #+end_src
 
-** Doom stuff
-*** Dashboard menu
-#+begin_src elisp
-(setq +doom-dashboard-menu-sections
-      '(
-        ("Load workspace"
-         :icon
-         (all-the-icons-octicon "rocket" :face 'doom-dashboard-menu-title)
-         :action +workspace/load)
-        ("Open my org"
-         :icon
-         (all-the-icons-fileicon "org" :face 'doom-dashboard-menu-title)
-         :when (file-exists-p (expand-file-name "~/Dropbox/Org/my.org"))
-         :action brust-open-my-org)
-        ;; :action (lambda nil (open-file (expand-file-name "~/Dropbox/Org/my.org"))))
-        ("Email"
-         :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
-         :action mu4e)
-        ;; ("Open register" :icon
-        ;;  (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
-        ;;  :action jump-to-register)
-        ;; ("Jump to bookmark"
-        ;;  :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
-        ;;  :action bookmark-jump)
-        ("Open org-agenda"
-         :icon
-         (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
-         :when (fboundp 'org-agenda)
-         :action org-agenda)
-        ("Reload last session"
-         :icon
-         (all-the-icons-octicon "history" :face 'doom-dashboard-menu-title)
-         :when (file-exists-p (expand-file-name persp-auto-save-fname persp-save-dir))
-         :face
-         (:inherit
-          (doom-dashboard-menu-title bold))
-         :action doom/quickload-session)
-        ("Open private configuration"
-         :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
-         :when (file-directory-p doom-private-dir)
-         :action doom/open-private-config)
-        ;; ("Notes"
-        ;;  :icon (all-the-icons-octicon "light-bulb" :face 'font-lock-keyword-face)
-        ;;  :action ragone-deft-or-close)
-        ;; ("Passwords"
-        ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
-        ;;  :action pass)
-        ;; ("IRC"
-        ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
-        ;;  :action =irc)))
-        ))
-#+end_src
 *** Lookup online
 - Thresauros for synonyms.
 #+begin_src elisp
@@ -294,7 +242,63 @@ and `line-number-display-limit-width'."
 #+begin_src elisp
 (setq doom-modeline-buffer-file-name-style 'buffer-name)
 #+end_src
-*** TODO Persp
+
+** Doom stuff
+*** Dashboard menu
+#+begin_src elisp
+(setq +doom-dashboard-menu-sections
+      '(
+        ;; ("Load workspace"
+        ;;  :icon
+        ;;  (all-the-icons-octicon "rocket" :face 'doom-dashboard-menu-title)
+        ;;  :action +workspace/load)
+        ;; ("Open file in Dropbox"
+        ;;  :icon
+        ;;  (all-the-icons-octicon "rocket" :face 'doom-dashboard-menu-title)
+        ;;  :action +workspace/load)
+        ("Open my org"
+         :icon
+         (all-the-icons-fileicon "org" :face 'doom-dashboard-menu-title)
+         :when (file-exists-p (expand-file-name "~/Dropbox/Org/my.org"))
+         :action brust-open-my-org)
+        ;; :action (lambda nil (open-file (expand-file-name "~/Dropbox/Org/my.org"))))
+        ("Email"
+         :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
+         :action mu4e)
+        ;; ("Open register" :icon
+        ;;  (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
+        ;;  :action jump-to-register)
+        ;; ("Jump to bookmark"
+        ;;  :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
+        ;;  :action bookmark-jump)
+        ("Open org-agenda"
+         :icon
+         (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
+         :when (fboundp 'org-agenda)
+         :action org-agenda)
+        ;; ("Reload last session"
+        ;;  :icon
+        ;;  (all-the-icons-octicon "history" :face 'doom-dashboard-menu-title)
+        ;;  :when (file-exists-p (expand-file-name persp-auto-save-fname persp-save-dir))
+        ;;  :face
+        ;;  (:inherit
+        ;;   (doom-dashboard-menu-title bold))
+        ;;  :action doom/quickload-session)
+        ("Open private configuration"
+         :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
+         :when (file-directory-p doom-private-dir)
+         :action doom/open-private-config)
+        ;; ("Notes"
+        ;;  :icon (all-the-icons-octicon "light-bulb" :face 'font-lock-keyword-face)
+        ;;  :action ragone-deft-or-close)
+        ;; ("Passwords"
+        ;;  :icon (all-the-icons-octicon "lock" :face 'font-lock-keyword-face)
+        ;;  :action pass)
+        ;; ("IRC"
+        ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
+        ;;  :action =irc)))
+        ))
+#+end_src
 #+begin_src elisp
 (setq persp-save-dir (expand-file-name "~/.doom.d/local/workspaces/")
       persp-auto-save-persps-to-their-file-before-kill nil)
