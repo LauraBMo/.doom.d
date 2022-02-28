@@ -679,7 +679,7 @@ Single Capitals as you type."
 (add-hook 'text-mode-hook #'dubcaps-mode)
 #+END_SRC
 
-*** Ivy read directory
+*** COMMENT Ivy read directory
 #+begin_src elisp
 (defun brust-ivy-read-directory-name (&optional initial-input action initial-directory)
   "Select a directory using `ivy-read'."
@@ -846,7 +846,7 @@ commands to work with MangaRock comics
 #+RESULTS:
 : brust-math-software-hookfun-to-intangify-prompt
 
-*** RGB color (get numbers)
+*** COMMENT RGB color (get numbers)
 #+begin_src elisp
 (defvar brust-colors-rgb-decimal-points 1 "Number of decimal points rounding RGB colors")
 (defvar brust-colors-rgb-separator "," "SEPARATOR between numbers")
@@ -1063,6 +1063,8 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
   (interactive)
   (delete-region (or start (point)) (skip-white-space-forward)))
 #+end_src
+** Completion environment
+
 ** TODO Org mode
 *** Config
  #+BEGIN_SRC elisp
@@ -1084,7 +1086,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
          :desc "vterm-julia send" "SPC" #'brust-org-mode-vterm-julia-send-region-or-block
          :desc "vterm-julia launch new" "v" #'brust-org-mode-vterm-julia-link-or-launch-and-link
          :desc "Babel" "B" org-babel-map
-         :desc "Biblio" "C" #'ivy-bibtex-with-local-bibliography
+         ;; :desc "Biblio" "C" #'ivy-bibtex-with-local-bibliography
           )))
  #+END_SRC
 
@@ -1648,7 +1650,8 @@ Add interactive TOC and references manager at .tex files.
         "m" #'TeX-insert-macro
         "]" #'LaTeX-close-environment
         "E" #'LaTeX-environment
-        "c" #'ivy-bibtex-with-local-bibliography)))
+        ;; "c" #'ivy-bibtex-with-local-bibliography
+        )))
 
 (map! :after (latex cdlatex)
       :map cdlatex-mode-map
@@ -1689,9 +1692,13 @@ Add interactive TOC and references manager at .tex files.
 #+end_src
 *** Biblio
 Getting bibtex entries from crossref and much more.
-#+begin_src elisp
-(setq biblio-crossref-user-email-address user-mail-address) ;; CrossRef gives priority to queries that include an email address.
 
+Problem: MathSciNet uses author title... not a "everywhere" query.
+The package bibretrive is a mess, but it works.
+To unify engines: Added action "Fallback options" to "ivy-bibtex" to look for MathSciNet using bibretrive
+Once it is done, add the correspnding entrie to =bibtex-completion-fallback-options=
+
+#+begin_src elisp
 ;; Use the same shortcut to search bib items on internet for all the engines.
 (after! bibtex-completion
   (setq bibtex-completion-fallback-options
@@ -1700,60 +1707,22 @@ Getting bibtex entries from crossref and much more.
             . (lambda (search-expression) (bibretrieve)))
            ("Download                                  (scihub.el)"
             . (lambda (search-expression) (scihub))))
-           bibtex-completion-fallback-options)))
-#+end_src
+         bibtex-completion-fallback-options)
+        ;; CrossRef gives priority to queries that include an email address.
+        biblio-crossref-user-email-address user-mail-address
+        bibtex-completion-bibliography "~/Dropbox/bibliography/my.bib"
+        bibtex-completion-additional-search-fields '(keywords tags)
+        bibtex-completion-pdf-extension '(".pdf" ".djvu")
+        ;; ivy-bibtex-default-action 'ivy-bibtex-insert-citation
+        ;; bibtex-completion-pdf-field "file" ;; pdf assoc a bib entry by field "file =
+        ;; {/path/to/article.pdf;:/path2...}"
+        bibtex-completion-display-formats
+        '((t . "${author:25} ${year:4} ${title:*} ${=has-pdf=:1} ${keywords:10} ${=type=:3}")))
 
-**** COMMENT MathSciNet backend
-
-Problem: MathSciNet uses author title... not a "everywhere" query.
-The package bibretrive is a mess, but it works.
-To unify engines: Added action "Fallback options" to "ivy-bibtex" to look for MathSciNet using bibretrive
-Once it is done, add the correspnding entrie to =bibtex-completion-fallback-options=
-
-#+begin_src elisp
-(defun biblio-crossref-backend (command &optional arg &rest more)
-  "A CrossRef backend for biblio.el.
-COMMAND, ARG, MORE: See `biblio-backends'."
-  (pcase command
-    (`name "CrossRef")
-    (`prompt "CrossRef query: ")
-    (`url (biblio-crossref--url arg))
-    (`parse-buffer (biblio-crossref--parse-search-results))
-    (`forward-bibtex (biblio-crossref--forward-bibtex arg (car more)))
-    (`register (add-to-list 'biblio-backends #'biblio-crossref-backend))))
-
-(defun biblio-msn-backend (command &optional arg &rest more)
-  "A MathSciNet backend for biblio.el.
-COMMAND, ARG, MORE: See `biblio-backends'."
-  (pcase command
-    (`name "MathSciNet")
-    (`prompt "MathSciNet query: ")
-    (`url (biblio-crossref--url arg))
-    (`parse-buffer (biblio-crossref--parse-search-results))
-    (`forward-bibtex (biblio-crossref--forward-bibtex arg (car more)))
-    (`register (add-to-list 'biblio-backends #'biblio-crossref-backend))))
-
-
-(defun biblio-msn--url (query)
-  "Create a MathSciNet url to look up QUERY."
-  (let* ((pairs `(("bdlback" . "r=1")
-		              ("dr" . "all")
-		              ("l" . "20")
-		              ("pg3" . "TI")
-		              ("s3" . ,title)
-		              ("pg4" . "ICN")
-		              ("s4" . ,author)
-		              ("fn" . "130")
-		              ("fmt" . "bibtex")
-		              ("bdlall" . "Retrieve+All"))))
-	  (url (concat "https://mathscinet.ams.org/mathscinet/search/publications.html?" (mm-url-encode-www-form-urlencoded pairs)))))
-
-(defun biblio-crossref--url (query)
-  "Create a CrossRef url to look up QUERY."
-  (format "https://api.crossref.org/works?query=%s%s"
-          (url-encode-url query)
-          (if biblio-crossref-user-email-address
-              (format "&mailto=%s" (url-encode-url biblio-crossref-user-email-address)) "")))
+  ;; Show entries in the same order as in bibtex file
+  (advice-add 'bibtex-completion-candidates
+              :filter-return 'reverse)
+  )
 #+end_src
 
 *** Bibretrive
@@ -1767,7 +1736,7 @@ Getting bib entries from MathSciNet or arxiv
         bibretrieve-backends '(("msn" . 10) ("arxiv" . 5))))
 #+END_SRC
 
-*** Ivy-bibtex
+*** COMMENT Ivy-bibtex
 Insert cite links and open pdf
 #+begin_src elisp
 (setq bibtex-completion-bibliography "~/Dropbox/bibliography/my.bib"
@@ -1999,7 +1968,7 @@ Run =doom build= to make it work (no idea why...)
 #+end_src
 
 **** ad-hoc functions
-***** Launch or link a julia process in vterm buffer
+***** COMMENT Launch or link a julia process in vterm buffer
 
 #+begin_src elisp
 (defun brust-julia--launch-and-link-vterm nil
@@ -2850,7 +2819,7 @@ I just want auto format in a few modes.
 #+RESULTS:
 : counsel-fzf
 
-**** Advice to include hidden files
+**** COMMENT Advice to include hidden files
 
 Install =ag= with: =sudo apt install silversearcher-ag=.
 
@@ -2868,7 +2837,7 @@ Install =ag= with: =sudo apt install silversearcher-ag=.
     (apply orig-fun args)))
 #+end_src
 
-**** Workaround for jumping to specific dirs
+**** COMMENT Workaround for jumping to specific dirs
 #+begin_src elisp
 (defun brust-counsel-fzf-dir nil
   "fzf find file selecting a directory"
@@ -2897,7 +2866,7 @@ Install =ag= with: =sudo apt install silversearcher-ag=.
                                         :desc name bind fun-name))))))
 #+end_src
 
-*** Ivy
+*** COMMENT Ivy
 **** General ivy
 
 #+BEGIN_SRC elisp
@@ -3030,7 +2999,7 @@ This package contains all the higher level UI modules of =lsp-mode=, like =flych
   (setq magit-turn-on-auto-revert-mode nil
         magit-diff-hide-trailing-cr-characters t
         magit-set-upstream-on-push 'dontask
-        magit-completing-read-function 'ivy-completing-read
+        ;; magit-completing-read-function 'ivy-completing-read
         magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1
         magit-save-repository-buffers 'dontask
         magit-diff-paint-whitespace t
