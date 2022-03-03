@@ -1071,6 +1071,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
 (defun brust-org-my-defaults nil
   (setq
    ;; org-edit-src-auto-save-idle-delay 20
+   org-src-window-setup #'current-window
    org-cycle-global-at-bob t
    org-return-follows-link t
    org-hide-leading-stars nil
