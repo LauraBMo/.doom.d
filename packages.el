@@ -12,11 +12,13 @@
 ;; LaTeX stuff
 (package! bratex :recipe (:host github :repo "sbrisard/bratex"))
 ;; Biblatex
+;; Packages to retrieve bib entries from the web
 ;; Biblio is not working for crossref any more...
 ;; (package! org-ref) ;; But this is not working either
-(package! bibretrieve) ;; For MAthSciNet references
-(package! biblio) ;; For all the others, mostly Crossref, ....
-(package! ivy-bibtex) ;; For inserting cites
+;; (package! bibretrieve) ;; For MathSciNet references
+;; (package! biblio) ;; For all the others, mostly Crossref, ....
+;; (package! ivy-bibtex) ;; For inserting cites
+
 ;; Downloading paper
 (package! scihub :recipe (:host github :repo "emacs-pe/scihub.el"))
 ;; (package! lsp-latex :recipe (:host github :repo "ROCKTAKEY/lsp-latex"))

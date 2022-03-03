@@ -202,7 +202,7 @@
        ;;twitter           ; twitter client https://twitter.com/vnought
 
        :config
-       ;; (literate +bindings +smartparens)
+       literate
        (default +bindings +snippets +evil-commands +smartparens)
        )
 
