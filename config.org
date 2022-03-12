@@ -430,9 +430,53 @@ Add my own templates for LaTeX, Singular, Julia... Looks pretty handy :)
 #+begin_src bash :tangle no
 cp -r ~/.doom.d/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates
 #+end_src
+
+** High light TODOS
+*** Making Items
+You can make a TODO item by simply writing
++ =TODO=
+  For things that need to be done, just not today.
++ =HACK=
+  For tidbits that are unconventional and not intended uses of the
+  constituent parts, and may break in a future update.
++ =FIXME=
+  For problems that will become bigger problems later if not fixed ASAP.
++ =REVIEW=
+  for things that were done hastily and/or hasn't been thoroughly
+  tested. it may not even be necessary!
++ =NOTE=
+  For especially important gotchas with a given implementation,
+  directed at another user other than the author.
++ =DEPRECATED=
+  For things that just gotta go and will soon be gone.
++ =BUG=
+  For a known bug that needs a workaround
++ =XXX=
+  For warning about a problematic or misguiding code
+
+*** Keybindings
+| keybind   | description                      |
+|-----------+----------------------------------|
+| =]t=      | go to next TODO item             |
+| =[t=      | go to previous TODO item         |
+| =SPC p t= | show all TODO items in a project |
+| =SPC s p= | search project for a string      |
+| =SPC s b= | search buffer for string         |
+
+*** Config
+#+begin_src elisp
+(after! hl-todo
+  (setq hl-todo-keyword-faces
+        `(
+          ("TODO"     . '(warning bold))
+          ("DONE"     . "#afd8af")
+          ("DOING"    . "#4169e1")
+          ("CANCELED" . "#708090")
+          ))
+  )
+;; TODO DONE DOING CANCELED
 #+end_src
 
-** TODO My Projects
 ** TODO Rotate text
 Rotate text under cursor under pre-establish patterns
 For example, var1, var2, ... varN
@@ -3184,44 +3228,6 @@ This package contains all the higher level UI modules of =lsp-mode=, like =flych
   (interactive "p")
   (brust-by-five #'pdf-view-previous-line-or-previous-page args))
 #+END_SRC
-
-** Prettify symbols
-[[https://www.reddit.com/r/emacs/comments/ctfxbg/emacs_doom_e15_fancy_task_priorities_in_org_mode/][reddit prettify org-mode]]
-*** Load utils
-#+begin_src elisp
-;; (load "~/.doom.d/local/lisp/prettify-utils/prettify-utils.el" t nil t)
-;; (add-load-path! "~/.doom.d/local/lisp/prettify-utils/")
-(cl-pushnew  "~/.doom.d/local/lisp/prettify-utils/" load-path :test #'string=)
-(autoload 'prettify-utils-add-hook "prettify-utils"
-  "Add hook to mode defining pretty symbols alist" t)
-#+end_src
-*** eLisp
-#+begin_src elisp
-(defconst lisp--prettify-symbols-alist
-  '(("lambda"  . ?λ)))
-#+end_src
-*** Org-mode
-#+begin_src elisp
-(add-hook! 'emacs-startup-hook
-  (prettify-utils-add-hook org-mode
-                           ("[ ]"       "☐")
-                           ("[X]"       "☑")
-                           ("[-]"       "❍")))
-
-;; ("TODO"      "⚑")
-;; ("DOING"     "⚐")
-;; ("CANCELED"  "✘")
-;; ("DONE"      "✔"))
-;; It does not use regexp... wtf!!
-;; ("^\\(\\*\\{1\\}\\) " "☰")
-;; ("^\\(\\*\\{2\\}\\) " "☱")
-;; ("^\\(\\*\\{3\\}\\) " "☲")
-;; ("^\\(\\*\\{4\\}\\) " "☳")
-;; ("^\\(\\*\\{5\\}\\) " "☴")
-;; ("^\\(\\*\\{6\\}\\) " "☵")
-;; ("^\\(\\*\\{7\\}\\) " "☶")
-;; ("^\\(\\*\\{8\\}\\) " "☷"))
-#+end_src
 
 ** Screenshot
 
