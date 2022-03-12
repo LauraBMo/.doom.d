@@ -408,9 +408,111 @@ Maintaining notes.org
 #+end_src
 
 ** Completion environment
+[[file:~/.emacs.d/modules/completion/vertico/README.org::*Table of Contents][Vertico module's README]]
+*** Bindings
+#+begin_src elisp :tangle no
+;; https://githubmemory.com/repo/minad/vertico/issues/156
+(defun my/vertico-insert-or-exit ()
+  "Insert the candidate if it's a directory, otherwise select it and exit."
+  (interactive)
+  (let ((cand (vertico--candidate)))
+    (if (and (>= vertico--index 0)
+             (equal (substring cand -1) "/"))
+        (vertico-insert)
+      (vertico-exit))))
+
+(map! :after vertico :map minibuffer-mode-map
+      ;; Motion: LOWER from keyboard
+      ;; "M-j" #'ivy-next-line
+      ;; "M-k" #'ivy-previous-line
+      ;;
+      ;; Finish
+      ;; "<right>"  #'ivy-alt-done
+      "<right>"  #'my/vertico-insert-or-exit
+      ;; ";"   #'ivy-immediate-done
+      "<return>" #'vertico-exit-input
+      ;;
+      ;; History
+      ;; "<next>"   #'next-history-element
+      ;; "<prior>"  #'previous-history-element
+      ;; "M-j"      #'next-history-element
+      ;; "M-k"      #'previous-history-element
+      ;; "M-j"      #'ivy-next-history-element
+      ;; "M-k"      #'ivy-previous-history-element
+      ;;
+      ;; Embark
+      ;; "C-;" #'embark-act
+      ;; "M-o" #'ivy-dispatching-done
+      ;;
+      ;; ;; Interaction
+      ;; "M-w"      #'ivy-yank-word
+      ;; "C-o"      #'hydra-ivy/body
+      ;; "C-<"      #'ivy-minibuffer-shrink
+      ;; "C->"      #'ivy-minibuffer-grow
+      ;; "M-m"      #'ivy-mark
+      ;; Security
+      ;; "<return>" #'nil
+      )
+#+end_src
+
+#+RESULTS:
+*** Find files recursively
+
+With prefix argument all files (hidden, .gitignoreds, ....) are shown as candidates.
+
+#+begin_src elisp
+(defun brust-vertico/find-file-in--add-hidden-files-option (orig-fun &rest args)
+  (if current-prefix-arg
+      (let ((+vertico-consult-fd-args "fdfind --color=never -i -H -I --regex "))
+        (apply orig-fun args))
+    (apply orig-fun args)))
+
+(advice-add '+vertico/find-file-in :around #'brust-vertico/find-file-in--add-hidden-files-option)
+;; (advice-remove '+vertico/find-file-in #'brust-vertico/find-file-in-add-hidden-files-option)
+
+(defun brust-doom-project-find-file--add-hidden-files-option (orig-fun &rest args)
+  (and current-prefix-arg
+      (+vertico/find-file-in default-directory)
+      t))
+
+;; (advice-remove 'doom-project-find-file #'brust-doom-project-find-file--add-hidden-files-option)
+;; (advice-add 'doom-project-find-file :around #'brust-doom-project-find-file--add-hidden-files-option)
+(advice-add 'doom-project-find-file :before-until #'brust-doom-project-find-file--add-hidden-files-option)
+#+end_src
+
+*** Jumping to specific dirs
+#+begin_src elisp :tangle no
+;; This is equivalent to #'+default/find-file-under-here
+;; (defun brust-counsel-fzf-dir nil
+;;   "fzf find file selecting a directory"
+;;   (interactive)
+;;   (let ((μdir (brust-ivy-read-directory-name)))
+;;     (counsel-fzf nil μdir (concat "fzf in " μdir ": "))))
+
+(defvar brust-find-file-recursively-default-dirs-alist
+  '(("~/" . "Home")
+    ("~/Dropbox/" . "Dropbox")
+    ("~/.emacs.d/" . "emacs.d")
+    ("~/.doom.d/" . ".doom.d"))
+  "Cons list of `(dir . name)' to auto-create fzf searches in.")
+
+(cl-loop for dirname in brust-find-file-recursively-default-dirs-alist do
+         ;; (message "dir %s, name %s" (car dirname) (cdr dirname))
+         (let* ((dir (car dirname))
+                (name (cdr dirname))
+                (bind (downcase (substring name 0 1)))
+                (fun-name (intern (format "brust-find-file-recursively-%s" (downcase name)))))
+           ;; (message "dir %s, name %s" dir name)
+           (fset fun-name
+                 `(lambda nil (interactive)
+                    (doom-project-find-file ,dir)))
+           (map! (:leader (:prefix "f" (:prefix "z"
+                                        :desc name bind fun-name))))))
+#+end_src
+
 ** TODO File templates
 
-Add my own templates for LaTeX, Singular, Julia... Looks pretty handy :)
+TODO Add templates for Julia...
 
 #+begin_src elisp
 ;; +file-templates-dir
@@ -2948,147 +3050,6 @@ I just want auto format in a few modes.
 ;;             tex-mode         ; latexindent is broken
 ;;             c-mode
 ;;             latex-mode))
-#+end_src
-
-** FZF Fuzzi file finder
-*** Main config
-
-#+begin_src elisp :tangle no
-(after! counsel
-  (advice-add 'counsel-fzf :around #'brust-counsel-fzf-advice-add-hide-files)
-
-  (map! (:leader (:prefix "f" (:prefix ("z" . "Fuzzy find")
-         :desc "Current dir" "z" #'counsel-fzf
-         :desc "Select dir"  "s" #'brust-counsel-fzf-dir)))))
-#+end_src
-
-*** COMMENT Advice to include hidden files
-
-Install =ag= with: =sudo apt install silversearcher-ag=.
-
-#+begin_src elisp :tangle no
-(defun brust-counsel-fzf-advice-add-hide-files (orig-fun &rest args)
-  (if current-prefix-arg
-      (let* ((ag-args (with-temp-buffer
-                        (ivy-read "Arguments for ag: "
-                                  '(("Hidden files but not .gitignoreds --hidden --ignore .git -g \"\"" . "--hidden --ignore .git -g \"\"")
-                                    ("Hidden files and .gitignoreds -U --hidden --ignore .git -g \"\""  . "-U --hidden --ignore .git -g \"\""))
-                                  :action (lambda (x) (insert (if (listp x) (cdr x) x))))
-                        (buffer-string)))
-             (counsel-fzf-cmd (concat "ag " ag-args " | fzf -f \"%s\"")))
-        (apply orig-fun args))
-    (apply orig-fun args)))
-#+end_src
-
-*** COMMENT Workaround for jumping to specific dirs
-#+begin_src elisp :tangle no
-(defun brust-counsel-fzf-dir nil
-  "fzf find file selecting a directory"
-  (interactive)
-  (let ((μdir (brust-ivy-read-directory-name)))
-    (counsel-fzf nil μdir (concat "fzf in " μdir ": "))))
-
-(defvar brust-counsel-fzf-default-dirs-alist
-  '(("~" . "Home")
-    ("~/Dropbox" . "Dropbox")
-    ("~/.emacs.d" . "emacs.d")
-    ("~/.doom.d" . ".doom.d"))
-  "Cons list of `(dir . name)' to auto-create fzf searches in.")
-
-(cl-loop for dirname in brust-counsel-fzf-default-dirs-alist do
-         ;; (message "dir %s, name %s" (car dirname) (cdr dirname))
-         (let* ((dir (car dirname))
-                (name (cdr dirname))
-                (bind (downcase (substring name 0 1)))
-                (fun-name (intern (format "brust-counsel-fzf-%s" (downcase name)))))
-           ;; (message "dir %s, name %s" dir name)
-           (fset fun-name
-                 `(lambda nil (interactive)
-                    (counsel-fzf nil ,dir ,(format "fzf in %s: " name))))
-           (map! (:leader (:prefix "f" (:prefix "z"
-                                        :desc name bind fun-name))))))
-#+end_src
-
-** COMMENT Ivy
-*** General ivy
-
-#+BEGIN_SRC elisp :tangle no
-(after! ivy
-  (setq ivy-use-virtual-buffers t
-        +ivy-buffer-preview t
-        counsel-find-file-at-point t
-        ;; ivy-initial-inputs-alist nil ; remove initial ^ input.
-        ;; ivy-virtual-abbreviate 'full ; properly use of bookmarks
-        ;; ivy-height 10 ;; is already in module
-        ivy-count-format "(%d/%d) "
-        ivy-extra-directories nil ; remove . and .. directory.
-        ;; Don't open in directory-mode
-        ;; Always ignore buffers set in `ivy-ignore-buffers'
-        ivy-use-ignore-default 'always)
-  ;; Ignore some buffers in `ivy-switch-buffer'
-  ;; (cl-loop for xx in
-  ;;          '("company-statistics-cache.el"
-  ;;            "^\\*vc\\*$"
-  ;;            "^\\*log-edit-files\\*$"
-  ;;            "^\\*Ibuffer\\*$"
-  ;;            ;; "^\\*Org Src .*$"
-  ;;            "^\\*magit[-a-z]*:.*$")
-  ;;          do  (cl-pushnew xx ivy-ignore-buffers))
-  ;; ;; Ignore some files in `counsel-find-file'
-  ;; (setq counsel-find-file-ignore-regexp
-  ;;       (concat "\\(^#.*#$\\)\\|\\(^.*~$\\)\\|\\(^\\..*$\\)"
-  ;;               (cl-loop for -xx in
-  ;;                        '(;; ".aux" ".bbl"
-  ;;                          ".blg" ".exe"
-  ;;                          ".log" ".meta" ".out" ;;".pdf"
-  ;;                          ".synctex.gz" ".tdo" ".toc"
-  ;;                          ".elc" ".eld" ".tex~" ".el~"
-  ;;                          ".bcf" ".fls" ".rel" ".fdb_latexmk")
-  ;;                        ;; may be add '("-pkg.el" "-autoloads.el")
-  ;;                        do
-  ;;                        (cl-pushnew
-  ;;                         (concat "^.*\\" -xx "$")
-  ;;                         ivy-ignore-buffers)
-  ;;                        concat (concat "\\|\\(^.*\\" -xx "\\)") into file-regexp
-  ;;                        finally return file-regexp)))
-
-  (map!
-   (:map ivy-minibuffer-map
-    ;; Motion
-    ;;         Now   I use LOWER form my keyboard
-    ;;         "M-j" #'ivy-next-line
-    ;;         "M-k" #'ivy-previous-line
-    ;; Finish
-    "<right>"  #'ivy-alt-done
-    ";"   #'ivy-immediate-done
-    ;; Interaction
-    "M-w"      #'ivy-yank-word
-    "M-o"      #'ivy-dispatching-done
-    ;; "C-o"      #'hydra-ivy/body
-    "C-<"      #'ivy-minibuffer-shrink
-    "C->"      #'ivy-minibuffer-grow
-    "M-j"      #'ivy-next-history-element
-    "M-k"      #'ivy-previous-history-element
-    "M-m"      #'ivy-mark
-    ;; Security
-    "<return>" #'nil
-    )))
-#+END_SRC
-
-*** Rich
-Enlarge width of some columns
-#+begin_src elisp :tangle no
-(after! ivy
-  (let* ((plist (plist-get ivy-rich-display-transformers-list 'ivy-switch-buffer))
-         (switch-buffer-alist (assq 'ivy-switch-buffer-transformer (plist-get plist :columns))))
-    (when switch-buffer-alist
-      (setcdr switch-buffer-alist '((:width 80)))))
-
-  (let* ((plist (plist-get ivy-rich-display-transformers-list 'counsel-M-x))
-         (switch-buffer-alist (assq 'counsel-M-x-transformer (plist-get plist :columns))))
-    (when switch-buffer-alist
-      (setcdr switch-buffer-alist '((:width 50)))))
-  )
 #+end_src
 
 ** Key-frequency
