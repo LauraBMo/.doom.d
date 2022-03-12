@@ -1,0 +1,39 @@
+# -*- mode: snippet -*-
+# group: file templates
+# contributor: Laura Brustenga
+# --
+
+enable_autocomplete_brackets(false) # To deactivate OhMyREPL brackets autocompletion.
+
+## For packages
+using DocStringExtensions: SIGNATURES, TYPEDEF
+using Requires # for macro @require
+using RecipesBase # For Plots recipes
+
+## Base packages
+using Plots; pyplot()
+using DelimitedFiles
+using LinearAlgebra
+
+## Alg. Geom. packages
+using Nemo
+using Polymake
+# using AbstractAlgebra
+import AbstractAlgebra as AA
+using Arblib
+using Polynomials # Polynomial type, roots function
+using PolynomialRoots # Doesn't need Polynomials
+
+## HC
+using HomotopyContinuation
+const HC = HomotopyContinuation
+
+## Mines
+using Revise
+using SymbolicCRN
+
+## Networks
+using Catalyst # OrdinaryDiffEq
+using BifurcationKit, LinearAlgebra#, Sundials
+using Setfield # @lens, setproperties, @set
+const BK = BifurcationKit

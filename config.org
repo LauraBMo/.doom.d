@@ -424,6 +424,12 @@ Add my own templates for LaTeX, Singular, Julia... Looks pretty handy :)
 
 (set-file-template! "[.]sing" :trigger "__sing" :mode 'c++-mode)
 (set-file-template! "[.]tex" :trigger "__tex" :mode 'latex-mode)
+(set-file-template! "[.]jl" :trigger "__jl" :mode 'julia-mode)
+#+end_src
+
+#+begin_src bash :tangle no
+cp -r ~/.doom.d/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates
+#+end_src
 #+end_src
 
 ** TODO My Projects
