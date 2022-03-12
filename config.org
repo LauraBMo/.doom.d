@@ -510,9 +510,7 @@ With prefix argument all files (hidden, .gitignoreds, ....) are shown as candida
                                         :desc name bind fun-name))))))
 #+end_src
 
-** TODO File templates
-
-TODO Add templates for Julia...
+** File templates
 
 #+begin_src elisp
 ;; +file-templates-dir
