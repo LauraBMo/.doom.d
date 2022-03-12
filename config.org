@@ -28,7 +28,6 @@ I’m rarely happier than when spending an entire day programming my computer
 -- https://www.gnu.org/software/emacs/manual/html_node/eintr/Emacs-Initialization.html
 #+end_quote
 
-
 * Change a few defaults
 ** Set some vars
 
@@ -182,7 +181,7 @@ org-directory "~/Dropbox/Org"
  ;; If there is more than one, they won't work right.
  '(highlight ((t (:background "#51afef" :foreground "black" :weight bold)))))
 #+end_src
-** Enabling some functions
+** Enabling
 
 #+begin_src elisp
 (put 'erase-buffer 'disabled nil)
@@ -293,10 +292,6 @@ Keymap to show or kill current date.")
   (display-time-mode +1))
 #+end_src
 
-** COMMENT Use buffer-name for buffer name
-#+begin_src elisp :tangle no
-(setq doom-modeline-buffer-file-name-style 'buffer-name)
-#+end_src
 * Doom modules
 ** Biblio
 #+begin_src elisp :tangle no
@@ -340,7 +335,7 @@ Editing =.bib= files.
                   sort-fields)
                 (delq! 'required-fields bibtex-entry-format))))
 #+end_src
-*** Get bib entries from the web
+*** COMMENT Get bib entries from the web
 **** Bibretrive
 Getting bib entries from MathSciNet or arxiv
 #+BEGIN_SRC elisp :tangle no
@@ -411,7 +406,6 @@ Maintaining notes.org
 (after! org
   (require 'ox-bibtex))
 #+end_src
-
 
 ** Completion environment
 ** TODO File templates
@@ -537,32 +531,32 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 ** COMMENT Add blank pages to a pdf
 
 #+BEGIN_SRC elisp :tangle no
-  (defun brust-pdf-add-blank-pages (-file init-page)
-    (interactive
-     (list  (read-file-name "Pdf to modify: ")
-            (read-number "Page to start adding blank pages: ")))
-    (let (-num -page (i init-page) -commstr)
-      (with-temp-buffer
-        (insert (shell-command-to-string (format "pdftk %s dump_data" -file)))
-        (goto-char (point-min))
-        (re-search-forward "NumberOfPages: \\([0-9]+\\)$" nil t)
-        (setq -num (- (string-to-number (match-string 1)) i))
-        (setq -page
-              (if (re-search-forward "PageMediaDimensions: \\([0-9]+\\) \\([0-9]+\\)$" nil t)
-                  (concat (match-string 1) "x" (match-string 2))
-                "a4")))
-      (setq -commstr
-            (concat (format "A1-%d " i)
-                    (cl-loop repeat -num
-                             concat (format "B1 A%d " (setq i (1+ i))))))
-      (let ((-blanche (concat (file-name-directory -file) "pageblanche.pdf"))
-            (-mod (concat (file-name-directory -file) "mod_" (file-name-base -file) ".pdf"))
-            (-out (concat (file-name-directory -file) "print_" (file-name-base -file) ".pdf")))
-        (shell-command (format "convert xc:none -page %s %s" -page -blanche))
-        (shell-command (format "pdftk A=%s B=%s cat %s output %s" -file -blanche -commstr -mod))
-        (shell-command (format "rm %s" -blanche)))))
-  ;; (shell-command (format "pdfnup %s --nup 2x1 --landscape --outfile %s" -mod -out))
-  ;; (shell-command (format "rm %s && rm %s" -mod -blanche)))))
+(defun brust-pdf-add-blank-pages (-file init-page)
+  (interactive
+   (list  (read-file-name "Pdf to modify: ")
+          (read-number "Page to start adding blank pages: ")))
+  (let (-num -page (i init-page) -commstr)
+    (with-temp-buffer
+      (insert (shell-command-to-string (format "pdftk %s dump_data" -file)))
+      (goto-char (point-min))
+      (re-search-forward "NumberOfPages: \\([0-9]+\\)$" nil t)
+      (setq -num (- (string-to-number (match-string 1)) i))
+      (setq -page
+            (if (re-search-forward "PageMediaDimensions: \\([0-9]+\\) \\([0-9]+\\)$" nil t)
+                (concat (match-string 1) "x" (match-string 2))
+              "a4")))
+    (setq -commstr
+          (concat (format "A1-%d " i)
+                  (cl-loop repeat -num
+                           concat (format "B1 A%d " (setq i (1+ i))))))
+    (let ((-blanche (concat (file-name-directory -file) "pageblanche.pdf"))
+          (-mod (concat (file-name-directory -file) "mod_" (file-name-base -file) ".pdf"))
+          (-out (concat (file-name-directory -file) "print_" (file-name-base -file) ".pdf")))
+      (shell-command (format "convert xc:none -page %s %s" -page -blanche))
+      (shell-command (format "pdftk A=%s B=%s cat %s output %s" -file -blanche -commstr -mod))
+      (shell-command (format "rm %s" -blanche)))))
+;; (shell-command (format "pdfnup %s --nup 2x1 --landscape --outfile %s" -mod -out))
+;; (shell-command (format "rm %s && rm %s" -mod -blanche)))))
 #+END_SRC
 
 ** Advise once
@@ -579,8 +573,8 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 ** By five
 
 #+BEGIN_SRC elisp
-  (defun brust-by-five (-function args)
-    (funcall-interactively -function (if (numberp args) (* 5 args) 5)))
+(defun brust-by-five (-function args)
+  (funcall-interactively -function (if (numberp args) (* 5 args) 5)))
 #+END_SRC
 
 ** Change font size
@@ -636,24 +630,24 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 
 *** By right
 #+BEGIN_SRC elisp
-  (defun close-quoted-open-paren-right (&optional args)
-    (interactive "P")
-    (close-quoted-open-paren (if (numberp args) args 1) 0))
+(defun close-quoted-open-paren-right (&optional args)
+  (interactive "P")
+  (close-quoted-open-paren (if (numberp args) args 1) 0))
 
-  (defun close-all-open-paren-right nil
-    (interactive)
-    (while (ignore-errors (close-quoted-open-paren-right))))
+(defun close-all-open-paren-right nil
+  (interactive)
+  (while (ignore-errors (close-quoted-open-paren-right))))
 
 #+END_SRC
 *** By left
 #+BEGIN_SRC elisp
-  (defun close-quoted-open-paren-left (&optional args)
-    (interactive "P")
-    (close-quoted-open-paren (if (numberp args) args 1) 1))
+(defun close-quoted-open-paren-left (&optional args)
+  (interactive "P")
+  (close-quoted-open-paren (if (numberp args) args 1) 1))
 
-  (defun close-all-open-paren-left nil
-    (interactive)
-    (while (ignore-errors (close-quoted-open-paren-left))))
+(defun close-all-open-paren-left nil
+  (interactive)
+  (while (ignore-errors (close-quoted-open-paren-left))))
 #+END_SRC
 *** By right or left
 #+BEGIN_SRC elisp
@@ -691,13 +685,13 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
     A handy function for customization (from Singular web page).
 
 #+BEGIN_SRC elisp
-  (defun customize-face-at-point nil
-    "Customize face which point is at."
-    (interactive)
-    (let ((face (get-text-property (point) 'face)))
-      (if face
-          (customize-face face)
-        (message "No face defined at point"))))
+(defun customize-face-at-point nil
+  "Customize face which point is at."
+  (interactive)
+  (let ((face (get-text-property (point) 'face)))
+    (if face
+        (customize-face face)
+      (message "No face defined at point"))))
 
 #+END_SRC
 ** Delete region advise
@@ -991,28 +985,28 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
 
 ** Prompt in Singular... Non-editable
 #+begin_src elisp
-        (defvar brust-math-software-buffers-prompts
-          '(("*julia*"    . "^julia>")
-            ("*singular*" . "^>"))
-          "List of cons with buffer names runing some math software and a regex for its promp string")
+(defvar brust-math-software-buffers-prompts
+  '(("*julia*"    . "^julia>")
+    ("*singular*" . "^>"))
+  "List of cons with buffer names runing some math software and a regex for its promp string")
 
-        (defun brust-math-software-intangify-buffer-text (-regexp beg end)
-          "Set cursor-intangible property to all buffer text maching regular expresion `-regexp` between `beg` and  `end`"
-          (save-excursion
-            (goto-char beg)
-            (save-match-data
-              (while (re-search-forward -regexp end t)
-                (add-text-properties (1- (match-beginning 0)) (match-end 0) '(cursor-intangible t rear-nonsticky nil))))))
+(defun brust-math-software-intangify-buffer-text (-regexp beg end)
+  "Set cursor-intangible property to all buffer text maching regular expresion `-regexp` between `beg` and  `end`"
+  (save-excursion
+    (goto-char beg)
+    (save-match-data
+      (while (re-search-forward -regexp end t)
+        (add-text-properties (1- (match-beginning 0)) (match-end 0) '(cursor-intangible t rear-nonsticky nil))))))
 
-        (defun brust-math-software-intangify-cursor-on-prompt (beg end length)
-          "Set cursor-intangible in math software buffers prompts"
-          (let ((-prompt (cdr (assoc (buffer-name) brust-math-software-buffers-prompts))))
-            (when -prompt
-              (brust-math-software-intangify-buffer-text -prompt beg end))))
+(defun brust-math-software-intangify-cursor-on-prompt (beg end length)
+  "Set cursor-intangible in math software buffers prompts"
+  (let ((-prompt (cdr (assoc (buffer-name) brust-math-software-buffers-prompts))))
+    (when -prompt
+      (brust-math-software-intangify-buffer-text -prompt beg end))))
 
-        (defun brust-math-software-hookfun-to-intangify-prompt nil
-          (cursor-intangible-mode 1)
-          (add-hook 'after-change-functions #'brust-math-software-intangify-cursor-on-prompt nil t))
+(defun brust-math-software-hookfun-to-intangify-prompt nil
+  (cursor-intangible-mode 1)
+  (add-hook 'after-change-functions #'brust-math-software-intangify-cursor-on-prompt nil t))
 #+end_src
 
 ** RGB colors (get numbers)
@@ -1051,8 +1045,8 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
 Return nil if NAME does not designate a valid color."
   (when-let* ((rgb (color-name-to-rgb name))
               ;; Sets 2 digits per component.
-             (hex (apply #'color-rgb-to-hex (append rgb '(2)))))
-      (insert hex)))
+              (hex (apply #'color-rgb-to-hex (append rgb '(2)))))
+    (insert hex)))
 #+end_src
 
 *** Consult colors
@@ -1072,11 +1066,11 @@ You can insert or kill the name or hexadecimal RGB value of the
 selected color."
   (interactive
    (list (consult--read (list-colors-duplicates (defined-colors))
-                 :prompt "Emacs color: "
-                 :require-match t
-                 :category 'color
-                 :history '(:input consult-colors-history)
-                 )))
+                        :prompt "Emacs color: "
+                        :require-match t
+                        :category 'color
+                        :history '(:input consult-colors-history)
+                        )))
   (insert color))
 
 ;; Copied from counsel.el to get web colors.
@@ -1199,42 +1193,42 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
 
 ** COMMENT Word count
 #+BEGIN_SRC elisp :tangle no
-  (defun brust-wc-get-word-count-list-of-current-project nil
-    (let ((project-master (expand-file-name (TeX-master-file t nil t))))
-      (with-temp-buffer
-        (call-process-shell-command
-         (concat "texcount -opt="
-                 (expand-file-name "~/Dropbox/config/TeXcount-emacs.txt")
-                 " -dir="
-                 (file-name-directory project-master)
-                 " "
-                 project-master)
-         nil t)
-        (re-search-backward
-         "new\\([0-9]+\\)w\\([0-9]+\\)im\\([0-9]+\\)dm\\([0-9]+\\)cd\\([0-9]+\\)h\\([0-9]+\\)file" nil t)
-        (cl-loop for xx from 1 to 6
-                 if (= xx 3) collect (number-to-string (- (string-to-number (match-string-no-properties 3))
-                                                          (string-to-number (match-string-no-properties 4))))
-                 else
-                 collect (match-string-no-properties xx)))))
+(defun brust-wc-get-word-count-list-of-current-project nil
+  (let ((project-master (expand-file-name (TeX-master-file t nil t))))
+    (with-temp-buffer
+      (call-process-shell-command
+       (concat "texcount -opt="
+               (expand-file-name "~/Dropbox/config/TeXcount-emacs.txt")
+               " -dir="
+               (file-name-directory project-master)
+               " "
+               project-master)
+       nil t)
+      (re-search-backward
+       "new\\([0-9]+\\)w\\([0-9]+\\)im\\([0-9]+\\)dm\\([0-9]+\\)cd\\([0-9]+\\)h\\([0-9]+\\)file" nil t)
+      (cl-loop for xx from 1 to 6
+               if (= xx 3) collect (number-to-string (- (string-to-number (match-string-no-properties 3))
+                                                        (string-to-number (match-string-no-properties 4))))
+               else
+               collect (match-string-no-properties xx)))))
 
-  (defun brust-wc-save-words nil
-    (interactive)
-    (let ((wc-sat (brust-wc-get-word-count-list-of-current-project)))
-      (find-file (concat
-                  (file-name-directory (expand-file-name (TeX-master-file t nil t)))
-                  "wc-statistics.txt"))
-      (goto-char (point-max))
-      (insert "\n" (format-time-string "%x, %X, ")
-              (cl-loop for xx in wc-sat
-                       concat (concat xx ", ")))
-      (save-buffer)
-      (kill-buffer)))
+(defun brust-wc-save-words nil
+  (interactive)
+  (let ((wc-sat (brust-wc-get-word-count-list-of-current-project)))
+    (find-file (concat
+                (file-name-directory (expand-file-name (TeX-master-file t nil t)))
+                "wc-statistics.txt"))
+    (goto-char (point-max))
+    (insert "\n" (format-time-string "%x, %X, ")
+            (cl-loop for xx in wc-sat
+                     concat (concat xx ", ")))
+    (save-buffer)
+    (kill-buffer)))
 
-  (defun brust-wc-save-words-my-thesis nil
-    (interactive)
-    (find-file "~/Dropbox/Math/Doctorat_Laura/Thesis/master.tex")
-    (brust-wc-save-words))
+(defun brust-wc-save-words-my-thesis nil
+  (interactive)
+  (find-file "~/Dropbox/Math/Doctorat_Laura/Thesis/master.tex")
+  (brust-wc-save-words))
 #+END_SRC
 
 ** White space edit
@@ -1325,7 +1319,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
 
 * TODO Org mode
 ** Config
- #+BEGIN_SRC elisp
+#+BEGIN_SRC elisp
 (after! org
   (setq
    ;; org-edit-src-auto-save-idle-delay 20
@@ -1346,7 +1340,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
          :desc "vterm-julia launch new" "v" #'brust-org-mode-vterm-julia-link-or-launch-and-link
          :desc "Babel" "B" org-babel-map
          )))
- #+END_SRC
+#+END_SRC
 
 ** TODO Agenda
 #+begin_src elisp
@@ -1403,7 +1397,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
 #+end_src
 
 ** Captures
- #+BEGIN_SRC elisp
+#+BEGIN_SRC elisp
 (after! org
   (setq org-capture-templates
         (append
@@ -1416,18 +1410,18 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
             "* TODO %^{Description}\n%A\n%?\n")
            ;; Ledger
            ("l" "Ledger")
-            ("lb" "Bank"
-             plain
-             (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y")))
-             ,my/org-ledger-card-template
-             :empty-lines 1
-             :immediate-finish t)
-            ("lc" "Cash"
-             plain
-             (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y")))
-             ,my/org-ledger-cash-template
-             :empty-lines 1
-             :immediate-finish t)
+           ("lb" "Bank"
+            plain
+            (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y")))
+            ,my/org-ledger-card-template
+            :empty-lines 1
+            :immediate-finish t)
+           ("lc" "Cash"
+            plain
+            (file ,(format "~/Dropbox/Org/ledger-%s.dat" (format-time-string "%Y")))
+            ,my/org-ledger-cash-template
+            :empty-lines 1
+            :immediate-finish t)
            ;; Hugo
            ("h" "Hugo post"
             entry
@@ -1436,7 +1430,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
             ;; symlink pointing to the actual location of all-posts.org!
             (file+olp "my.org" "Blog Ideas")
             (function org-hugo-new-subtree-post-capture-template))))))
- #+END_SRC
+#+END_SRC
 
 *** Functions
 **** Hugo
@@ -1619,73 +1613,73 @@ See `org-capture-templates' for more information."
 ** COMMENT Pdf links org-pdftools
      Org links for pdfs
 #+begin_src elisp :tangle no
-  (use-package org-pdfview
-    :config ;;(setq org-pdftools-root-dir "~/Dropbox/bibliography/pdf")
-    )
+(use-package org-pdfview
+  :config ;;(setq org-pdftools-root-dir "~/Dropbox/bibliography/pdf")
+  )
 #+end_src
 
 ** COMMENT Ledgers
 Mainly from [[https://www.reddit.com/r/emacs/comments/8x4xtt/tip_how_i_use_ledger_to_track_my_money/][Reddit discution]]
 *** Config
 #+BEGIN_SRC elisp :tangle no
-  (use-package! ledger-mode
-    :mode ("\\.dat\\'"
-           "\\.ledger\\'")
-    :custom
-    (ledger-clear-whole-transactions t)
-    (add-hook 'ledger-mode-hook #'ledger-flymake-enable)
-    (add-hook 'ledger-mode-hook #'company-mode)
-    (ledger-post-auto-adjust-amounts t)
-    :bind
-    (:map ledger-mode-map
-          ("C-c C-a" . brust-ledger-add-transaction)))
+(use-package! ledger-mode
+  :mode ("\\.dat\\'"
+         "\\.ledger\\'")
+  :custom
+  (ledger-clear-whole-transactions t)
+  (add-hook 'ledger-mode-hook #'ledger-flymake-enable)
+  (add-hook 'ledger-mode-hook #'company-mode)
+  (ledger-post-auto-adjust-amounts t)
+  :bind
+  (:map ledger-mode-map
+   ("C-c C-a" . brust-ledger-add-transaction)))
 
-  (with-eval-after-load 'ledger-mode
-    (define-key ledger-mode-map [remap save-buffer] #'std::ledger::save))
+(with-eval-after-load 'ledger-mode
+  (define-key ledger-mode-map [remap save-buffer] #'std::ledger::save))
 #+END_SRC
 
 *** Functions
 #+BEGIN_SRC elisp :tangle no
-  (defun brust-ledger-add-transaction (&optional -date)
-    "Add new transaction using `org-read-date'"
-    (interactive)
-    (ledger-add-transaction
-     (or -date (org-read-date))
-     nil)
-    (insert "?\n    Assets:DebitCard")
-    (cdlatex-position-cursor))
+(defun brust-ledger-add-transaction (&optional -date)
+  "Add new transaction using `org-read-date'"
+  (interactive)
+  (ledger-add-transaction
+   (or -date (org-read-date))
+   nil)
+  (insert "?\n    Assets:DebitCard")
+  (cdlatex-position-cursor))
 
-  (defun std::ledger::save nil
-    "First `ledger-mode-clean-buffer', then `save-buffer'."
-    (interactive)
-    (save-excursion
-      (when (buffer-modified-p)
-        (with-demoted-errors (ledger-mode-clean-buffer))
-        (save-buffer))))
+(defun std::ledger::save nil
+  "First `ledger-mode-clean-buffer', then `save-buffer'."
+  (interactive)
+  (save-excursion
+    (when (buffer-modified-p)
+      (with-demoted-errors (ledger-mode-clean-buffer))
+      (save-buffer))))
 
-  (defun brust-ledger-copy-transaction-from-extract nil
-    "`-string' is a line of my bank extract in cvs format"
-    (interactive)
-    (let ((-entry
-           (split-string
-            (buffer-substring-no-properties (point-at-bol) (point-at-eol))
-            "\,")))
-      (switch-to-buffer "ledger-2021.dat")
-      (brust-ledger-add-transaction
-       (brust-from-eur-ame-date (nth 0 -entry)))
-      (insert (capitalize (nth 1 -entry))
-              "\n    ?  €"
-              (nth 3 -entry))
-      (cdlatex-position-cursor)))
+(defun brust-ledger-copy-transaction-from-extract nil
+  "`-string' is a line of my bank extract in cvs format"
+  (interactive)
+  (let ((-entry
+         (split-string
+          (buffer-substring-no-properties (point-at-bol) (point-at-eol))
+          "\,")))
+    (switch-to-buffer "ledger-2021.dat")
+    (brust-ledger-add-transaction
+     (brust-from-eur-ame-date (nth 0 -entry)))
+    (insert (capitalize (nth 1 -entry))
+            "\n    ?  €"
+            (nth 3 -entry))
+    (cdlatex-position-cursor)))
 
 
-  (defun brust-from-eur-ame-date (-date)
-    (let ((-new-date (split-string -date "/")))
-      (concat (nth 2 -new-date)
-              "-"
-              (nth 1 -new-date)
-              "-"
-              (nth 0 -new-date))))
+(defun brust-from-eur-ame-date (-date)
+  (let ((-new-date (split-string -date "/")))
+    (concat (nth 2 -new-date)
+            "-"
+            (nth 1 -new-date)
+            "-"
+            (nth 0 -new-date))))
 #+END_SRC
 
 ** Eval julia code blocks in vterm
@@ -1916,37 +1910,37 @@ Add interactive TOC and references manager at .tex files.
       - [X] [[https://wiki.archlinux.org/index.php/Isync#Troubleshooting][Archlinux mbsync config page]]
       -
 ** COMMENT Install
- Just in case to generate a certificate:
- # openssl s_client -connect mail.mat.uab.cat:993 -showcerts 2>&1 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sed -ne '1,/-END CERTIFICATE-/p' > ~/mail.uab.cat.ctr
+Just in case to generate a certificate:
+# openssl s_client -connect mail.mat.uab.cat:993 -showcerts 2>&1 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sed -ne '1,/-END CERTIFICATE-/p' > ~/mail.uab.cat.ctr
 
- #+BEGIN_SRC bash :tangle no
-   # Install things
-   sudo apt install msmtp-gnome msmtp-mta isync gnupg2
-   cd src
-   git clone https://github.com/djcb/mu.git
-   ./autogen.sh
-   make
+#+BEGIN_SRC bash :tangle no
+# Install things
+sudo apt install msmtp-gnome msmtp-mta isync gnupg2
+cd src
+git clone https://github.com/djcb/mu.git
+./autogen.sh
+make
 
-   # Paswords
-   ## UAB
-   cd
-   echo PASSWORD > .mathuab
-   gpg2 -c .mathuab
-   rm .mathuab
-   ## Gmail
-   echo PASSWORD > .gmailpass
-   gpg2 -c .gmailpass
-   rm .gmailpass
-   # Delete corresponding lines of .bash_history
+# Paswords
+## UAB
+cd
+echo PASSWORD > .mathuab
+gpg2 -c .mathuab
+rm .mathuab
+## Gmail
+echo PASSWORD > .gmailpass
+gpg2 -c .gmailpass
+rm .gmailpass
+# Delete corresponding lines of .bash_history
 
-   mkdir Maildir
-   # Copy from Dropbox/config/Maildir
- #+END_SRC
+mkdir Maildir
+# Copy from Dropbox/config/Maildir
+#+END_SRC
 
 ** Add Path
- #+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp :tangle no
 (add-to-list 'load-path (expand-file-name "~/src/mu/mu4e/"))
- #+END_SRC
+#+END_SRC
 
 ** Config
 [[file:lisp/brusts-mu4e-config.org][Mu4e config file]]
@@ -2610,62 +2604,62 @@ List if julia functions names to define wrap for.")
      It comes from [[http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html][Ispell and abbrev]], to find the misspelled work plain =ispell= is used, I adapted it to use =flyspell=, now I just get words which are underlined as misspelled (red curvi line under the word).
      That's useful in TeX files where plain ispell has many false misspellings, but it could be a problem on buffers without =flyspell= minormode.
 #+BEGIN_SRC elisp :tangle no
-  (defun endless/simple-get-word ()
-    (car-safe (save-excursion (ispell-get-word nil))))
+(defun endless/simple-get-word ()
+  (car-safe (save-excursion (ispell-get-word nil))))
 
-  (defun endless/ispell-word-then-abbrev (p)
-    "Call `ispell-word', then create an abbrev for it.
+(defun endless/ispell-word-then-abbrev (p)
+  "Call `ispell-word', then create an abbrev for it.
   With prefix P, create local abbrev. Otherwise it will
   be global.
   If there's nothing wrong with the word at point, keep
   looking for a typo until the beginning of buffer. You can
   skip typos you don't want to fix with `SPC', and you can
   abort completely with `C-g'."
-    (interactive "P")
+  (interactive "P")
 
-    (let ((top (window-start))
-          (bot (window-end))
-          (position (point))
-          incorrect-word-pos
-          position-at-incorrect-word
-          bef aft)
-      (save-excursion
-        (save-restriction
-          ;; make sure that word under point is checked first
-          (forward-word)
+  (let ((top (window-start))
+        (bot (window-end))
+        (position (point))
+        incorrect-word-pos
+        position-at-incorrect-word
+        bef aft)
+    (save-excursion
+      (save-restriction
+        ;; make sure that word under point is checked first
+        (forward-word)
 
-          ;; narrow the region
-          (narrow-to-region top bot)
-          (overlay-recenter (point))
+        ;; narrow the region
+        (narrow-to-region top bot)
+        (overlay-recenter (point))
 
-          (let ((overlay-list (overlays-in (point-min) (+ position 1)))
-                (overlay 'dummy-value))
+        (let ((overlay-list (overlays-in (point-min) (+ position 1)))
+              (overlay 'dummy-value))
 
-            (while overlay
-              (setq overlay (car-safe overlay-list))
-              (setq overlay-list (cdr-safe overlay-list))
-              (when (and overlay
-                         (flyspell-overlay-p overlay))
-                (setq incorrect-word-pos (overlay-start overlay))
+          (while overlay
+            (setq overlay (car-safe overlay-list))
+            (setq overlay-list (cdr-safe overlay-list))
+            (when (and overlay
+                       (flyspell-overlay-p overlay))
+              (setq incorrect-word-pos (overlay-start overlay))
 
-                ;; try to correct word
-                (save-excursion
-                  (goto-char incorrect-word-pos)
-                  (setq bef (endless/simple-get-word))
-                  ;; `flyspell-correct-at-point' returns t when there is
-                  ;; nothing to correct. In such case we just skip current word.
-                  (unless (flyspell-correct-at-point)
-                    (setq overlay nil)
-                    (setq aft (endless/simple-get-word)))))))))
-      (if (and aft bef (not (equal aft bef)))
-          (let ((aft (downcase aft))
-                (bef (downcase bef)))
-            (define-abbrev
-              (if p local-abbrev-table global-abbrev-table)
-              bef aft)
-            (message "\"%s\" now expands to \"%s\" %sally"
-                     bef aft (if p "loc" "glob")))
-        (user-error "No typo at or before point"))))
+              ;; try to correct word
+              (save-excursion
+                (goto-char incorrect-word-pos)
+                (setq bef (endless/simple-get-word))
+                ;; `flyspell-correct-at-point' returns t when there is
+                ;; nothing to correct. In such case we just skip current word.
+                (unless (flyspell-correct-at-point)
+                  (setq overlay nil)
+                  (setq aft (endless/simple-get-word)))))))))
+    (if (and aft bef (not (equal aft bef)))
+        (let ((aft (downcase aft))
+              (bef (downcase bef)))
+          (define-abbrev
+            (if p local-abbrev-table global-abbrev-table)
+            bef aft)
+          (message "\"%s\" now expands to \"%s\" %sally"
+                   bef aft (if p "loc" "glob")))
+      (user-error "No typo at or before point"))))
 #+END_SRC
 
 ** Auto revert
@@ -2693,18 +2687,18 @@ List if julia functions names to define wrap for.")
 #+END_SRC
 
 #+BEGIN_SRC elisp
-  (defun ediff-copy-both-to-C nil
-    (interactive)
-    (ediff-copy-diff
-     ediff-current-difference nil 'C nil
-     (concat
-      (ediff-get-region-contents
-       ediff-current-difference 'A ediff-control-buffer)
-      (ediff-get-region-contents
-       ediff-current-difference 'B ediff-control-buffer))))
+(defun ediff-copy-both-to-C nil
+  (interactive)
+  (ediff-copy-diff
+   ediff-current-difference nil 'C nil
+   (concat
+    (ediff-get-region-contents
+     ediff-current-difference 'A ediff-control-buffer)
+    (ediff-get-region-contents
+     ediff-current-difference 'B ediff-control-buffer))))
 
-  (defun add-d-to-ediff-mode-map nil
-    (define-key ediff-mode-map "d" #'ediff-copy-both-to-C))
+(defun add-d-to-ediff-mode-map nil
+  (define-key ediff-mode-map "d" #'ediff-copy-both-to-C))
 #+END_SRC
 
 #+begin_src elisp
@@ -3238,11 +3232,11 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
 
 #+begin_src elisp
 (use-package! scihub
- :init
- (setq scihub-download-directory "~/Dropbox/bibliography/pdf/"
-       scihub-open-after-download t
-       scihub-fetch-domain 'scihub-fetch-domains-lovescihub
-       scihub-homepage "https://sci-hub.se"))
+  :init
+  (setq scihub-download-directory "~/Dropbox/bibliography/pdf/"
+        scihub-open-after-download t
+        scihub-fetch-domain 'scihub-fetch-domains-lovescihub
+        scihub-homepage "https://sci-hub.se"))
 #+end_src
 
 ** Turn grep "writable" buffer
