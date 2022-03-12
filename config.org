@@ -148,14 +148,14 @@ org-directory "~/Dropbox/Org"
         ))
 #+end_src
 ** Lookup online
-- Thresauros for synonyms.
 #+begin_src elisp
 (setq +lookup-provider-url-alist
       '(;; ("Doom Emacs issues" "https://github.com/hlissner/doom-emacs/issues?q=is%%3Aissue+%s")
         ("Google"            +lookup--online-backend-google "https://google.com/search?q=%s")
         ("Wikipedia"         "https://wikipedia.org/search-redirect.php?language=en&go=Go&search=%s")
+        ("Thesaurus"         "https://www.thesaurus.com/browse/%s")
         ("Singular Manual"   "https://www.google.com/search?q=site:www.singular.uni-kl.de+%s")
-        ("Project Gutenberg" "http://www.gutenberg.org/ebooks/search/?query=%s")
+        ;; ("Project Gutenberg" "http://www.gutenberg.org/ebooks/search/?query=%s")
         ;; ("DuckDuckGo"        +lookup--online-backend-duckduckgo "https://duckduckgo.com/?q=%s")
         ("DevDocs.io"        "https://devdocs.io/#q=%s")
         ("StackOverflow"     "https://stackoverflow.com/search?q=%s")
