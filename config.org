@@ -28,6 +28,10 @@ I’m rarely happier than when spending an entire day programming my computer
 -- https://www.gnu.org/software/emacs/manual/html_node/eintr/Emacs-Initialization.html
 #+end_quote
 
+* Lexical binding
+#+begin_src elisp
+;;; -*- lexical-binding: t; -*-
+#+end_src
 * Change a few defaults
 ** Set some vars
 
