@@ -130,6 +130,11 @@
 #+begin_src elisp
 (setq TeX-electric-sub-and-superscript t)
 #+end_src
+** Insert change to math mode
+#+begin_src elisp
+(advice-add 'TeX-insert-dollar :before #'brust-evil-insert--to-normal-to-insert-state)
+(advice-add 'brust-LaTeX-insert-math2 :before #'brust-evil-insert--to-normal-to-insert-state)
+#+end_src
 
 ** New line function
 #+BEGIN_SRC elisp
