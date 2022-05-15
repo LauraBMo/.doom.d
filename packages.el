@@ -14,10 +14,10 @@
 ;; Biblatex
 ;; Packages to retrieve bib entries from the web
 ;; Biblio is not working for crossref any more...
-;; (package! org-ref) ;; But this is not working either
-;; (package! bibretrieve) ;; For MathSciNet references
 ;; (package! biblio) ;; For all the others, mostly Crossref, ....
-;; (package! ivy-bibtex) ;; For inserting cites
+(package! biblio :recipe (:host github :repo "cpitclaudel/biblio.el"))
+;; For MathSciNet references
+(package! bibretrieve :recipe (:host github :repo "pzorin/bibretrieve"))
 
 ;; Downloading paper
 (package! scihub :recipe (:host github :repo "emacs-pe/scihub.el"))
