@@ -1124,6 +1124,7 @@ There are many defaults that I do not use, this is to clean a bit.
           ( ?\) ("\\rangle"         ))
           ( ?\[ ("\\subseteq"     ""))
           ( ?\] ("\\supseteq"    ""))
+          ( ?;  (";"      ""))
           ( ?ç  ("\\subseteq"      "\\subset"))
           ( ?´  ("\\supseteq"      "\\supset"))
           ( ?{  ("\\{?\\}"))
@@ -1133,104 +1134,6 @@ There are many defaults that I do not use, this is to clean a bit.
           ( ?`  (""                 ))
           ( ?'  ("\\prime"          ))))
 #+END_SRC
-
-#+RESULTS:
-|  99 | (\circ \comp \cos)                  |
-|  97 | (\alpha \aff )                      |
-|  65 | (\Alpha \aleph)                     |
-|  98 | (\beta)                             |
-|  66 | (\Beta)                             |
-|  67 | (\lceil \rceil \arccos)             |
-| 100 | (\delta \partial)                   |
-|  68 | (\Delta \nabla)                     |
-| 101 | (\varepsilon \epsilon \exp)         |
-|  69 | (\exists  \ln)                      |
-| 102 | (\varphi \field \phi)               |
-|  70 | (\Phi)                              |
-| 103 | (\gamma \dim~ \deg~)                |
-|  71 | (\Gamma)                            |
-| 104 | (\eta \hbar)                        |
-|  72 | ()                                  |
-| 105 | (\in \inte i=1,\dots,n)             |
-|  73 | (\Im)                               |
-| 106 | (\iota j=1,\dots,n j=0,\dots,n)     |
-|  74 | ()                                  |
-| 107 | (\kappa)                            |
-|  75 | ()                                  |
-| 108 | (\lambda  \ln)                      |
-|  76 | (\Lambda)                           |
-| 109 | (\mu \module \matx)                 |
-|  77 | ( \matx)                            |
-| 110 | (\nu \nat \ln)                      |
-|  78 | ()                                  |
-| 111 | (\omega)                            |
-|  79 | (\Omega \mho)                       |
-| 112 | (\pi \proj \perp)                   |
-|  80 | (\Pi)                               |
-| 113 | (\theta \qch \vartheta)             |
-|  81 | (\Theta \rat)                       |
-| 114 | (\rho \reals \varrho)               |
-|  82 | ( \Re)                              |
-| 115 | (\sigma \sch \set)                  |
-|  83 | (\Sigma  \arcsin)                   |
-| 116 | (\tau \set \tan)                    |
-|  84 | (  \arctan)                         |
-| 117 | (\upsilon)                          |
-|  85 | (\Upsilon)                          |
-| 118 | (\vee)                              |
-|  86 | (\Phi)                              |
-| 119 | (\xi)                               |
-|  87 | (\Xi)                               |
-| 120 | (\chi x_1,\dots,x_n x_0,\dots,x_n)  |
-|  88 | ()                                  |
-| 121 | (\psi y_1,\dots,y_m y_0,\dots,y_m)  |
-|  89 | (\Psi)                              |
-| 122 | (\zeta z_1,\dots,z_k z_0,\dots,z_k) |
-|  90 | ()                                  |
-|  48 | (\emptyset)                         |
-|  49 | (^{-1} ^{*} ^{#})                   |
-|  50 | (\clf)                              |
-|  51 | (\cls)                              |
-|  52 | (\clk)                              |
-|  53 | (\clpi)                             |
-|  54 | (\clb)                              |
-|  55 | (\not \neq)                         |
-|  56 | (\infty)                            |
-|  57 | ()                                  |
-|  33 | ()                                  |
-|  64 | ()                                  |
-|  35 | ()                                  |
-|  36 | ()                                  |
-|  37 | ()                                  |
-|  94 | (\uparrow)                          |
-|  38 | (\wedge)                            |
-|  63 | ()                                  |
-|  95 | (\overset \underto)                 |
-|  58 | (\vdots \ddots)                     |
-|  44 | (\from \bullet )                    |
-|  46 | (\dots \cdots \cdot)                |
-|  45 | (\to \tohook \tofunct)              |
-|  42 | (\otimes \cap \bigcap)              |
-|  43 | (\times \cup \bigcup)               |
-|  47 | (\not \neq)                         |
-| 124 | (\perp )                            |
-| 186 | (\setminus)                         |
-|  92 | (\setminus)                         |
-|  34 | ()                                  |
-| 126 | (\approx \simeq \sim)               |
-|  61 | (\cong \equiv)                      |
-|  40 | (\langle)                           |
-|  41 | (\rangle)                           |
-|  91 | ( )                                 |
-|  93 | ( )                                 |
-| 231 | (\subseteq \subset)                 |
-| 180 | (\supseteq \supset)                 |
-| 123 | (\{?\})                             |
-| 125 | ()                                  |
-|  60 | (\le \min)                          |
-|  62 | (\ge \max)                          |
-|  96 | ()                                  |
-|  39 | (\prime)                            |
 
 ** COMMENT Adaptation to my style
 
