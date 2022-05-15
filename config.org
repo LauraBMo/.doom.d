@@ -2874,6 +2874,10 @@ Package to highlight TODO's in comments and so.
 #+begin_src elisp
 (setq ispell-highlight-face 'flyspell-incorrect)
 #+end_src
+** Recentf
+#+begin_src elisp
+(add-hook! 'emacs-startup-hook (recentf-mode 1))
+#+end_src
 
 ** Tramp
 #+begin_src elisp
