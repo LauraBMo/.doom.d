@@ -2878,6 +2878,135 @@ Package to highlight TODO's in comments and so.
 #+begin_src elisp
 (add-hook! 'emacs-startup-hook (recentf-mode 1))
 #+end_src
+** Show parentheses
+*** In =org-mode=
+#+begin_src elisp
+(after! org
+  ;; Doom disables =show-paren-mode= because:
+  ;;  ;; `show-paren-mode' causes flickering with indent overlays made by
+  ;;  ;; `org-indent-mode', so we turn off show-paren-mode altogether
+  ;;  but it is not a problem for me so long, so I reable it.
+  (add-hook 'org-mode-hook #'brust-doom-reable-show-paren-mode-h t)
+  (add-hook 'org-mode-hook #'org-setup-<>-syntax-fix))
+
+;; Locally reable show parens
+(defun brust-doom-reable-show-paren-mode-h nil
+  "Turn off `show-paren-mode' buffer-locally."
+  (setq-local show-paren-mode t))
+
+;; Fix syntax for chars <,> in org-mode blocks
+(defun org-mode-<>-syntax-fix (start end)
+  "Change syntax of characters ?< and ?> to symbol within source code blocks."
+  (let ((case-fold-search t))
+    (when (eq major-mode 'org-mode)
+      (save-excursion
+        (goto-char start)
+        (while (re-search-forward "<\\|>" end t)
+          (when (save-excursion
+                  (and
+                   (re-search-backward "[[:space:]]*#\\+\\(begin\\|end\\)_src\\_>" nil t)
+                   (string-equal (downcase (match-string 1)) "begin")))
+            ;; This is a < or > in an org-src block
+            (put-text-property (point) (1- (point))
+                               'syntax-table (string-to-syntax "_"))))))))
+(defun org-setup-<>-syntax-fix nil
+  "Setup for characters ?< and ?> in source code blocks.
+Add this function to `org-mode-hook'."
+  (make-local-variable 'syntax-propertize-function)
+  (setq syntax-propertize-function 'org-mode-<>-syntax-fix)
+  (syntax-propertize (point-max)))
+#+end_src
+*** Display lines matching off-screen parentheses at the top of the window.
+https://with-emacs.com/posts/ui-hacks/show-matching-lines-when-parentheses-go-off-screen/
+
+#+begin_src elisp
+;; we will call `blink-matching-open` ourselves...
+(remove-hook 'post-self-insert-hook
+             #'blink-paren-post-self-insert-function)
+;; this still needs to be set for `blink-matching-open` to work
+(setq blink-matching-paren 'show)
+
+(let ((ov nil)) ; keep track of the overlay
+  (advice-add
+   #'show-paren-function
+   :after
+    (defun show-paren--off-screen+ (&rest args)
+      "Display matching line for off-screen paren."
+      ;; (apply orig-fun args)
+      (when (overlayp ov)
+        (delete-overlay ov))
+      ;; check if it's appropriate to show match info,
+      ;; see `blink-paren-post-self-insert-function'
+      (when (and (overlay-buffer show-paren--overlay)
+                 (not (or cursor-in-echo-area
+                          executing-kbd-macro
+                          noninteractive
+                          (minibufferp)
+                          this-command))
+                 (and (not (bobp))
+                      (memq (char-syntax (char-before)) '(?\) ?\$)))
+                 (= 1 (logand 1 (- (point)
+                                   (save-excursion
+                                     (forward-char -1)
+                                     (skip-syntax-backward "/\\")
+                                     (point))))))
+        ;; rebind `minibuffer-message' called by
+        ;; `blink-matching-open' to handle the overlay display
+        (cl-letf (((symbol-function #'minibuffer-message)
+                   (lambda (msg &rest args)
+                     (let ((msg (apply #'format-message msg args)))
+                       (setq ov (display-line-overlay+
+                                 (window-start) msg ))))))
+          (blink-matching-open))))))
+
+(defadvice show-paren--off-screen+ (around evil activate)
+  "Match parentheses in Normal state."
+  (if (if (memq 'not evil-highlight-closing-paren-at-point-states)
+          (memq evil-state evil-highlight-closing-paren-at-point-states)
+        (not (memq evil-state evil-highlight-closing-paren-at-point-states)))
+      ad-do-it
+    (let ((pos (point)) syntax narrow)
+      (setq pos
+            (catch 'end
+              (dotimes (var (1+ (* 2 evil-show-paren-range)))
+                (if (zerop (mod var 2))
+                    (setq pos (+ pos var))
+                  (setq pos (- pos var)))
+                (setq syntax (syntax-class (syntax-after pos)))
+                (cond
+                 ((eq syntax 4)
+                  (setq narrow pos)
+                  (throw 'end pos))
+                 ((eq syntax 5)
+                  (throw 'end (1+ pos)))))))
+      (if pos
+          (save-excursion
+            (goto-char pos)
+            (save-restriction
+              (when narrow
+                (narrow-to-region narrow (point-max)))
+              ad-do-it))
+        ;; prevent the preceding pair from being highlighted
+        (dolist (ov '(show-paren--overlay
+                      show-paren--overlay-1
+                      show-paren-overlay
+                      show-paren-overlay-1))
+          (let ((ov (and (boundp ov) (symbol-value ov))))
+            (when (overlayp ov) (delete-overlay ov))))))))
+
+(defun display-line-overlay+ (pos str &optional face)
+  "Display line at POS as STR with FACE.
+
+FACE defaults to inheriting from default and highlight."
+  (let ((ol (save-excursion
+              (goto-char pos)
+              (make-overlay (line-beginning-position)
+                            (line-end-position)))))
+    (overlay-put ol 'display str)
+    (overlay-put ol 'face
+                 (or face '(:inherit default :inherit highlight)))
+    ol))
+#+end_src
 
 ** Tramp
 #+begin_src elisp
