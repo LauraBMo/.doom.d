@@ -1182,6 +1182,15 @@ Subtrees under a COMMENTed header are not evaluated."
 ;;   (brust-endless/org-eval-eblocks "~/.doom.d/MyConfig.org" "init.el" t))
 
 #+end_src
+** Evil inset --> normal --> insert
+Function to advice =TeX-insert-dollar=. While typing, save undo ring and more before inserting a math formula.
+
+#+begin_src elisp
+(defun brust-evil-insert--to-normal-to-insert-state (&optional ARG)
+  (evil-normal-state)
+  (evil-insert-state)
+  (forward-char 1))
+#+end_src
 
 ** COMMENT Read directory
 
