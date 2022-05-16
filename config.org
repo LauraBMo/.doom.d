@@ -2864,6 +2864,11 @@ List if julia functions names to define wrap for.")
 #+begin_src elisp
 (setq eldoc-echo-area-use-multiline-p nil)
 #+end_src
+** Elisp
+#+begin_src elisp
+(add-hook! 'emacs-lisp-mode-hook (modify-syntax-entry ?- "w"))
+#+end_src
+
 ** High light TODO
 Package to highlight TODO's in comments and so.
 #+begin_src elisp
