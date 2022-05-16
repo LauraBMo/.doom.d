@@ -738,9 +738,9 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
 ;; (shell-command (format "rm %s && rm %s" -mod -blanche)))))
 #+END_SRC
 
-** Advise once
+** COMMENT Advise once
 
-#+begin_src elisp
+#+begin_src elisp :tangle no
 (defun advice-once (symbol where function &optional props)
   (let ((new-function (intern (concat (symbol-name function) "-advice-once"))))
     (fset new-function `(lambda (&rest _)
