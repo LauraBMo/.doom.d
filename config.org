@@ -2741,6 +2741,22 @@ List if julia functions names to define wrap for.")
     (call-interactively 'M2)))
 #+end_src
 
+** COMMENT SAGE
+
+#+BEGIN_SRC elisp :tangle no
+(use-package! sage-shell-mode
+  :defer t
+  :init
+  (setq sage-shell:sage-root "~/SageMath")
+  :config
+  ;; Run SageMath by M-x run-sage instead of M-x sage-shell:run-sage
+  (sage-shell:define-alias)
+
+  ;; Turn on eldoc-mode in Sage terminal and in Sage source files
+  (add-hook 'sage-shell-mode-hook #'eldoc-mode)
+  (add-hook 'sage-shell:sage-mode-hook #'eldoc-mode))
+#+END_SRC
+
 * Build-in modes
 ** Abbrev's
 *** Setting
