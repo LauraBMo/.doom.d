@@ -2180,7 +2180,8 @@ Bad
   ;; (add-hook 'term-mode-hook #'visual-line-mode)
   ;; (setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
   ;; treat underscores as word delimiters, see https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#how-do-i-get-motions-to-treat-underscores-as-word-delimiters
-  (add-hook! 'julia-mode-hook (modify-syntax-entry ?_ "w"))
+  (add-hook! 'julia-mode-hook (progn (modify-syntax-entry ?_ "w")
+                                     (modify-syntax-entry ?! "w")))
   (when (executable-find "julia")
     (setq julia-repl-executable-records
           `(;; (default "julia")
