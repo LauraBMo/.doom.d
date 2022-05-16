@@ -307,22 +307,27 @@ Keymap to show or kill current date.")
 ;; In LaTeX-mode-map
 ;; "c" #'ivy-bibtex-with-local-bibliography
 #+end_src
-*** Citar
+
+*** TODO Citar
+
+Search, insert, call... =.bib= keys, entries, pdfs...
 
 - [ ] Learn to use local bibliography
 
 #+begin_src elisp
 (after! citar
-  (setq citar-symbols
-        `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
-          (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
-          (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
-        citar-symbol-separator "  "
-        citar-bibliography '("~/Dropbox/bibliography/my.bib")
-        citar-library-paths '("~/Dropbox/bibliography/pdf/"
-                              "~/Dropbox/bibliography/")
-        citar-notes-paths '("~/Dropbox/bibliography/notes.org"))
-  )
+  (setq
+   ;; Use icons
+   citar-symbols
+   `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
+     (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
+     (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
+   citar-symbol-separator "  "
+   ;; My biblio files
+   citar-bibliography '("~/Dropbox/bibliography/my.bib")
+   citar-library-paths '("~/Dropbox/bibliography/pdf/"
+                         "~/Dropbox/bibliography/")
+   citar-notes-paths '("~/Dropbox/bibliography/notes.org")))
 #+end_src
 
 *** BibTeX
@@ -439,52 +444,55 @@ Maintaining notes.org
 ** Completion environment
 [[file:~/.emacs.d/modules/completion/vertico/README.org::*Table of Contents][Vertico module's README]]
 *** Bindings
-#+begin_src elisp :tangle no
+#+begin_src elisp
 ;; https://githubmemory.com/repo/minad/vertico/issues/156
-(defun my/vertico-insert-or-exit ()
-  "Insert the candidate if it's a directory, otherwise select it and exit."
-  (interactive)
-  (let ((cand (vertico--candidate)))
-    (if (and (>= vertico--index 0)
-             (equal (substring cand -1) "/"))
-        (vertico-insert)
-      (vertico-exit))))
+;; (defun my/vertico-insert-or-exit ()
+;;   "Insert the candidate if it's a directory, otherwise select it and exit."
+;;   (interactive)
+;;   (if (and (>= vertico--index 0) ;; We are selecting some candidate
+;;            (file-directory-p (vertico--candidate))) ;; and the candidate is a directory
+;;       (vertico-insert)
+;;     (vertico-exit)))
 
-(map! :after vertico :map minibuffer-mode-map
-      ;; Motion: LOWER from keyboard
-      ;; "M-j" #'ivy-next-line
-      ;; "M-k" #'ivy-previous-line
-      ;;
-      ;; Finish
-      ;; "<right>"  #'ivy-alt-done
-      "<right>"  #'my/vertico-insert-or-exit
-      ;; ";"   #'ivy-immediate-done
-      "<return>" #'vertico-exit-input
-      ;;
-      ;; History
-      ;; "<next>"   #'next-history-element
-      ;; "<prior>"  #'previous-history-element
-      ;; "M-j"      #'next-history-element
-      ;; "M-k"      #'previous-history-element
-      ;; "M-j"      #'ivy-next-history-element
-      ;; "M-k"      #'ivy-previous-history-element
-      ;;
-      ;; Embark
-      ;; "C-;" #'embark-act
-      ;; "M-o" #'ivy-dispatching-done
-      ;;
-      ;; ;; Interaction
-      ;; "M-w"      #'ivy-yank-word
-      ;; "C-o"      #'hydra-ivy/body
-      ;; "C-<"      #'ivy-minibuffer-shrink
-      ;; "C->"      #'ivy-minibuffer-grow
-      ;; "M-m"      #'ivy-mark
-      ;; Security
-      ;; "<return>" #'nil
-      )
+(map!
+ "C-:" #'embark-act
+ :map minibuffer-mode-map
+ ;; Motion: LOWER from keyboard
+ ;; "M-j" #'ivy-next-line
+ ;; "M-k" #'ivy-previous-line
+ ;;
+ ;; Finish
+ ;; "<right>"  #'ivy-alt-done
+ ;; "<right>"  #'my/vertico-insert-or-exit
+ ;; ";"   #'ivy-immediate-done
+ ;; "<return>" #'vertico-exit-input
+ "C-:" #'embark-act
+ ;; Current bind  "M-<return>" ;; good enough
+ ;;
+ ;; History
+ ;; Already bind
+ ;; "<next>"   #'next-history-element
+ ;; "<prior>"  #'previous-history-element
+ ;; Old binds
+ ;; "M-j"      #'next-history-element
+ ;; "M-k"      #'previous-history-element
+ ;; "M-j"      #'ivy-next-history-element
+ ;; "M-k"      #'ivy-previous-history-element
+ ;;
+ ;; Embark
+ ;; "M-o" #'ivy-dispatching-done
+ ;;
+ ;; ;; Interaction
+ ;; "M-w"      #'ivy-yank-word
+ ;; "C-o"      #'hydra-ivy/body
+ ;; "C-<"      #'ivy-minibuffer-shrink
+ ;; "C->"      #'ivy-minibuffer-grow
+ ;; "M-m"      #'ivy-mark
+ ;; Security
+ ;; "<return>" #'nil
+ )
 #+end_src
 
-#+RESULTS:
 *** Find files recursively
 
 With prefix argument all files (hidden, .gitignoreds, ....) are shown as candidates.
@@ -2065,9 +2073,9 @@ Add interactive TOC and references manager at .tex files.
         "0" #'brust-cycle-texmath
         "W" #'brust-wc-save-words
         "r" #'reftex-reference
-        "t" #'reftex-toc
-        "b" #'reftex-citation
-        "e" #'brust-LaTeX-set-header
+        ;; "t" #'reftex-toc
+        "b" #'citar-insert-citation
+        "h" #'brust-LaTeX-set-header
         "SPC" #'TeX-command-master
         "m" #'TeX-insert-macro
         "]" #'LaTeX-close-environment
