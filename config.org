@@ -1310,7 +1310,7 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
 #+begin_src elisp
 (defun brust-open-my-org nil
   (interactive)
-  (find-file (expand-file-name (concat org-directory  "my.org"))))
+  (find-file (expand-file-name (concat org-directory  "/my.org"))))
 #+end_src
 
 ** Prompt in Singular... Non-editable
@@ -1545,7 +1545,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
         (:localleader
          ;; "SPC" (kbd "C-c C-c")
          :desc "vterm-julia send" "SPC" #'brust-org-mode-vterm-julia-send-region-or-block
-         :desc "vterm-julia launch new" "v" #'brust-org-mode-vterm-julia-link-or-launch-and-link
+         :desc "vterm-julia launch new" "v" #'brust-julia--link-or-launch-and-link-vterm
          :desc "Babel" "B" org-babel-map
          )))
 #+END_SRC
