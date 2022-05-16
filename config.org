@@ -2029,8 +2029,13 @@ Add interactive TOC and references manager at .tex files.
           :e "j"  #'reftex-select-next
           :e "k"  #'reftex-select-previous))
 
+  (setq reftex-toc-mode-hook nil) ;; +ref.el in modules/lang/latex
   (add-hook! 'reftex-toc-mode-hook
     (map! :map 'local
+          :e "j"   #'next-line
+          :e "k"   #'previous-line
+          :e "q"   #'kill-buffer-and-window
+          :e "ESC" #'kill-buffer-and-window
           :e "1"  #'brust-reftex-toc-level-1
           :e "2"  #'brust-reftex-toc-level-2
           :e "3"  #'brust-reftex-toc-level-3
