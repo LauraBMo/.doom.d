@@ -160,7 +160,7 @@ org-directory "~/Dropbox/Org"
         ("Thesaurus"         "https://www.thesaurus.com/browse/%s")
         ("Singular Manual"   "https://www.google.com/search?q=site:www.singular.uni-kl.de+%s")
         ;; ("Project Gutenberg" "http://www.gutenberg.org/ebooks/search/?query=%s")
-        ;; ("DuckDuckGo"        +lookup--online-backend-duckduckgo "https://duckduckgo.com/?q=%s")
+        ("DuckDuckGo"        +lookup--online-backend-duckduckgo "https://duckduckgo.com/?q=%s")
         ("DevDocs.io"        "https://devdocs.io/#q=%s")
         ("StackOverflow"     "https://stackoverflow.com/search?q=%s")
         ("Github"            "https://github.com/search?ref=simplesearch&q=%s")
