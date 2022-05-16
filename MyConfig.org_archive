@@ -1,10 +1,8 @@
 #    -*- mode: org -*-
 
 
-* Init.el
-** Programing
-*** Julia
-**** COMMENT LSP
+* Julia
+** COMMENT LSP
      :PROPERTIES:
      :ARCHIVE_TIME: 2020-10-09 Fri 14:17
      :ARCHIVE_FILE: ~/.doom.d/MyConfig.org
@@ -24,14 +22,14 @@
 
    #+RESULTS:
 
-**** COMMENT ESS (julia interaction)
+** COMMENT ESS (julia interaction)
      :PROPERTIES:
      :ARCHIVE_TIME: 2020-10-09 Fri 14:17
      :ARCHIVE_FILE: ~/.doom.d/MyConfig.org
      :ARCHIVE_OLPATH: init.el/Programming/Julia mode
      :ARCHIVE_CATEGORY: MyConfig
      :END:
-***** Load it
+*** Load it
        - ob-julia.el does not work properly see [[https://stackoverflow.com/questions/52043705/emacs-org-babel-with-ob-julia-el-does-not-work-anymore-with-julia-v1-0][StackOverflow disscution]]
    #+begin_src elisp
 ;; (add-to-list 'auto-mode-alist '("\\.jl\\'" . ess-julia-mode)) ;; auto loads
@@ -57,7 +55,7 @@
 
    #+RESULTS:
 
-***** Turn on latexsubs
+*** Turn on latexsubs
    This needs load julia something in lisp folder
    #+begin_src elisp
 (defadvice ess-indent-or-complete (after julia-latexsubs activate)
@@ -68,7 +66,7 @@
    #+RESULTS:
    : ess-indent-or-complete
 
-***** COMMENT System environment parameter.
+*** COMMENT System environment parameter.
    #+begin_src elisp
   (setenv "JULIA_HISTORY"  ".julia_history")
   (setenv "JULIA_ANSWER_COLOR" "blue")
@@ -77,7 +75,7 @@
 
    #+RESULTS:
    : 3
-***** COMMENT LSP Julia
+*** COMMENT LSP Julia
    It requires julia> Pkg.add("LanguageServer")
    #+begin_src elisp
 (use-package! lsp-julia ;; USE lsp!
@@ -99,7 +97,6 @@
   :init
   (add-hook! 'emacs-startup-hook (global-aggressive-indent-mode +1)))
 #+END_SRC
-
 
 * Retrieving old undo
 :PROPERTIES:
@@ -135,7 +132,6 @@ see [[https://github.com/TommyX12/company-tabnine][Tabnine]]
       company-idle-delay 0.5
       company-show-numbers t)
 #+end_src
-
 
 * COMMENT Backends
 :PROPERTIES:
@@ -234,30 +230,6 @@ see [[https://github.com/TommyX12/company-tabnine][Tabnine]]
 
 #+RESULTS:
 
-* COMMENT SAGE
-:PROPERTIES:
-:ARCHIVE_TIME: 2020-12-09 mié 04:23
-:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
-:ARCHIVE_OLPATH: init.el/Programming
-:ARCHIVE_CATEGORY: MyConfig
-:END:
-#+BEGIN_SRC elisp
-  (use-package sage-shell-mode
-    :init
-    (setq sage-shell:sage-root "~/SageMath")
-    :config
-    ;; Run SageMath by M-x run-sage instead of M-x sage-shell:run-sage
-    (sage-shell:define-alias)
-
-    ;; Turn on eldoc-mode in Sage terminal and in Sage source files
-    (add-hook 'sage-shell-mode-hook #'eldoc-mode)
-    (add-hook 'sage-shell:sage-mode-hook #'eldoc-mode))
-#+END_SRC
-
-#+RESULTS:
-: t
-
-
 * COMMENT SASS files
 :PROPERTIES:
 :ARCHIVE_TIME: 2020-12-09 mié 04:23
@@ -277,7 +249,6 @@ see [[https://github.com/TommyX12/company-tabnine][Tabnine]]
 
 #+RESULTS:
 : t
-
 
 * COMMENT Help echo messages
 :PROPERTIES:
@@ -360,51 +331,6 @@ see [[https://github.com/TommyX12/company-tabnine][Tabnine]]
 
 #+RESULTS:
 : brust-open-paren-hydra/body
-
-
-* COMMENT Ibuffer
-:PROPERTIES:
-:ARCHIVE_TIME: 2021-04-04 dom 02:13
-:ARCHIVE_FILE: ~/.doom.d/MyConfig.org
-:ARCHIVE_OLPATH: init.el/External modes
-:ARCHIVE_CATEGORY: MyConfig
-:END:
-#+BEGIN_SRC elisp
-  (after! ibuffer
-    (define-ibuffer-column lines-h
-      (:name "nºLines" :inline t)
-      ;;(set-buffer (buffer))
-      (brust--number-of-lines-current-buffer))
-      ;; (let ((n (line-number-at-pos (point-max))))
-      ;;   (cond
-      ;;    ((> n 1000000) (format "%7.1fM" (/ n 1000000.0)))
-      ;;    ((> n 1000) (format "%7.1fk" (/ n 1000.0)))
-      ;;    ;;((> n 100) (format "%7.1fh" (/ n 100.0)))
-      ;;    (t (format "%8d" n)))))
-
-    (setq ibuffer-formats
-          ;; Modify the default ibuffer-formats (toggle with `)
-          '((mark modified read-only vc-status-mini " "
-                  (name 30 30 :left :elide)
-                  " "
-                  (lines-h 9 -1 :right)
-                  " "
-                  (mode 16 16 :left :elide)
-                  " "
-                  (vc-status 16 16 :left)
-                  " "
-                  filename-and-process)
-            (mark " " (name 16 -1) " " filename)))
-
-    ;; Switching to ibuffer puts the cursor on the most recent buffer
-    (defadvice ibuffer (around ibuffer-point-to-most-recent activate) ()
-               "Open ibuffer with cursor pointed to most recent buffer name"
-               (let ((recent-buffer-name (buffer-name)))
-                 ad-do-it
-                 (ibuffer-jump-to-buffer recent-buffer-name))))
-
-#+END_SRC
-
 
 * COMMENT Hydra
 :PROPERTIES:
@@ -621,7 +547,6 @@ _o_: org-cap | _C--_: show less   | _*_: *thing  | _q_: quit hdrs | _j_: jump2ma
 #+RESULTS:
 : hydra-pdftools/body
 
-
 * COMMENT Smartparents
 :PROPERTIES:
 :ARCHIVE_TIME: 2022-02-21 lun 00:31
@@ -665,7 +590,6 @@ _o_: org-cap | _C--_: show less   | _*_: *thing  | _q_: quit hdrs | _j_: jump2ma
     (unless (string= formatted-args "")
       (mapconcat 'identity (list "# Arguments" formatted-args) indent))))
 #+end_src
-
 
 * COMMENT Surround
 :PROPERTIES:
@@ -722,7 +646,6 @@ _o_: org-cap | _C--_: show less   | _*_: *thing  | _q_: quit hdrs | _j_: jump2ma
 
 #+RESULTS:
 : brust-embrace-LaTeX-mode-hook
-
 
 * COMMENT Find file sudo
 :PROPERTIES:
