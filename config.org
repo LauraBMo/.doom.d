@@ -342,10 +342,10 @@ Editing =.bib= files.
                   sort-fields)
                 (delq! 'required-fields bibtex-entry-format))))
 #+end_src
-*** COMMENT Get bib entries from the web
+*** Getting bib entries from the web
 **** Bibretrive
 Getting bib entries from MathSciNet or arxiv
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
 ;; See https://github.com/pzorin/bibretrieve
 (use-package! bibretrieve
   :commands bibretrieve
@@ -366,7 +366,7 @@ The package bibretrive is a mess, but it works.
 To unify engines: Added action "Fallback options" to "ivy-bibtex" to look for MathSciNet using bibretrive
 Once it is done, add the correspnding entrie to =bibtex-completion-fallback-options=
 
-#+begin_src elisp :tangle no
+#+begin_src elisp
 ;; Use the same shortcut to search bib items on internet for all the engines.
 (after! bibtex-completion
   (setq bibtex-completion-fallback-options
