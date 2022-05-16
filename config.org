@@ -634,7 +634,7 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
  "s-s"      #'save-buffer
  "s-w"      #'evil-window-next
  ;; "s-c"      #'close-quoted-open-paren-right-or-left-end-of-line
- "s-c"      #'close-quoted-open-paren-right-or-left
+ "s-f"      #'close-quoted-open-paren-right-or-left
  ;; "s-SPC"    #'brust-cycle-whitespace ;; I am used to 'g SPC'
  "s-h"      #'recenter-top-bottom
  ;; "s-f"      #'flyspell-correct-previous ;; Learning to use z=
