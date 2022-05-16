@@ -859,6 +859,149 @@ See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Ro
   (close-quoted-open-paren-right-or-left args))
 #+END_SRC
 
+** Colors RGB (get numbers)
+
+Functions similar to =counsel-colors-emacs= and =counsel-colors-web=.
+Insert color name from the list of supported colors or, via embark actions, insert RGB or HEX values.
+
+*** Consult colors functions
+#+begin_src elisp
+(defvar consult-colors-history nil
+  "History for `consult-colors-emacs' and `consult-colors-web'.")
+
+;; No longer preloaded in Emacs 28.
+(autoload 'list-colors-duplicates "facemenu")
+;; No preloaded in consult.el
+(autoload 'consult--read "consult")
+
+(defun consult-colors-emacs (color)
+  "Show a list of all supported colors for a particular frame.\
+
+You can insert the name (default), or insert or kill the hexadecimal or RGB value of the
+selected color (it needs embrack)."
+  (interactive
+   (list (consult--read (list-colors-duplicates (defined-colors))
+                        :prompt "Emacs color: "
+                        :require-match t
+                        :category 'color
+                        :history '(:input consult-colors-history)
+                        )))
+  (insert color))
+
+;; Adapted from counsel.el to get web colors.
+(defun counsel-colors--web-list nil
+  "Return list of CSS colors for `counsult-colors-web'."
+  (require 'shr-color)
+  (sort (mapcar #'downcase (mapcar #'car shr-color-html-colors-alist)) #'string-lessp))
+
+(defun consult-colors-web (color)
+  "Show a list of all CSS colors.\
+
+You can insert the name (default), or insert or kill the hexadecimal or RGB value of the
+selected color (it needs embrack)."
+  (interactive
+   (list (consult--read (counsel-colors--web-list)
+                        :prompt "Color: "
+                        :require-match t
+                        :category 'color
+                        :history '(:input consult-colors-history)
+                        )))
+  (insert color))
+#+end_src
+
+*** Embark integration
+**** Convert color's names
+
+#+begin_src elisp
+(defun rounding-numbers (list-of-num decimal-points)
+  "Return the list of numbers rounded up to decimal-points."
+  (let ((rounding (expt 10 decimal-points)))
+    (mapcar (lambda (x) (/ (fround (* rounding x)) rounding)) list-of-num)))
+
+(defun numbers-to-string (list-of-num SEPARATOR)
+  "Converts a list of numbers to a string \"num1,num2,num3,...\", where ."
+  (mapconcat #'number-to-string list-of-num SEPARATOR))
+
+;; Colors RGB number as string
+(defvar color-rgb-round-decimal-points 2 "Number of decimal points to round RGB colors.")
+(defvar-local color-rgb-string-separator "," "SEPARATOR between numbers for RGB strings.")
+
+(defun color-name-to-rgb-string (NAME)
+  "Return the RGB value of color NAME as string \"num1,num2,num3\", with num between 0 and 1.
+Return nil if NAME does not designate a valid color."
+  (when-let ((rgb (color-name-to-rgb NAME)))
+    (numbers-to-string rgb color-rgb-string-separator)))
+
+(defun color-name-to-round-rgb-string (NAME)
+  "Returns the rounded RGB value of color as string \"num1,num2,num3\", with num between 0 and 1.
+Return nil if NAME does not designate a valid color."
+  (when-let ((rgb (color-name-to-rgb NAME)))
+    (numbers-to-string (rounding-numbers rgb color-rgb-round-decimal-points)
+                       color-rgb-string-separator)))
+
+;; Adapted from counsel.el to conver color name to hex.
+(defun counsel-colors--hex (NAME)
+  "Return hexadecimal value of color with NAME.
+Return nil if NAME does not designate a valid color."
+  (when-let* ((rgb (color-name-to-rgb NAME))
+              ;; Sets 2 digits per component.
+              (hex (apply #'color-rgb-to-hex (append rgb '(2)))))
+    hex))
+#+end_src
+
+**** Embark config
+
+Config using Doom emacs. For doomed users not using Doom, evaluate code in =(after! embark ... )= using =define-key= instead of =map!=.
+
+#+begin_src elisp
+(after! embark
+  (embark-define-keymap embark-consult-color-action-map
+    "Keymap for embark actions in the `color' category of marginalia.")
+
+  ;; Kill and insert versions
+  (defvar embark-consult-color-functions-alist
+    '(((color-name-to-round-rgb-string . "rRGB") . ("r" . "k"))
+      ((color-name-to-rgb-string       . "RGB")  . ("R" . "K"))
+      ((counsel-colors--hex            . "hex")  . ("h" . "H")))
+    "Cons list of ((fun . desc) . (bind_insert . bind_kill)) of functions converting a color name to some value.
+Used to define their `insert' and `kill-new' versions for embark actions.")
+
+  ;; Define `insert' versions
+  (cl-loop for fun in embark-consult-color-functions-alist do
+           ;; (message "dir %s, name %s" (car dirname) (cdr dirname))
+           (let* ((sym (caar fun))
+                  (bind (cadr fun))
+                  (desc (format "Insert %s" (cdar fun)))
+                  (newname (intern (format "%s-insert" (symbol-name sym)))))
+             ;; `(lambda (color) (insert (apply ',fun (list color))))
+             (fset newname `(lambda (color)
+                              (insert (,sym color))
+                              (pushnew! consult-colors-history color)))
+             ;; (define-key 'embark-consult-color-action-map (kbd bind) (cons desc newname))
+             (map! :map embark-consult-color-action-map
+                   :desc desc bind newname)))
+
+  ;; Define `kill-new' versions
+  (cl-loop for fun in embark-consult-color-functions-alist do
+           (let* ((sym (caar fun))
+                  (bind (cddr fun))
+                  (desc (format "Kill %s" (cdar fun)))
+                  (newname (intern (format "%s-kill" (symbol-name sym)))))
+             ;; `(lambda (color) (kill-new (apply ',fun (list color))))
+             (fset newname `(lambda (color)
+                              (kill-new (,sym color))
+                              (pushnew! consult-colors-history color)))
+             ;; (define-key 'embark-consult-color-action-map (kbd bind) (cons desc newname))
+             (map! :map embark-consult-color-action-map
+                   :desc desc bind newname)))
+
+  (add-to-list 'embark-keymap-alist '(color . embark-consult-color-action-map)))
+#+end_src
+
+*** Marginalized
+
+Compatibility with Marginalized comes for free, since it already defines the category =color=, for which uses =marginalia-annotate-color=.
+
 ** Customize face at point
 
     A handy function for customization (from Singular web page).
@@ -1185,128 +1328,6 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
 (defun brust-math-software-hookfun-to-intangify-prompt nil
   (cursor-intangible-mode 1)
   (add-hook 'after-change-functions #'brust-math-software-intangify-cursor-on-prompt nil t))
-#+end_src
-
-** RGB colors (get numbers)
-*** Convert color's names
-#+begin_src elisp
-(defvar brust-colors-rgb-decimal-points 1 "Number of decimal points rounding RGB colors")
-(defvar brust-colors-rgb-separator "," "SEPARATOR between numbers")
-
-(defun brust-round (list-of-num)
-  (let ((rounding (* 10 brust-colors-rgb-decimal-points)))
-    (cl-loop for x in list-of-num
-             collect (/ (fround (* rounding x)) rounding))))
-
-(defun brust-colors-num-to-str (color)
-  (mapconcat #'number-to-string color brust-colors-rgb-separator))
-
-(defun brust-colors-insert-rgb (color)
-  "Insert the RGB value 'num1,num2,num3' with num between 0 and 1"
-  (insert (brust-colors-num-to-str (color-name-to-rgb color))))
-
-(defun brust-colors-insert-rounded-rgb (color)
-  "Insert the RGB value 'num1,num2,num3' rounded to `brust-colors-rgb-decimal-points' decimal points."
-  (insert (brust-colors-num-to-str (brust-round (color-name-to-rgb color)))))
-
-(defun brust-colors-kill-rgb (color)
-  "Kill the RGB value 'num1,num2,num3' with num between 0 and 1"
-  (kill-new (brust-colors-num-to-str (color-name-to-rgb color))))
-
-(defun brust-colors-kill-rounded-rgb (color)
-  "Kill the RGB value 'num1,num2,num3' rounded to `brust-colors-rgb-decimal-points' decimal points."
-  (kill-new (brust-colors-num-to-str (brust-round (color-name-to-rgb color)))))
-
-;; Copied from counsel.el to conver color name to hex.
-(defun counsel-colors--name-to-hex (name)
-  "Return hexadecimal RGB value of color with NAME.
-Return nil if NAME does not designate a valid color."
-  (when-let* ((rgb (color-name-to-rgb name))
-              ;; Sets 2 digits per component.
-              (hex (apply #'color-rgb-to-hex (append rgb '(2)))))
-    (insert hex)))
-#+end_src
-
-*** Consult colors
-#+begin_src elisp
-(defvar consult-colors-history nil
-  "History for `consult-colors-emacs' and `consult-colors-web'.")
-
-;; No longer preloaded in Emacs 28.
-(autoload 'list-colors-duplicates "facemenu")
-
-(autoload 'consult--read "consult")
-
-(defun consult-colors-emacs (color)
-  "Show a list of all supported colors for a particular frame.\
-
-You can insert or kill the name or hexadecimal RGB value of the
-selected color."
-  (interactive
-   (list (consult--read (list-colors-duplicates (defined-colors))
-                        :prompt "Emacs color: "
-                        :require-match t
-                        :category 'color
-                        :history '(:input consult-colors-history)
-                        )))
-  (insert color))
-
-;; Copied from counsel.el to get web colors.
-(defun counsel-colors--web-alist ()
-  "Return list of CSS colors for `counsel-colors-web'."
-  (require 'shr-color)
-  (let* ((alist (copy-alist shr-color-html-colors-alist))
-         (mp  (assoc "MediumPurple"  alist))
-         (pvr (assoc "PaleVioletRed" alist))
-         (rp  (assoc "RebeccaPurple" alist)))
-    ;; Backport GNU Emacs bug#30377
-    (when mp (setcdr mp "#9370db"))
-    (when pvr (setcdr pvr "#db7093"))
-    (unless rp (push (cons "rebeccapurple" "#663399") alist))
-    (sort (mapcar (lambda (cell)
-                    (propertize (downcase (car cell))
-                                'hex (downcase (cdr cell))))
-                  alist)
-          #'string-lessp)))
-
-(defun consult-colors-web (color)
-  "Show a list of all supported colors for a particular frame.\
-
-You can insert or kill the name or hexadecimal RGB value of the
-selected color."
-  (interactive
-   (list (consult--read (counsel-colors--web-alist)
-                        :prompt "Color: "
-                        :require-match t
-                        :category 'color
-                        :history '(:input consult-colors-history)
-                        )))
-  (insert color))
-#+end_src
-
-*** Embark actions
-#+begin_src elisp
-(after! embark
-  (embark-define-keymap embark-consult-colors-actions
-                        "Keymap for actions for `color' category."
-                        ("h" '("Insert hex value". counsel-colors--name-to-hex))
-                        ("r" '("Insert rRGB value" . brust-colors-insert-rounded-rgb))
-                        ("g" '("Insert RGB value" . brust-colors-insert-rgb))
-                        ("G" '("Kill RGB value". brust-colors-kill-rgb))
-                        ("R" '("Kill rRGB value" . brust-colors-kill--rounded-rgb)))
-
-  (add-to-list 'embark-keymap-alist '(color . embark-consult-colors-actions)))
-#+end_src
-
-*** Marginalized
-
-Marginalized already defined a category =color= for which uses =marginalia-annotate-color=.
-So, unless we create a new category (simply by defining new elements in it) we do NOT need to
-add any register to marginalized.
-
-#+begin_src elisp :tangle no
-;; (add-to-list 'marginalia-annotator-registry
-;;  '(consult-colors marginalia-annotate-color builtin none))
 #+end_src
 
 ** Spelling
