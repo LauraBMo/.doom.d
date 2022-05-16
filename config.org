@@ -177,7 +177,7 @@ org-directory "~/Dropbox/Org"
 ;; (setq delete-selection-save-to-register 'kill-ring)
 #+END_SRC
 ** Faces
-#+begin_src elisp
+#+begin_src elisp :tangle no
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
