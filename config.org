@@ -288,19 +288,21 @@ and `line-number-display-limit-width'."
     map) "\
 Keymap to show or kill current date.")
 
+(customize-set-variable 'display-time-string-forms
+                        '((propertize (concat " " 12-hours ":" minutes am-pm " ")
+                                      'face 'mode-line
+                                      'help-echo "Current date: mouse 1 show, mouse 3 kill"
+                                      'local-map mode-line-display-time-mode-map)))
+
+(setq display-time-default-load-average nil)
+
 ;; Time format
-(add-hook! 'emacs-startup-hook
-  (customize-set-variable 'display-time-string-forms
-                          '((propertize (concat " " 12-hours ":" minutes am-pm " ")
-                                        'face 'mode-line
-                                        'help-echo "Current date: mouse 1 show, mouse 3 kill"
-                                        'local-map mode-line-display-time-mode-map)))
-  (setq display-time-default-load-average nil)
-  (display-time-mode +1))
+(add-hook! 'emacs-startup-hook (display-time-mode +1))
 #+end_src
 
 * Doom modules
 ** Biblio
+
 #+begin_src elisp :tangle no
 ;; In org-mode-map
 ;; :desc "Biblio" "C" #'ivy-bibtex-with-local-bibliography
