@@ -6,7 +6,7 @@
 ;; have nasty side-effects and is not recommended.
 
 ;; (disable-packages! forge cua preview flyspell-lazy)
-(disable-packages! forge cua preview)
+(disable-packages! forge cua preview elfeed-goodies)
 
 
 ;; LaTeX stuff

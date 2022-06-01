@@ -746,6 +746,142 @@ You can make a TODO item by simply writing
 Rotate text under cursor under pre-establish patterns
 For example, var1, var2, ... varN
 See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Rotate Text]]
+** TODO RSS (arXiv)
+*** Intro
+
+Usage:
+
+- Call =elfeed= retrieve a list of latest arxiv papers under AG and CA
+- Filter list of entries with =s= (delete or add filters).
+- Type =SPC= or =RET= on an entry to see further details.
+  - =o= opens the link on browse via avy.
+
+TODO:
+
+- Learn use filters.
+- Download pdf from the entry view and create a note.
+
+Obs.:
+- There are two modes/buffers/windows: the 'search' buffer and the 'show' buffer.
+  The 'search' displays the list of entries, which can be filtered (=s=).
+  The 'show' contains all details of a selected entry (=SPC=, =RET=).
+
+*** Config
+#+begin_src elisp
+(after! elfeed
+  (setq elfeed-search-filter "@1-week-ago +unread"
+        ;; elfeed-search-print-entry-function #'my-search-print-fn
+        elfeed-search-print-entry-function #'elfeed-goodies/entry-line-draw
+        elfeed-show-entry-delete #'elfeed-goodies/delete-pane
+        ;; elfeed-search-date-format '("%y-%m-%d" 10 :left)
+        elfeed-search-title-max-width 90)
+
+  (map! :map elfeed-search-mode-map
+        :desc "Open entry" "SPC" #'elfeed-search-show-entry)
+  ;;        (:map elfeed-show-mode-map
+  ;;         :desc "Fetch arXiv paper to the local library" "a" #'robo/elfeed-entry-to-arxiv)))
+  (map! :map elfeed-show-mode-map
+        :desc "Quit" :n "q" #'elfeed-goodies/delete-pane
+        :desc "Open web" :n "o" #'link-hint-open-link
+        )
+
+  (add-hook! 'elfeed-search-mode-hook 'elfeed-update))
+#+end_src
+
+*** Print lines in search buffer
+#+begin_src elisp
+(defcustom elfeed-goodies/feed-source-column-width 16
+  "Width of the feed source column."
+  :type 'integer)
+
+(defcustom elfeed-goodies/tag-column-width 24
+  "Width of the tags column."
+  :type 'integer)
+
+(defun brust-elfeed-get-nth-name (n list)
+  (plist-get (nth n list) :name))
+
+(defun concatenate-authors (list)
+  "Given AUTHORS-LIST, list of plists; return string of all authors concatenated."
+  (concat
+   (brust-elfeed-get-nth-name 0 list)
+   (if (> (length list) 1) (concat ", " (brust-elfeed-get-nth-name 1 list)))
+   (if (> (length list) 2) (concat ", " (brust-elfeed-get-nth-name 2 list)))
+   (if (> (length list) 3) " et al")
+   "."))
+
+(defun elfeed-goodies/entry-line-draw (entry)
+  "Print ENTRY to the buffer."
+  (let* (;; Title
+         (title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
+         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+         (title-width (- (window-width) 10 elfeed-search-trailing-width))
+         ;; (title-width (- (window-width) elfeed-goodies/feed-source-column-width
+         ;;                 elfeed-goodies/tag-column-width 4))
+         (title-column (elfeed-format-column
+                        title (elfeed-clamp
+                               elfeed-search-title-min-width
+                               title-width
+                               title-width)
+                        :left))
+         ;; Authors
+         (authors (concatenate-authors (elfeed-meta entry :authors)))
+         (authors-column (elfeed-format-column authors 45 :left))
+         (authors-face (if (memq 'unread (elfeed-entry-tags entry))
+                           'default
+                         'font-lock-comment-face))
+         ;; Score (requires elfeed-score.el)
+         ;; (entry-score (elfeed-format-column (number-to-string (elfeed-score-scoring-get-score-from-entry entry)) 10 :left))
+         ;; Feed
+         (feed (elfeed-entry-feed entry))
+         (feed-title
+          (when feed
+            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+         (feed-column (elfeed-format-column
+                       feed-title (elfeed-clamp elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width
+                                                elfeed-goodies/feed-source-column-width)
+                       :left))
+         ;; Tags
+         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+         (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
+         (tag-column (elfeed-format-column
+                      tags-str (elfeed-clamp (length tags-str)
+                                             elfeed-goodies/tag-column-width
+                                             elfeed-goodies/tag-column-width)
+                      :left)))
+    (insert
+     (propertize feed-column 'face 'elfeed-search-feed-face) " "
+     ;; entry-score  " "
+     ;; (propertize tag-column 'face 'elfeed-search-tag-face) " "
+     (propertize authors-column 'face authors-face 'kbd-help authors) " "
+     (propertize title 'face title-faces 'kbd-help title))
+    ))
+#+end_src
+
+*** Delete panel showing entry
+#+begin_src elisp
+(defun elfeed-goodies/delete-pane ()
+  "Delete the *elfeed-entry* split pane."
+  (interactive)
+  (let* ((buff (get-buffer "*elfeed-entry*"))
+         (window (get-buffer-window buff)))
+    (kill-buffer buff)
+    (delete-window window)))
+#+end_src
+*** TODO Download pdf using biblio-arxiv-lookup
+
+#+begin_src elisp
+;; (defun robo/elfeed-entry-to-arxiv ()
+;;   "Fetch an arXiv paper into the local library from the current elfeed entry."
+;;   (interactive)
+;;   (let* ((link (elfeed-entry-link elfeed-show-entry))
+;;          (match-idx (string-match "arxiv.org/abs/\\([0-9.]*\\)" link))
+;;          (matched-arxiv-number (match-string 1 link)))
+;;     (when matched-arxiv-number
+;;       (message "Going to arXiv: %s" matched-arxiv-number)
+;;       (arxiv-get-pdf-add-bibtex-entry matched-arxiv-number robo/main-bib-library robo/main-pdfs-library-path)))))
+#+end_src
 
 ** Visual fill mode
 
