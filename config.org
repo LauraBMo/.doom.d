@@ -303,18 +303,23 @@ Keymap to show or kill current date.")
 * Doom modules
 ** Biblio
 
-#+begin_src elisp :tangle no
-;; In org-mode-map
-;; :desc "Biblio" "C" #'ivy-bibtex-with-local-bibliography
-;; In LaTeX-mode-map
-;; "c" #'ivy-bibtex-with-local-bibliography
-#+end_src
+- [ ] Learn to use local bibliography
 
-*** TODO Citar
+Usage:
+
+- In =LaTeX-mode=,
+  - Insert citation from my.bib call =SPC SPC b= (=citar-insert-citation=).
+    If no entry matches your search, you can try on internet with =C-:= (=embark-act=) + =B= (=embark-become=)
+    and choose fallback option: ArXiv, CrossRef, Bibretrive (MathSciNet, needs access), HAL,
+- Open pdf assoc call =C-:= (=embark-act=) in cite (e.g., "\cite{keyw|ord}") + =f= (=citar-open-library-file=).
+- Link and download (from Sci-hub) pdf to an entry,
+  - In .bib file call =brust-bibtex-link-pdf= inside the entry.
+  - In .tex file call =SPC SPC b= (=citar-insert-citation=) + =C-:= (=embark-act=) + =s= (=brust-citar-scihub=).
+- Download a pdf: call =biblio-lookup= (or any =biblio-crossref-lookup=) choose engine, find document in biblio buffer + =x= (=biblio--selection-extended-action=) pick =Sci-Hub=.
+
+*** Citar
 
 Search, insert, call... =.bib= keys, entries, pdfs...
-
-- [ ] Learn to use local bibliography
 
 #+begin_src elisp
 (after! citar
@@ -329,7 +334,20 @@ Search, insert, call... =.bib= keys, entries, pdfs...
    citar-bibliography '("~/Dropbox/bibliography/my.bib")
    citar-library-paths '("~/Dropbox/bibliography/pdf/"
                          "~/Dropbox/bibliography/")
-   citar-notes-paths '("~/Dropbox/bibliography/notes.org")))
+   citar-notes-paths '("~/Dropbox/bibliography/notes.org"))
+
+  ;; See citar become in citar.el README.
+  (defvar citar-embark-become-map
+    (let ((map (make-sparse-keymap)))
+      ;; Callee functions
+      (define-key map (kbd "p") #'("Insert cite" . citar-insert-citation))
+      (define-key map (kbd "f") #'("Open file" . citar-open-library-file))
+      map)
+    "Citar Embark become keymap."))
+
+(after! (embark citar)
+  ;; tell embark about the keymap
+  (add-to-list 'embark-become-keymaps #'citar-embark-become-map))
 #+end_src
 
 *** BibTeX
@@ -339,8 +357,16 @@ Editing =.bib= files.
 #+begin_src elisp
 (after! (latex bibtex)
   (add-to-list 'auto-mode-alist '("\\.bib\\'"  . bibtex-mode))
+  ;; Spell checking (requires the ispell software)
+  (add-hook 'bibtex-mode-hook 'flyspell-mode)
+
   (setq bibtex-maintain-sorted-entries t ;; to sort bibtex entries with C-c C-c
         bibtex-comma-after-last-field t ;; insert a comma after last field
+        ;; Change fields and format
+        bibtex-user-optional-fields '(("keywords" "Keywords to describe the entry" "")
+                                      ("file" "Link to document file." ":"))
+        bibtex-align-at-equal-sign t
+        ;; How to format entries
         bibtex-entry-format
         (append '(whitespace
                   realign
@@ -349,31 +375,154 @@ Editing =.bib= files.
                   sort-fields)
                 (delq! 'required-fields bibtex-entry-format))))
 #+end_src
-*** Getting bib entries from the web
+
+#+begin_src elisp
+(defun brust-bibtex-link-pdf (&optional title doi)
+  "Link pdf to a bib entrie. Download from Sci-Hub if pdf not found."
+  (interactive (list
+                (bibtex-text-in-field "title")
+                (bibtex-text-in-field "doi")))
+  (let ((fname (brust-title-to-fname title "pdf")))
+    (unless (bibtex-text-in-field "file")
+      (bibtex-beginning-first-field)
+      (move-end-of-line 1) (forward-char -1)
+      (bibtex-make-field "file")
+      (forward-char -1) (insert fname)
+      (bibtex-clean-entry))
+    (if (file-exists-p fname)
+        (find-file fname)
+      (scihub doi fname))))
+#+end_src
+
+*** Getting bib from the web
 **** Bibretrive
-Getting bib entries from MathSciNet or arxiv
+
+Getting bib entries from MathSciNet (or arxiv).
+
 #+BEGIN_SRC elisp
 ;; See https://github.com/pzorin/bibretrieve
 (use-package! bibretrieve
   :commands bibretrieve
-  :init
+  :config
   (setq bibretrieve-prompt-for-bibtex-file nil ;; use defaul bib file
         bibretrieve-backends '(("msn" . 10) ("arxiv" . 5))))
 #+END_SRC
 
 **** Biblio
 
-- [ ] How to use =bibtex-completion-fallback=
-- [ ] Or use =biblio.el=
-
 Getting bibtex entries from crossref and much more.
 
 Problem: MathSciNet uses author title... not a "everywhere" query.
-The package bibretrive is a mess, but it works.
-To unify engines: Added action "Fallback options" to "ivy-bibtex" to look for MathSciNet using bibretrive
-Once it is done, add the correspnding entrie to =bibtex-completion-fallback-options=
+The package bibretrive is a mess, but it works for MathSciNet.
 
 #+begin_src elisp
+(use-package! biblio
+  :config
+  (setq biblio-crossref-user-email-address user-mail-address)
+  (add-to-list 'biblio-selection-mode-actions-alist
+               '("Sci-Hub (download pdf)" . brust-biblio-scihub))
+  (map! :map biblio-selection-mode-map
+        "j" #'biblio--selection-next
+        "k" #'biblio--selection-previous))
+
+(defun brust-biblio-scihub (entry)
+  (if-let ((title (biblio-alist-get 'title entry))
+           (doi (biblio-alist-get 'doi entry))
+           (fname (brust-title-to-fname title "pdf")))
+      (if (file-exists-p fname)
+          (find-file fname)
+        (scihub doi fname))
+    (message "No DOI or Title found for %s" (car entry))))
+
+(defun brust-title-to-fname (title ext)
+  ;; expand-file-name ;; Relative paths work, so why?
+  (concat
+   (car citar-library-paths)
+   (with-temp-buffer
+     (insert (downcase title))
+     ;; Remove currly brackets, colon, underscores,...
+     (goto-char (point-min))
+     (while (re-search-forward "[{}:_$\]+" nil t)
+       (replace-match ""))
+     ;; Replace white spaces by a dash
+     (goto-char (point-min))
+     (while (re-search-forward (concat "[" brust-whitespace-regexp " ]+") nil t)
+       (replace-match "-"))
+     ;; Get the file name
+     (buffer-string))
+   "." ext))
+#+end_src
+
+**** Scihub
+
+#+begin_src elisp
+(use-package! scihub
+  :commands scihub
+  :config
+  (setq scihub-download-directory "~/Dropbox/bibliography/pdf/"
+        scihub-open-after-download t
+        scihub-fetch-domain 'scihub-fetch-domains-lovescihub
+        scihub-homepage "https://sci-hub.se"))
+
+(map! :after citar :map citar-map
+      :desc "Sci-Hub" "s" #'brust-citar-scihub)
+
+(defun brust-citar-scihub (key-entry)
+  "Download DOI associated with the KEY-ENTRY from Sci-Hub.
+
+With prefix, rebuild the cache before offering candidates."
+  (interactive (list (citar-select-ref
+                      :rebuild-cache current-prefix-arg)))
+  (if-let ((doi (citar-get-value 'doi (cdr key-entry)))
+           (title (citar-get-value 'title (cdr key-entry)))
+           (fname (brust-title-to-fname title "pdf")))
+      (progn
+        (citar-open-entry key-entry)
+        (brust-bibtex-link-pdf title doi))
+    (message "No DOI or Title found for %s" (car key-entry))))
+#+end_src
+
+***** COMMENT Download pdf from Sci-hub.
+See https://www.anghyflawn.net/blog/2014/emacs-give-a-doi-get-a-bibtex-entry/
+And see https://www.crossref.org/blog/dois-and-matching-regular-expressions/
+#+begin_src elisp :tangle no
+(defun get-bibtex-from-doi (doi)
+ "Get a BibTeX entry from the DOI"
+ (interactive "MDOI: ")
+ (let ((url-mime-accept-string "text/bibliography;style=bibtex"))
+   (with-current-buffer
+     (url-retrieve-synchronously
+       (format "http://dx.doi.org/%s"
+       	(replace-regexp-in-string "http://dx.doi.org/" "" doi)))
+     (switch-to-buffer (current-buffer))
+     (goto-char (point-max))
+     (setq bibtex-entry
+     	  (buffer-substring
+          	(string-match "@" (buffer-string))
+              (point)))
+     (kill-buffer (current-buffer))))
+ (insert (decode-coding-string bibtex-entry 'utf-8))
+ (bibtex-fill-entry))
+#+end_src
+
+**** Citar-become map
+#+begin_src elisp
+;; After calling =citar-insert-cite=, type =C-:= (=embark-act=), =B= (=embark-become=).
+(map!
+ :after citar
+ :map citar-embark-become-map
+ ;; bibretrieve.el search bib entries in MathSciNet
+ :desc "MathSciNet" "m" #'bibretrieve
+ ;; Biblio.el search bib entries on internet
+ :desc "ArXiv"      "x" #'biblio-arxiv-lookup
+ :desc "CrossRef"   "c" #'biblio-crossref-lookup
+ :desc "HAL"        "h" #'biblio-hal-lookup
+ :desc "Insert doi" "i" #'biblio-doi-insert-bibtex)
+#+end_src
+
+**** COMMENT a la ivy-bibtex
+
+#+begin_src elisp :tangle no
 ;; Use the same shortcut to search bib items on internet for all the engines.
 (after! bibtex-completion
   (setq bibtex-completion-fallback-options
@@ -384,7 +533,6 @@ Once it is done, add the correspnding entrie to =bibtex-completion-fallback-opti
             . (lambda (search-expression) (call-interactively 'scihub))))
          bibtex-completion-fallback-options)
         ;; CrossRef gives priority to queries that include an email address.
-        biblio-crossref-user-email-address user-mail-address
         ;; bibtex-completion-bibliography "~/Dropbox/bibliography/my.bib"
         bibtex-completion-additional-search-fields '(keywords tags)
         bibtex-completion-pdf-extension '(".pdf" ".djvu")
@@ -414,28 +562,6 @@ Once it is done, add the correspnding entrie to =bibtex-completion-fallback-opti
   )
 #+end_src
 
-**** Download pdf from Sci-hub.
-See https://www.anghyflawn.net/blog/2014/emacs-give-a-doi-get-a-bibtex-entry/
-And see https://www.crossref.org/blog/dois-and-matching-regular-expressions/
-#+begin_src elisp :tangle no
-(defun get-bibtex-from-doi (doi)
- "Get a BibTeX entry from the DOI"
- (interactive "MDOI: ")
- (let ((url-mime-accept-string "text/bibliography;style=bibtex"))
-   (with-current-buffer
-     (url-retrieve-synchronously
-       (format "http://dx.doi.org/%s"
-       	(replace-regexp-in-string "http://dx.doi.org/" "" doi)))
-     (switch-to-buffer (current-buffer))
-     (goto-char (point-max))
-     (setq bibtex-entry
-     	  (buffer-substring
-          	(string-match "@" (buffer-string))
-              (point)))
-     (kill-buffer (current-buffer))))
- (insert (decode-coding-string bibtex-entry 'utf-8))
- (bibtex-fill-entry))
-#+end_src
 *** COMMENT ox-bibtex
 Maintaining notes.org
 #+begin_src elisp :tangle no
@@ -3426,17 +3552,6 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
   :commands screenshot
   :config
   (load-file (locate-library "screenshot.elc")))
-#+end_src
-
-** Scihub
-
-#+begin_src elisp
-(use-package! scihub
-  :init
-  (setq scihub-download-directory "~/Dropbox/bibliography/pdf/"
-        scihub-open-after-download t
-        scihub-fetch-domain 'scihub-fetch-domains-lovescihub
-        scihub-homepage "https://sci-hub.se"))
 #+end_src
 
 ** Turn grep "writable" buffer
