@@ -160,7 +160,7 @@
         ;; +gnuplot
         +hugo
         +noter            ; Enables org-noter integration. Keeps notes in sync with a document.
-        ;;+jupyter        ; ipython/jupyter support for babel
+        +jupyter          ; ipython/jupyter support for babel
         ;;+pandoc          ; export-with-pandoc support
         +pomodoro        ; be fruitful with the tomato technique
         +present) ;; +pretty ; +roam ; using org-mode for presentations
