@@ -3532,36 +3532,49 @@ FACE defaults to inheriting from default and highlight."
 #+end_src
 
 ** Ibuffer
+
 - [[http://martinowen.net/blog/2010/02/03/tips-for-emacs-ibuffer.html][Blog nice config]]
 
 #+begin_src elisp
 (after! ibuffer
-  ;; ReRedefine size column to display human readable number of line,
+  ;; Redefine size Ibuffer's column to display the total number of lines,
   ;; a humanly understandable measure of size.
   (define-ibuffer-column size
     (:name "nºLines"
      :inline t
-     :header-mouse-map ibuffer-size-header-map)
-    (let ((n (line-number-at-pos (point-max))))
-      (cond
-       ((> n 1000000) (format "%7.1fM" (/ n 1000000.0)))
-       ((> n 1000) (format "%7.1fk" (/ n 1000.0)))
-       ;;((> n 100) (format "%7.1fh" (/ n 100.0)))
-       (t (format "%8d" n)))))
+     :header-mouse-map ibuffer-size-header-map
+     :summarizer brust--number-of-lines-summarize)
+    (save-window-excursion
+      (switch-to-buffer buffer)
+      (brust--number-of-lines-current-buffer)))
 
-  ;; (setq ibuffer-formats
-  ;;       ;; Modify the default ibuffer-formats (toggle with `)
-  ;;       '((mark modified read-only vc-status-mini " "
-  ;;               (name 30 30 :left :elide)
-  ;;               " "
-  ;;               (size 9 -1 :right)
-  ;;               " "
-  ;;               (mode 16 16 :left :elide)
-  ;;               " "
-  ;;               (vc-status 16 16 :left)
-  ;;               " "
-  ;;               filename-and-process)
-  ;;         (mark " " (name 16 -1) " " filename)))
+  (defun brust--number-of-lines-string-to-number (str)
+    (let ((factor
+           (cond
+            ((string-match-p "k" str) 1000)
+            ((string-match-p "M" str) 1000000)
+            (t 1))))
+      (floor (* factor (string-to-number str)))))
+
+  (defun brust--number-of-lines-summarize (nlines)
+    (number-to-string
+     (cl-loop for n in nlines sum
+              (brust--number-of-lines-string-to-number n))))
+
+  ;; Add a view to display full name and filename.
+  (setq ibuffer-formats ;; Modify Ibuffer columns (toggle with `)
+        (append ibuffer-formats
+                '((mark vc-status-mini " "
+                        (icon 2 2 :left :elide)
+                        (size 5 -1 :right)
+                        " "
+                        (name 40 40 :left :elide)
+                        ;; " "
+                        ;; (mode 16 16 :left :elide)
+                        ;; " "
+                        ;; (vc-status 16 16 :left)
+                        " "
+                        filename-and-process))))
 
   (setq ibuffer-saved-filter-groups
         (list (cons "home"
