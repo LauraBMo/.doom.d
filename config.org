@@ -2693,7 +2693,16 @@ Bad
 #+end_src
 *** LSP mode
 
-Run =doom build= to make it work (no idea why...)
+Run =doom build= to make it work, install local version of =LanguageServer.jl=.
+It stoped working. Install master branch with =add LanguageServer#master= in both
+projects =.julia/environments/...= and =.emacs.d/.local/...= in =lsp-julia-package-dir=.
+
+#+begin_src julia :results output :tangle no
+import Pkg
+# Pkg.add(name="LanguageServer", rev="master")
+Pkg.activate("~/.emacs.d/.local/straight/repos/lsp-julia/languageserver/")
+Pkg.add(name="LanguageServer", rev="master")
+#+end_src
 
 #+begin_src elisp
 (use-package! lsp-julia
