@@ -770,7 +770,12 @@ Obs.:
         elfeed-search-title-max-width 90)
 
   (map! :map elfeed-search-mode-map
-        :desc "Open entry" "SPC" #'elfeed-search-show-entry)
+        :desc "Open entry" :n "SPC" #'elfeed-search-show-entry
+        :desc "Download pdf" :n "x" #'robo/elfeed-entry-to-arxiv
+        :desc "Biblio" :n "X" #'brust-elfeed-arxiv-send-entry-to-biblio
+        )
+
+
   ;;        (:map elfeed-show-mode-map
   ;;         :desc "Fetch arXiv paper to the local library" "a" #'robo/elfeed-entry-to-arxiv)))
   (map! :map elfeed-show-mode-map
@@ -824,7 +829,7 @@ Obs.:
                            'default
                          'font-lock-comment-face))
          ;; Score (requires elfeed-score.el)
-         ;; (entry-score (elfeed-format-column (number-to-string (elfeed-score-scoring-get-score-from-entry entry)) 10 :left))
+         (entry-score (elfeed-format-column (number-to-string (elfeed-score-scoring-get-score-from-entry entry)) 10 :left))
          ;; Feed
          (feed (elfeed-entry-feed entry))
          (feed-title
@@ -846,6 +851,7 @@ Obs.:
     (insert
      (propertize feed-column 'face 'elfeed-search-feed-face) " "
      ;; entry-score  " "
+     (propertize entry-score 'face 'elfeed-search-tag-face) " "
      ;; (propertize tag-column 'face 'elfeed-search-tag-face) " "
      (propertize authors-column 'face authors-face 'kbd-help authors) " "
      (propertize title 'face title-faces 'kbd-help title))
@@ -862,19 +868,134 @@ Obs.:
     (kill-buffer buff)
     (delete-window window)))
 #+end_src
-*** TODO Download pdf using biblio-arxiv-lookup
+*** TODO elfeed-score
+
+TODO: work on the file =elfeed.stats=.
 
 #+begin_src elisp
-;; (defun robo/elfeed-entry-to-arxiv ()
-;;   "Fetch an arXiv paper into the local library from the current elfeed entry."
-;;   (interactive)
-;;   (let* ((link (elfeed-entry-link elfeed-show-entry))
-;;          (match-idx (string-match "arxiv.org/abs/\\([0-9.]*\\)" link))
-;;          (matched-arxiv-number (match-string 1 link)))
-;;     (when matched-arxiv-number
-;;       (message "Going to arXiv: %s" matched-arxiv-number)
-;;       (arxiv-get-pdf-add-bibtex-entry matched-arxiv-number robo/main-bib-library robo/main-pdfs-library-path)))))
+(use-package! elfeed-score
+  :after elfeed
+  :config
+  (setq
+   elfeed-score-rule-stats-file "~/.doom.d/local/elfeed.stats"
+   elfeed-score-score-file "~/.doom.d/local/elfeed.score"
+   elfeed-score-serde-score-file  "~/.doom.d/local/elfeed.score"
+   )
+  ;; (setq elfeed-score-serde-score-file nil) ;;
+  ;; (elfeed-score-load-score-file "~/.doom.d/local/elfeed.score") ; See the elfeed-score documentation for the score file syntax
+  (elfeed-score-enable)
+  (map! :map elfeed-search-mode-map
+        :desc "Score" :n "=" elfeed-score-map))
 #+end_src
+
+*** TODO Download pdf (using biblio-arxiv-lookup)
+
+#+begin_src elisp
+(defun brust-elfeed-arxiv-send-entry-to-biblio (entry)
+  "Fetch an arXiv paper into the local library from the current elfeed entry."
+  (interactive (list (elfeed-search-selected :ignore-region)))
+  (require 'elfeed-show)
+  (when (elfeed-entry-p entry)
+    (when-let* ((link (elfeed-entry-link entry))
+                (match-idx (string-match "arxiv.org/abs/\\([0-9.]*\\)" link))
+                (matched-arxiv-number (match-string 1 link)))
+      (biblio-arxiv-lookup matched-arxiv-number))))
+
+(defun robo/elfeed-entry-to-arxiv (entry)
+  "Fetch an arXiv paper into the local library from the current elfeed entry."
+  (interactive (list (elfeed-search-selected :ignore-region)))
+  (require 'elfeed-show)
+  (when (elfeed-entry-p entry)
+    (when-let* ((link (elfeed-entry-link entry))
+                (match-idx (string-match "arxiv.org/abs/\\([0-9.]*\\)" link))
+                (matched-arxiv-number (match-string 1 link))
+                (title (elfeed-entry-title entry))
+                (fname (brust-citar-title-to-fname-default title)))
+      (message "Going to arXiv: %s" matched-arxiv-number)
+      (arxiv-get-pdf matched-arxiv-number fname))))
+
+;; From https://github.com/jkitchin/org-ref/blob/cbe9e870a5f488cdfc5e6a3b5478845ea8acdcde/org-ref-arxiv.el#L216
+(defun arxiv-get-pdf (arxiv-number pdf)
+  "Retrieve a pdf for ARXIV-NUMBER and save it to PDF."
+  (interactive
+   (list (read-string
+          "arxiv: "
+          (arxiv-maybe-arxiv-id-from-current-kill))
+         (read-string
+          "PDF: ")))
+  (let ((pdf-url (with-current-buffer
+                     (url-retrieve-synchronously
+                      (concat
+                       "http://arxiv.org/abs/" arxiv-number))
+                   ;; <meta name="citation_pdf_url" content="http://arxiv.org/pdf/0801.1144" />
+                   (goto-char (point-min))
+                   (search-forward-regexp
+                    "name=\\\"citation_pdf_url\\\" content=\\\"\\(.*\\)\\\"")
+                   (match-string 1))))
+    (url-copy-file pdf-url pdf)
+    ;; now check if we got a pdf
+    (unless (org-ref-pdf-p pdf)
+      (delete-file pdf)
+      (message "Error downloading arxiv pdf %s" pdf-url))))
+
+;; From https://github.com/jkitchin/org-ref/blob/cbe9e870a5f488cdfc5e6a3b5478845ea8acdcde/org-ref-utils.el#L457
+(defun org-ref-pdf-p (filename)
+  "Check if FILENAME is PDF file.
+From the PDF specification 1.7:
+    The first line of a PDF file shall be a header consisting of
+    the 5 characters %PDF- followed by a version number of the
+    form 1.N, where N is a digit between 0 and 7."
+  (let* ((header (with-temp-buffer
+                   (set-buffer-multibyte nil)
+                   (insert-file-contents-literally filename nil 0 5)
+                   (buffer-string)))
+         (valid (string-equal (encode-coding-string header 'utf-8) "%PDF-")))
+    (if valid
+        valid
+      (message "Invalid pdf. Header = %s" header)
+      nil)))
+
+;; From https://github.com/jkitchin/org-ref/blob/cbe9e870a5f488cdfc5e6a3b5478845ea8acdcde/org-ref-arxiv.el#L153
+(defun arxiv-maybe-arxiv-id-from-current-kill ()
+  "Try to get an arxiv ID from the current kill."
+  (let* ((the-current-kill (ignore-errors (current-kill 0 t)))  ;; nil if empty kill ring
+         (arxiv-url-prefix-regexp "^https?://arxiv\\.org/\\(pdf\\|abs\\|format\\)/")
+         (arxiv-cite-prefix-regexp "^\\(arXiv\\|arxiv\\):")
+         (arxiv-id-old-regexp "[a-z-]+\\(\\.[A-Z]\\{2\\}\\)?/[0-9]\\{5,7\\}") ; Ex: math.GT/0309136
+         (arxiv-id-new-regexp "[0-9]\\{4\\}[.][0-9]\\{4,5\\}\\(v[0-9]+\\)?") ; Ex: 1304.4404v2
+         (arxiv-id-regexp (concat "\\(" arxiv-id-old-regexp "\\|" arxiv-id-new-regexp "\\)")))
+    (cond
+     (;; make sure current-kill has something in it
+      ;; if current-kill is not a string, return nil
+      (not (stringp the-current-kill))
+      nil)
+     (;; check if current-kill looks like an arxiv ID
+      ;; if so, return it
+      ;; Ex: 1304.4404v2
+      (s-match (concat "^" arxiv-id-regexp) the-current-kill)
+      the-current-kill)
+     (;; check if current-kill looks like an arxiv cite
+      ;; if so, remove the prefix and return
+      ;; Ex: arXiv:1304.4404v2 --> 1304.4404v2
+      (s-match (concat arxiv-cite-prefix-regexp arxiv-id-regexp "$") the-current-kill)
+      (replace-regexp-in-string arxiv-cite-prefix-regexp "" the-current-kill))
+     (;; check if current-kill looks like an arxiv url
+      ;; if so, remove the url prefix and return
+      ;; Ex: https://arxiv.org/abs/1304.4404 --> 1304.4404
+      (s-match (concat arxiv-url-prefix-regexp arxiv-id-regexp "$") the-current-kill)
+      (replace-regexp-in-string arxiv-url-prefix-regexp "" the-current-kill))
+     (;; check if current-kill looks like an arxiv PDF url
+      ;; if so, remove the url prefix, the .pdf suffix, and return
+      ;; Ex: https://arxiv.org/pdf/1304.4404.pdf --> 1304.4404
+      (s-match (concat arxiv-url-prefix-regexp arxiv-id-regexp "\\.pdf$") the-current-kill)
+      (replace-regexp-in-string arxiv-url-prefix-regexp "" (substring the-current-kill 0 (- (length the-current-kill) 4))))
+     ;; otherwise, return nil
+     (t
+      nil))))
+#+end_src
+
+#+RESULTS:
+: arxiv-maybe-arxiv-id-from-current-kill
 
 ** Visual fill mode
 

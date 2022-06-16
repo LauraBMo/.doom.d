@@ -35,6 +35,10 @@
            :repo "tecosaur/org-pandoc-import"
            :files ("*.el" "filters" "preprocessors")))
 
+;; Score my arXiv feed
+(package! elfeed-score
+  :recipe (:host github
+           :repo "sp1ff/elfeed-score"))
 
 ;; Programing
 ;; Edit Maple .mpl files
