@@ -336,6 +336,17 @@ Search, insert, call... =.bib= keys, entries, pdfs...
                          "~/Dropbox/bibliography/")
    citar-notes-paths '("~/Dropbox/bibliography/notes.org"))
 
+  (defun brust-citar-title-to-fname (title ext)
+    ;; expand-file-name ;; Relative paths work, so why?
+    (cl-loop for path in citar-library-paths
+             collect (concat path
+                             (brust-title-to-fname title)
+                             "." ext)))
+
+  (defun brust-citar-title-to-fname-default (title)
+    (interactive)
+    (car (brust-citar-title-to-fname title "pdf")))
+
   ;; See citar become in citar.el README.
   (defvar citar-embark-become-map
     (let ((map (make-sparse-keymap)))
@@ -382,7 +393,7 @@ Editing =.bib= files.
   (interactive (list
                 (bibtex-text-in-field "title")
                 (bibtex-text-in-field "doi")))
-  (let ((fname (brust-title-to-fname title "pdf")))
+  (let ((fname (brust-citar-title-to-fname-default title)))
     (unless (bibtex-text-in-field "file")
       (bibtex-beginning-first-field)
       (move-end-of-line 1) (forward-char -1)
@@ -428,29 +439,11 @@ The package bibretrive is a mess, but it works for MathSciNet.
 (defun brust-biblio-scihub (entry)
   (if-let ((title (biblio-alist-get 'title entry))
            (doi (biblio-alist-get 'doi entry))
-           (fname (brust-title-to-fname title "pdf")))
+           (fname (brust-citar-title-to-fname-default title)))
       (if (file-exists-p fname)
           (find-file fname)
         (scihub doi fname))
     (message "No DOI or Title found for %s" (car entry))))
-
-(defun brust-title-to-fname (title ext)
-  ;; expand-file-name ;; Relative paths work, so why?
-  (concat
-   (car citar-library-paths)
-   (with-temp-buffer
-     (insert (downcase title))
-     ;; Remove currly brackets, colon, underscores,...
-     (goto-char (point-min))
-     (while (re-search-forward "[{}:_$\]+" nil t)
-       (replace-match ""))
-     ;; Replace white spaces by a dash
-     (goto-char (point-min))
-     (while (re-search-forward (concat "[" brust-whitespace-regexp " ]+") nil t)
-       (replace-match "-"))
-     ;; Get the file name
-     (buffer-string))
-   "." ext))
 #+end_src
 
 **** Scihub
@@ -475,7 +468,7 @@ With prefix, rebuild the cache before offering candidates."
                       :rebuild-cache current-prefix-arg)))
   (if-let ((doi (citar-get-value 'doi (cdr key-entry)))
            (title (citar-get-value 'title (cdr key-entry)))
-           (fname (brust-title-to-fname title "pdf")))
+           (fname (brust-citar-title-to-fname-default title)))
       (progn
         (citar-open-entry key-entry)
         (brust-bibtex-link-pdf title doi))
