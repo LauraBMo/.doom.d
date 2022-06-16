@@ -1733,6 +1733,22 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
     (+spell/previous-error)
     (+spell/correct)))
 #+end_src
+** Title to file name
+#+begin_src elisp
+(defun brust-title-to-fname (title)
+  (with-temp-buffer
+    (insert (downcase title))
+    ;; Remove currly brackets, colon, underscores,...
+    (goto-char (point-min))
+    (while (re-search-forward "[{}:_$\]+" nil t)
+      (replace-match ""))
+    ;; Replace white spaces by a dash
+    (goto-char (point-min))
+    (while (re-search-forward (concat "[" brust-whitespace-regexp " ]+") nil t)
+      (replace-match "-"))
+    ;; Get the file name
+    (buffer-string)))
+#+end_src
 
 ** Total number of lines
 #+begin_src elisp
