@@ -1124,15 +1124,17 @@ From the PDF specification 1.7:
 ;; (shell-command (format "rm %s && rm %s" -mod -blanche)))))
 #+END_SRC
 
-** COMMENT Advise once
+** Advise once
 
-#+begin_src elisp :tangle no
+#+begin_src elisp
 (defun advice-once (symbol where function &optional props)
-  (let ((new-function (intern (concat (symbol-name function) "-advice-once"))))
-    (fset new-function `(lambda (&rest _)
-                          (call-interactively ',function)
-                          (advice-remove ',symbol #',new-function)))
-    (advice-add symbol where new-function props)))
+  (let* ((name (symbol-name function))
+         (fname (intern (concat name "--advice-once"))))
+    (fset fname `(lambda (&rest _)
+                   "Copy for advice it once."
+                   (funcall ',function)
+                   (advice-remove ',symbol #',fname)))
+    (advice-add symbol where fname props)))
 #+end_src
 
 ** By five
@@ -3809,15 +3811,19 @@ This package contains all the higher level UI modules of =lsp-mode=, like =flych
   (brust-by-five #'pdf-view-previous-line-or-previous-page args))
 #+END_SRC
 
-** Screenshot
+** TODO Screenshot
 
 Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][screenshot.el]].
 
 #+begin_src elisp
 (use-package! screenshot
   :commands screenshot
-  :config
-  (load-file (locate-library "screenshot.elc")))
+  :init
+  ;; TODO Check whether it is still needed.
+  (advice-once 'screenshot :before #'load-screenshot)
+  (defun load-screenshot nil
+    (load-file (locate-library "screenshot.el")))
+  )
 #+end_src
 
 ** Turn grep "writable" buffer
