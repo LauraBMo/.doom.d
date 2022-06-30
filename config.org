@@ -2506,6 +2506,10 @@ Add interactive TOC and references manager at .tex files.
   (add-hook 'latex-mode-hook 'lsp))
 #+end_src
 * COMMENT Mu4e
+:PROPERTIES:
+:header-args: :tangle no
+:END:
+
 ** General info
     - Manual [[https://www.djcbsoftware.nl/code/mu/mu4e/index.html#Top][Mu4e's online manual]]
     - TODOs [0/6]
@@ -2555,13 +2559,13 @@ mkdir Maildir
 #+END_SRC
 
 ** Add Path
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
 (add-to-list 'load-path (expand-file-name "~/src/mu/mu4e/"))
 #+END_SRC
 
 ** Config
 [[file:lisp/brusts-mu4e-config.org][Mu4e config file]]
-#+begin_src elisp :tangle no
+#+begin_src elisp
 (use-package! mu4e
   :commands (mu4e)
   :config
@@ -3882,17 +3886,20 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
   (add-hook! 'ediff-cleanup-hook (zoom-mode +1)))
 #+end_src
 * Unusal packages
+:PROPERTIES:
+:header-args: :tangle no
+:END:
 
 Load each with =brust-endless/org-eval-current-header=
 
 ** Maxima
 *** Load-path
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
 (push "/usr/share/emacs/site-lisp/maxima/" load-path)
 #+END_SRC
 
 *** Auto-load
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
 (autoload 'maxima-mode "maxima" "Maxima mode" t)
 (autoload 'maxima "maxima" "Maxima interaction" t)
 (autoload 'imaxima "imaxima" "Frontend for maxima with Image support" t)
@@ -3902,13 +3909,13 @@ Load each with =brust-endless/org-eval-current-header=
 
 #+END_SRC
 *** Auto-mode
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
 (add-to-list 'auto-mode-alist '("\\.ma[cx]" . maxima-mode))
 
 #+END_SRC
 *** Config:
 **** COMMENT setq
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
   (setq imaxima-fnt-size "huge"
         ;;  imaxima-latex-preamble "\\usepackage{concrete}\\usepackage{euler}"
         imaxima-use-maxima-mode-flag t
@@ -3920,7 +3927,7 @@ Load each with =brust-endless/org-eval-current-header=
 #+END_SRC
 **** COMMENT An advice
      For a correct use of imaxima.
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
 (defadvice maxima-send-region (before maxima-start-imaxima first)
   "Ensures that imaxima is running and the correct flag is set."
   (setq imaxima-use-maxima-mode-flag t)
@@ -3931,7 +3938,7 @@ Load each with =brust-endless/org-eval-current-header=
 #+END_SRC
 *** Keybindings
 **** COMMENT Maxima
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
 (defun customize-maxima-mode nil
   (interactive)
   (local-set-key (kbd "TAB") 'maxima-complete)
@@ -3941,7 +3948,7 @@ Load each with =brust-endless/org-eval-current-header=
 
 #+END_SRC
 **** COMMENT iMaxima
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
 (defun customize-imaxima nil
  "For the imaxima buffer"
   (interactive)
@@ -3952,7 +3959,7 @@ Load each with =brust-endless/org-eval-current-header=
 #+END_SRC
 *** DeFuns AcMe
 **** COMMENT AcMe-max-to-xml
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
 (defun AcMe-max-to-xml (xmlFileName); pNumber)
   "Convert standard maxima file to xml, you need an xml template.
    This function only changes the math content of the xml file.
@@ -4022,7 +4029,7 @@ Load each with =brust-endless/org-eval-current-header=
 
 #+END_SRC
 **** COMMENT AcMe-xml-to-max
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
   (defun AcMe-xml-to-max (maxFileName); pNumber)
     "Convert AcMe standard .xml file to a maxima file with the conventions to the reverse convertion.
      Any content of the .max file is deleted. Puts the solution on top."
@@ -4071,7 +4078,7 @@ Load each with =brust-endless/org-eval-current-header=
 
 #+END_SRC
 **** COMMENT AcMe-new-parameter
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
 (defun AcMe-new-parameter (paramater_num)
   "Example function taking a prefix arg, or reading a number if no prefix arg"
   (interactive
@@ -4087,7 +4094,7 @@ Load each with =brust-endless/org-eval-current-header=
 
 #+END_SRC
 ** Yanki
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
   (setq auto-mode-alist
         (append '(("\\.yanki\\'"    . Yanki-mode)
                   ("\\.yanki-b\\'"  . Yanki-build-mode))
@@ -4099,7 +4106,7 @@ Load each with =brust-endless/org-eval-current-header=
 #+END_SRC
 
 ** Table org duplicates into columns
-  #+BEGIN_SRC elisp :tangle no
+  #+BEGIN_SRC elisp
       (defun brust-org-table-delete-duplicates-by-current-column (args)
         (interactive "P")
         (unless (org-at-table-p) (user-error "No table at point"))
@@ -4156,7 +4163,7 @@ Load each with =brust-endless/org-eval-current-header=
 #+END_SRC
 
 ** My-dictionary
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
   (global-set-key (kbd "<C-M-return>") 'brust-my-dictionary-edit-an-entry)
 
   (global-set-key (kbd "<s-return>") 'brust-my-dictionary-new-entry)
@@ -4253,7 +4260,7 @@ Load each with =brust-endless/org-eval-current-header=
 ** Teaching
    From Excel save the table in csv format into /"tmp/my-table.csv"/ using {tab} as separators.
    Eval =C-c C-c=:
-#+BEGIN_SRC elisp :tangle no
+#+BEGIN_SRC elisp
   (find-file (concat temporary-file-directory "new-notes.org"))
   (insert "#+NAME: alumnes\n")
   (org-table-import (concat temporary-file-directory "my-table.csv") nil)
@@ -4264,7 +4271,7 @@ Load each with =brust-endless/org-eval-current-header=
   And copy the following subtree =C-c C-x M-w= under the table and eval the code.
 
 *** Teaching functions
-#+BEGIN_SRC elisp :command export :var data=alumnes :tangle no
+#+BEGIN_SRC elisp :command export :var data=alumnes
 (require 's)
 
 (defvar brust-mark-column "Column number (starting from 1) where to insert marks (hard-code)")
