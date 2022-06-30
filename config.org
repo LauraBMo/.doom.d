@@ -3747,11 +3747,16 @@ This package contains all the higher level UI modules of =lsp-mode=, like =flych
         magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1
         magit-save-repository-buffers 'dontask
         magit-diff-paint-whitespace t
-        magit-diff-refine-ignore-whitespace nil
+        ;; magit-diff-refine-ignore-whitespace nil
         magit-diff-refine-hunk t)
 
   (add-hook 'magit-log-edit-mode-hook #'turn-on-flyspell)
-  (add-hook 'git-commit-mode-hook #'turn-on-flyspell))
+  (add-hook 'git-commit-mode-hook #'turn-on-flyspell)
+
+  (add-hook! 'magit-mode-hook
+            (map! :map magit-mode-map
+                  :n "n" #'magit-section-forward-sibling
+                  :n "p" #'magit-section-backward-sibling)))
 #+END_SRC
 
 ** Nyan
