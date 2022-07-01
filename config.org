@@ -2698,22 +2698,29 @@ Bad
 *** LSP mode
 
 Run =doom build= to make it work, install local version of =LanguageServer.jl=.
-It stoped working. Install master branch with =add LanguageServer#master= in both
-projects =.julia/environments/...= and =.emacs.d/.local/...= in =lsp-julia-package-dir=.
+It stopped working. Install both =LanguageServer= and =SymbolServer= master branch with =add LanguageServer#master= in =.emacs.d/.local/...= in =lsp-julia-package-dir=.
 
 #+begin_src julia :results output :tangle no
 import Pkg
 # Pkg.add(name="LanguageServer", rev="master")
 Pkg.activate("~/.emacs.d/.local/straight/repos/lsp-julia/languageserver/")
 Pkg.add(name="LanguageServer", rev="master")
+Pkg.add(name="SymbolServer", rev="master")
 #+end_src
+
+This command should give no error: (from [[file:~/.emacs.d/modules/lang/julia/doctor.el][Julia module's doctor]])
+#+begin_src bash :tangle no
+julia --project=/home/laury/.emacs.d/.local/straight/repos/lsp-julia/languageserver --startup-file=no --history-file=no -e "using LanguageServer, SymbolServer"
+#+end_src
+
+#+RESULTS:
 
 #+begin_src elisp
 (use-package! lsp-julia
-  :after lsp
+  ;; :after lsp
   :config
-  (setq lsp-julia-package-dir nil
-        ;; lsp-julia-default-environment "~/.julia/environments/v1.7"
+  (setq ;; lsp-julia-package-dir nil
+        lsp-julia-default-environment "~/.julia/environments/v1.7"
         ;; lsp-enable-folding t
         lsp-julia-lint-nothingcomp nil ;; Do not check for nothing === something
         lsp-julia-format-indents nil
