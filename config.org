@@ -1171,7 +1171,7 @@ From the PDF specification 1.7:
    :desc "code screenshot"   "p"    #'screenshot
    :desc "visual rx replace" "%"    #'vr/query-replace
    :desc "macro insert str"  "<f3>" #'kmacro-query-my
-   :desc "ispell & abbrev"   "i"    #'endless/ispell-word-then-abbrev
+   ;; :desc "ispell & abbrev"   "i"    #'endless/ispell-word-then-abbrev
    "1" #'zoom-out ;; enlarge font
    "2" #'zoom-in ;; reduce font
    ))
