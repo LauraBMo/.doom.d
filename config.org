@@ -1,6 +1,7 @@
 #-*- mode: org -*-
 #+TITLE: Main config file
 #+STARTUP: overview
+#+OPTIONS: toc:2 (only include two levels in TOC)
 
 #+begin_quote
 (What the world needs (I think) is not
