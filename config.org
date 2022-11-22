@@ -277,6 +277,12 @@ I’m rarely happier than when spending an entire day programming my computer
 
 *** Mode line string
 #+begin_src elisp
+(defsubst doom-modeline-spc nil
+  "Text style with whitespace."
+  (propertize " " 'face (if (doom-modeline--active)
+                            'mode-line
+                          'mode-line-inactive)))
+
 (defsubst brust-line-number-mode--string nil
   "Show current line/buffer total number of lines."
   (concat (doom-modeline-spc)
