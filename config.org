@@ -1,6 +1,6 @@
 #-*- mode: org -*-
-#+TITLE=Main config file
-#+STARTUP:overview
+#+TITLE: Main config file
+#+STARTUP: overview
 
 #+begin_quote
 (What the world needs (I think) is not
