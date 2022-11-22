@@ -3505,7 +3505,7 @@ Package to highlight TODO's in comments and so.
 
 ;; Locally reable show parens
 (defun brust-doom-reable-show-paren-mode-h nil
-  "Turn off `show-paren-mode' buffer-locally."
+  "Turn on `show-paren-mode' buffer-locally."
   (setq-local show-paren-mode t))
 
 ;; Fix syntax for chars <,> in org-mode blocks
