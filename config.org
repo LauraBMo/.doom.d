@@ -436,7 +436,7 @@ Editing =.bib= files.
 (after! (latex bibtex)
   (add-to-list 'auto-mode-alist '("\\.bib\\'"  . bibtex-mode))
   ;; Spell checking (requires the ispell software)
-  (add-hook 'bibtex-mode-hook 'flyspell-mode)
+  ;; (add-hook 'bibtex-mode-hook 'flyspell-mode)
 
   (setq bibtex-maintain-sorted-entries t ;; to sort bibtex entries with C-c C-c
         bibtex-comma-after-last-field t ;; insert a comma after last field
@@ -3481,7 +3481,12 @@ Package to highlight TODO's in comments and so.
 ** Ispell
 
 #+begin_src elisp
-(setq ispell-highlight-face 'flyspell-incorrect)
+;; (setq ispell-highlight-face 'flyspell-incorrect)
+
+;; See https://github.com/doomemacs/doomemacs/issues/4239
+;; Useful for spell-fu
+;; Notice the lack of "--run-together"
+(setq ispell-extra-args '("--sug-mode=ultra"))
 #+end_src
 ** Recentf
 #+begin_src elisp
@@ -3641,7 +3646,7 @@ FACE defaults to inheriting from default and highlight."
 
 * External modes
 ** Avy
-#+begin_src elisp
+#+begin_src elisp :tangle no
 (setq avy-flyspell-correct-function #'+spell/correct)
 #+end_src
 
@@ -3865,17 +3870,33 @@ This package contains all the higher level UI modules of =lsp-mode=, like =flych
         ;; magit-diff-refine-ignore-whitespace nil
         magit-diff-refine-hunk t)
 
-  (add-hook 'magit-log-edit-mode-hook #'turn-on-flyspell)
-  (add-hook 'git-commit-mode-hook #'turn-on-flyspell)
+  ;; (add-hook 'magit-log-edit-mode-hook #'turn-on-flyspell)
+  ;; (add-hook 'git-commit-mode-hook #'turn-on-flyspell)
 
   (add-hook! 'magit-mode-hook
             (map! :map magit-mode-map
                   :n "n" #'magit-section-forward-sibling
                   :n "p" #'magit-section-backward-sibling)))
 #+END_SRC
+** Org pandoc import
+
+Import any file to org mode
+
+#+begin_src elisp :tangle packages.el
+(package! org-pandoc-import
+  :recipe (:host github
+           :repo "tecosaur/org-pandoc-import"
+           :files ("*.el" "filters" "preprocessors")))
+#+end_src
 
 ** Nyan
     Show the rainbow progres line.
+
+#+begin_src elisp :tangle packages.el
+(package! nyan-mode)
+(package! zone-nyan)
+#+end_src
+
 #+BEGIN_SRC elisp
 (use-package! nyan-mode
   :defer t
