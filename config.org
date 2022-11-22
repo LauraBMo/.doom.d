@@ -1,7 +1,6 @@
 #-*- mode: org -*-
 #+TITLE: Main config file
 #+STARTUP: overview
-#+OPTIONS: toc:2 (only include two levels in TOC)
 
 #+begin_quote
 (What the world needs (I think) is not
@@ -54,28 +53,6 @@ I’m rarely happier than when spending an entire day programming my computer
   - [[#visual-fill-mode][Visual fill mode]]
 - [[#bindings][Bindings]]
 - [[#my-functions][My functions]]
-  - [[#advise-once][Advise once]]
-  - [[#by-five][By five]]
-  - [[#change-font-size][Change font size]]
-  - [[#close-open-parents][Close<->open parents]]
-  - [[#colors-rgb-get-numbers][Colors RGB (get numbers)]]
-  - [[#customize-face-at-point][Customize face at point]]
-  - [[#delete-region-advise][Delete region advise]]
-  - [[#double-capitals][Double Capitals]]
-  - [[#eval-elips-blocks-in-org-mode][Eval elips blocks in org mode]]
-  - [[#evil-inset----normal----insert][Evil inset --> normal --> insert]]
-  - [[#line-by-line][Line by line]]
-  - [[#macro-query][Macro query]]
-  - [[#mouse-wheel][Mouse wheel]]
-  - [[#narrow-or-widen-dwin][Narrow or widen dwin]]
-  - [[#open-myorg][Open my.org]]
-  - [[#prompt-in-singular-non-editable][Prompt in Singular... Non-editable]]
-  - [[#spelling][Spelling]]
-  - [[#title-to-file-name][Title to file name]]
-  - [[#total-number-of-lines][Total number of lines]]
-  - [[#vterm][Vterm]]
-  - [[#white-space-edit][White space edit]]
-  - [[#white-space-cycle][White space cycle]]
 - [[#org-mode][Org mode]]
   - [[#config][Config]]
   - [[#agenda][Agenda]]
@@ -1281,7 +1258,7 @@ From the PDF specification 1.7:
  )
 #+end_src
 
-* My functions
+* My functions :noexport_1:
 ** COMMENT Add blank pages to a pdf
 
 #+BEGIN_SRC elisp :tangle no
