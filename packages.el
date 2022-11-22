@@ -1,87 +1,6 @@
 ;; -*- no-byte-compile: t; -*-
 ;;; $DOOMDIR/packages.el
 
-
-;; WARNING: Disabling core packages listed in ~/.emacs.d/core/packages.el may
-;; have nasty side-effects and is not recommended.
-
-;; (disable-packages! forge cua preview flyspell-lazy)
-(disable-packages! forge cua preview elfeed-goodies)
-
-
-;; LaTeX stuff
-(package! bratex :recipe (:host github :repo "sbrisard/bratex"))
-;; Biblatex
-;; Packages to retrieve bib entries from the web
-;; Biblio is not working for crossref any more...
-;; (package! biblio) ;; For all the others, mostly Crossref, ....
-(package! biblio :recipe (:host github :repo "cpitclaudel/biblio.el"))
-;; For MathSciNet references
-(package! bibretrieve :recipe (:host github :repo "pzorin/bibretrieve"))
-
-;; Downloading paper
-(package! scihub :recipe (:host github :repo "emacs-pe/scihub.el"))
-;; (package! lsp-latex :recipe (:host github :repo "ROCKTAKEY/lsp-latex"))
-;; (package! org-ref) ;; it is way too heavy: it requires helm, helm-bibtex, parsebib, biblio, key-chord, pdf-tool
-
-;; Handy tecosaur's packages:
-;; take a screenshot of some code to share
-(package! screenshot
-  :recipe (:host github
-           :repo "tecosaur/screenshot"))
-;; Import any file to org mode
-(package! org-pandoc-import
-  :recipe (:host github
-           :repo "tecosaur/org-pandoc-import"
-           :files ("*.el" "filters" "preprocessors")))
-
-;; Score my arXiv feed
-(package! elfeed-score
-  :recipe (:host github
-           :repo "sp1ff/elfeed-score"))
-
-;; Programing
-;; Edit Maple .mpl files
-(package! maplev :recipe (:host github :repo "JoeRiel/maplev"))
-;; Edit POV-ray files
-(package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
-
-
-;; Julia in Org-mode
-;; Using vterm
-;; (package! ob-julia-vterm :recipe (:host github :repo "shg/ob-julia-vterm.el")) ;; For ob-vterm-julia
-;; (package! julia-vterm :recipe (:host github :repo "shg/julia-vterm.el")) ;; For ob-vterm-julia
-;; Using ess
-;; (package! ob-ess-julia :recipe (:type git :host github :repo "frederic-santos/ob-ess-julia" :includes (ob-julia)))
-;; (package! ob-julia :recipe (:type git :host github :repo "nico202/ob-julia"))
-
-;; Nyans
-(package! nyan-mode)
-(package! zone-nyan)
-
-;; Miscelaneos
-(package! keyfreq :recipe (:host github :repo "dacap/keyfreq"))
-(package! visual-regexp)
-(package! zoom)
-;; (package! wc-mode :recipe (:host github :repo "bnbeckwith/wc-mode"))
-;; (package! aggressive-indent) ;; use "= G" in normal mode
-
-;; Try someday
-;; (package! evil-tutor)
-;; (package! esup)
-
-;; Old stuff
-;; (package! transpose-frame) ;; With evil rotate it is enogh
-;; (package! company-statistics) ;; Doom uses https://github.com/raxod502/prescient.el
-;; (package! company-box)
-;; (package! company-tabnine)
-
-;; (package! smerge-mode)
-;; (package! wgrep)
-;; (package! beacon)
-;; (package! mu4e :recipe (:local-repo "~/src/mu4e")) ;; any way I need to add to load-path
-;; (package! hydra)
-;; (package! darktooth-theme)
 ;; To install a package with Doom you must declare them here and run 'doom sync'
 ;; on the command line, then restart Emacs for the changes to take effect -- or
 ;; use 'M-x doom/reload'.
@@ -92,7 +11,7 @@
 
 ;; To install a package directly from a remote git repo, you must specify a
 ;; `:recipe'. You'll find documentation on what `:recipe' accepts here:
-;; https://github.com/raxod502/straight.el#the-recipe-format
+;; https://github.com/radian-software/straight.el#the-recipe-format
 ;(package! another-package
 ;  :recipe (:host github :repo "username/repo"))
 
@@ -115,7 +34,7 @@
 
 ;; Specify a `:branch' to install a package from a particular branch or tag.
 ;; This is required for some packages whose default branch isn't 'master' (which
-;; our package manager can't deal with; see raxod502/straight.el#279)
+;; our package manager can't deal with; see radian-software/straight.el#279)
 ;(package! builtin-package :recipe (:branch "develop"))
 
 ;; Use `:pin' to specify a particular commit to install.
@@ -129,3 +48,36 @@
 ;(unpin! pinned-package another-pinned-package)
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;(unpin! t)
+
+;; (disable-packages! forge cua preview flyspell-lazy)
+(disable-packages! forge cua preview elfeed-goodies)
+
+(package! bibretrieve :recipe (:host github :repo "pzorin/bibretrieve"))
+
+(package! biblio :recipe (:host github :repo "cpitclaudel/biblio.el"))
+
+(package! scihub :recipe (:host github :repo "emacs-pe/scihub.el"))
+
+(package! elfeed-score :recipe (:host github :repo "sp1ff/elfeed-score"))
+
+(package! bratex :recipe (:host github :repo "sbrisard/bratex"))
+
+(package! maplev :recipe (:host github :repo "JoeRiel/maplev"))
+
+(package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
+
+(package! keyfreq :recipe (:host github :repo "dacap/keyfreq"))
+
+(package! org-pandoc-import
+  :recipe (:host github
+           :repo "tecosaur/org-pandoc-import"
+           :files ("*.el" "filters" "preprocessors")))
+
+(package! nyan-mode)
+(package! zone-nyan)
+
+(package! screenshot :recipe (:host github :repo "tecosaur/screenshot"))
+
+(package! visual-regexp)
+
+(package! zoom)

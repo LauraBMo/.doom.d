@@ -28,10 +28,71 @@ I’m rarely happier than when spending an entire day programming my computer
 -- https://www.gnu.org/software/emacs/manual/html_node/eintr/Emacs-Initialization.html
 #+end_quote
 
-* Lexical binding
+* Files' header
+** Lexical binding
 #+begin_src elisp
 ;;; -*- lexical-binding: t; -*-
 #+end_src
+** Packages.el
+*** Header
+#+begin_src elisp :tangle packages.el
+;; -*- no-byte-compile: t; -*-
+;;; $DOOMDIR/packages.el
+
+;; To install a package with Doom you must declare them here and run 'doom sync'
+;; on the command line, then restart Emacs for the changes to take effect -- or
+;; use 'M-x doom/reload'.
+
+
+;; To install SOME-PACKAGE from MELPA, ELPA or emacsmirror:
+;(package! some-package)
+
+;; To install a package directly from a remote git repo, you must specify a
+;; `:recipe'. You'll find documentation on what `:recipe' accepts here:
+;; https://github.com/radian-software/straight.el#the-recipe-format
+;(package! another-package
+;  :recipe (:host github :repo "username/repo"))
+
+;; If the package you are trying to install does not contain a PACKAGENAME.el
+;; file, or is located in a subdirectory of the repo, you'll need to specify
+;; `:files' in the `:recipe':
+;(package! this-package
+;  :recipe (:host github :repo "username/repo"
+;           :files ("some-file.el" "src/lisp/*.el")))
+
+;; If you'd like to disable a package included with Doom, you can do so here
+;; with the `:disable' property:
+;(package! builtin-package :disable t)
+
+;; You can override the recipe of a built in package without having to specify
+;; all the properties for `:recipe'. These will inherit the rest of its recipe
+;; from Doom or MELPA/ELPA/Emacsmirror:
+;(package! builtin-package :recipe (:nonrecursive t))
+;(package! builtin-package-2 :recipe (:repo "myfork/package"))
+
+;; Specify a `:branch' to install a package from a particular branch or tag.
+;; This is required for some packages whose default branch isn't 'master' (which
+;; our package manager can't deal with; see radian-software/straight.el#279)
+;(package! builtin-package :recipe (:branch "develop"))
+
+;; Use `:pin' to specify a particular commit to install.
+;(package! builtin-package :pin "1a2b3c4d5e")
+
+
+;; Doom's packages are pinned to a specific commit and updated from release to
+;; release. The `unpin!' macro allows you to unpin single packages...
+;(unpin! pinned-package)
+;; ...or multiple packages
+;(unpin! pinned-package another-pinned-package)
+;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
+;(unpin! t)
+#+end_src
+*** Disable packages
+#+begin_src elisp :tangle packages.el
+;; (disable-packages! forge cua preview flyspell-lazy)
+(disable-packages! forge cua preview elfeed-goodies)
+#+end_src
+
 * Change a few defaults
 ** Set some vars
 
@@ -410,6 +471,10 @@ Editing =.bib= files.
 
 Getting bib entries from MathSciNet (or arxiv).
 
+#+begin_src elisp :tangle packages.el
+(package! bibretrieve :recipe (:host github :repo "pzorin/bibretrieve"))
+#+end_src
+
 #+BEGIN_SRC elisp
 ;; See https://github.com/pzorin/bibretrieve
 (use-package! bibretrieve
@@ -425,6 +490,10 @@ Getting bibtex entries from crossref and much more.
 
 Problem: MathSciNet uses author title... not a "everywhere" query.
 The package bibretrive is a mess, but it works for MathSciNet.
+
+#+begin_src elisp :tangle packages.el
+(package! biblio :recipe (:host github :repo "cpitclaudel/biblio.el"))
+#+end_src
 
 #+begin_src elisp
 (use-package! biblio
@@ -447,6 +516,10 @@ The package bibretrive is a mess, but it works for MathSciNet.
 #+end_src
 
 **** Scihub
+
+#+begin_src elisp :tangle packages.el
+(package! scihub :recipe (:host github :repo "emacs-pe/scihub.el"))
+#+end_src
 
 #+begin_src elisp
 (use-package! scihub
@@ -758,6 +831,13 @@ Obs.:
 - There are two modes/buffers/windows: the 'search' buffer and the 'show' buffer.
   The 'search' displays the list of entries, which can be filtered (=s=).
   The 'show' contains all details of a selected entry (=SPC=, =RET=).
+*** Packages
+
+Score my arXiv feed
+
+#+begin_src elisp :tangle packages.el
+(package! elfeed-score :recipe (:host github :repo "sp1ff/elfeed-score"))
+#+end_src
 
 *** Config
 #+begin_src elisp
@@ -2448,7 +2528,12 @@ Add interactive TOC and references manager at .tex files.
   (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "cdLaTeX" t))
 #+end_src
 ** Bratex
-    Load before auctex ??2
+*** Package
+#+begin_src elisp :tangle packages.el
+(package! bratex :recipe (:host github :repo "sbrisard/bratex"))
+#+end_src
+
+*** Load after auctex
 #+BEGIN_SRC elisp
 (use-package! bratex
   :after latex)
@@ -2837,6 +2922,11 @@ List if julia functions names to define wrap for.")
 #+end_src
 
 ** Maple
+
+#+begin_src elisp :tangle packages.el
+(package! maplev :recipe (:host github :repo "JoeRiel/maplev"))
+#+end_src
+
 #+begin_src elisp
 ;; (add-load-path! "~/src/maplev-master/lisp")
 (autoload 'maplev-mode "maplev" "Maple editing mode" 'interactive)
@@ -2844,6 +2934,11 @@ List if julia functions names to define wrap for.")
 #+end_src
 
 ** POV-Ray
+
+#+begin_src elisp :tangle packages.el
+(package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
+#+end_src
+
 #+begin_src elisp
 (defun brust-pov-ray-compile nil
   (interactive)
@@ -3707,6 +3802,11 @@ I just want auto format in a few modes.
 #+end_src
 
 ** Key-frequency
+
+#+begin_src elisp :tangle packages.el
+(package! keyfreq :recipe (:host github :repo "dacap/keyfreq"))
+#+end_src
+
 #+BEGIN_SRC elisp
 (use-package! keyfreq
   :init
@@ -3851,7 +3951,12 @@ This package contains all the higher level UI modules of =lsp-mode=, like =flych
 
 ** TODO Screenshot
 
+Handy tecosaur's packages.
 Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][screenshot.el]].
+
+#+begin_src elisp :tangle packages.el
+(package! screenshot :recipe (:host github :repo "tecosaur/screenshot"))
+#+end_src
 
 #+begin_src elisp
 (use-package! screenshot
@@ -3874,12 +3979,21 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
 #+END_SRC
 
 ** Visual regexp
+
+#+begin_src elisp :tangle packages.el
+(package! visual-regexp)
+#+end_src
+
 #+BEGIN_SRC elisp
 (use-package! visual-regexp
   :commands (vr/replace vr/query-replace))
 #+END_SRC
 
 ** Zoom
+#+begin_src elisp :tangle packages.el
+(package! zoom)
+#+end_src
+
 #+begin_src elisp
 (use-package! zoom
   :defer t
