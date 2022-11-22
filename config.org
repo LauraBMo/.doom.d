@@ -2194,7 +2194,9 @@ See `org-capture-templates' for more information."
 #+begin_src elisp
 (after! org
   (add-to-list 'org-structure-template-alist
-               '("e" . "src elisp"))
+               '("ee" . "src elisp"))
+  (add-to-list 'org-structure-template-alist
+               '("ep" . "src elisp :tangle packages.el"))
   (add-to-list 'org-structure-template-alist
                '("E" . "example"))
   (add-to-list 'org-structure-template-alist
