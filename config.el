@@ -1,182 +1,5 @@
-#-*- mode: org -*-
-#+TITLE: Main config file
-#+STARTUP: overview
-
-#+begin_quote
-(What the world needs (I think) is not
-      (a Lisp (with fewer parentheses))
-      but (an English (with more.)))
--- Brian Hayes, http://tinyurl.com/3y9l2kf
-#+end_quote
-
-#+begin_quote
- Emacs is a flexible platform for developing end-user applications
-   –unfortunately it is generally perceived as merely a text editor.
-Some people use it specifically for one or two applications.
--- https://alhassy.github.io/init/
-#+end_quote
-
-#+begin_quote
-I’m rarely happier than when spending an entire day programming my computer
-  to perform automatically a task that would otherwise take me a
-  good ten seconds to do by hand.
--- Douglas Adams
-#+end_quote
-
-#+begin_quote
-“You don’t have to like Emacs to like it.”
--- https://www.gnu.org/software/emacs/manual/html_node/eintr/Emacs-Initialization.html
-#+end_quote
-
-* Table of Contents :TOC:
-- [[#files-header][Files' header]]
-  - [[#lexical-binding][Lexical binding]]
-  - [[#packagesel][Packages.el]]
-- [[#change-a-few-defaults][Change a few defaults]]
-  - [[#set-some-vars][Set some vars]]
-  - [[#dashboard-menu][Dashboard menu]]
-  - [[#lookup-online][Lookup online]]
-  - [[#delete-selection-on-type][Delete selection on type.]]
-  - [[#faces][Faces]]
-  - [[#enabling][Enabling]]
-- [[#mode-line][Mode Line]]
-  - [[#do-not-show][Do not show]]
-  - [[#show-size-total-number-of-lines][Show size: Total number of lines]]
-  - [[#display-time][Display time]]
-- [[#doom-modules][Doom modules]]
-  - [[#biblio][Biblio]]
-  - [[#completion-environment][Completion environment]]
-  - [[#file-templates][File templates]]
-  - [[#high-light-todos][High light TODOS]]
-  - [[#rotate-text][Rotate text]]
-  - [[#rss-arxiv][RSS (arXiv)]]
-  - [[#visual-fill-mode][Visual fill mode]]
-- [[#bindings][Bindings]]
-- [[#my-functions][My functions]]
-- [[#org-mode][Org mode]]
-  - [[#config][Config]]
-  - [[#agenda][Agenda]]
-  - [[#exports][Exports]]
-  - [[#captures][Captures]]
-  - [[#code-blocks-templates][Code blocks templates]]
-  - [[#pretty-headlines][Pretty headlines]]
-  - [[#eval-julia-code-blocks-in-vterm][Eval julia code blocks in vterm]]
-  - [[#eval-elisp-blocks][Eval elisp blocks]]
-  - [[#import-other-formats][Import other formats]]
-- [[#latex-mode][LaTeX mode]]
-  - [[#auctex][AUCTeX]]
-  - [[#reftex][RefTeX]]
-  - [[#cdlatex][CDLaTeX]]
-  - [[#bratex][Bratex]]
-  - [[#bindings-1][Bindings]]
-- [[#programming][Programming]]
-  - [[#julia-mode][Julia mode]]
-  - [[#maple][Maple]]
-  - [[#pov-ray][POV-Ray]]
-  - [[#singular][Singular]]
-  - [[#macaulay2-m2][Macaulay2 M2]]
-- [[#build-in-modes][Build-in modes]]
-  - [[#abbrevs][Abbrev's]]
-  - [[#auto-revert][Auto revert]]
-  - [[#ediff][Ediff]]
-  - [[#eldoc][Eldoc]]
-  - [[#elisp][Elisp]]
-  - [[#high-light-todo][High light TODO]]
-  - [[#ispell][Ispell]]
-  - [[#recentf][Recentf]]
-  - [[#show-parentheses][Show parentheses]]
-  - [[#tramp][Tramp]]
-- [[#external-modes][External modes]]
-  - [[#avy][Avy]]
-  - [[#ibuffer][Ibuffer]]
-  - [[#company][Company]]
-  - [[#evil-mode][Evil mode]]
-  - [[#key-frequency][Key-frequency]]
-  - [[#lsp-mode][LSP mode]]
-  - [[#magit][Magit]]
-  - [[#org-pandoc-import][Org pandoc import]]
-  - [[#nyan][Nyan]]
-  - [[#pdf-tools][Pdf tools]]
-  - [[#screenshot][Screenshot]]
-  - [[#turn-grep-writable-buffer][Turn grep "writable" buffer]]
-  - [[#visual-regexp][Visual regexp]]
-  - [[#zoom][Zoom]]
-- [[#unusal-packages][Unusal packages]]
-  - [[#maxima][Maxima]]
-  - [[#yanki][Yanki]]
-  - [[#table-org-duplicates-into-columns][Table org duplicates into columns]]
-  - [[#my-dictionary][My-dictionary]]
-  - [[#teaching][Teaching]]
-
-* Files' header
-** Lexical binding
-#+begin_src elisp
 ;;; -*- lexical-binding: t; -*-
-#+end_src
-** Packages.el
-*** Header
-#+begin_src elisp :tangle packages.el
-;; -*- no-byte-compile: t; -*-
-;;; $DOOMDIR/packages.el
 
-;; To install a package with Doom you must declare them here and run 'doom sync'
-;; on the command line, then restart Emacs for the changes to take effect -- or
-;; use 'M-x doom/reload'.
-
-
-;; To install SOME-PACKAGE from MELPA, ELPA or emacsmirror:
-;(package! some-package)
-
-;; To install a package directly from a remote git repo, you must specify a
-;; `:recipe'. You'll find documentation on what `:recipe' accepts here:
-;; https://github.com/radian-software/straight.el#the-recipe-format
-;(package! another-package
-;  :recipe (:host github :repo "username/repo"))
-
-;; If the package you are trying to install does not contain a PACKAGENAME.el
-;; file, or is located in a subdirectory of the repo, you'll need to specify
-;; `:files' in the `:recipe':
-;(package! this-package
-;  :recipe (:host github :repo "username/repo"
-;           :files ("some-file.el" "src/lisp/*.el")))
-
-;; If you'd like to disable a package included with Doom, you can do so here
-;; with the `:disable' property:
-;(package! builtin-package :disable t)
-
-;; You can override the recipe of a built in package without having to specify
-;; all the properties for `:recipe'. These will inherit the rest of its recipe
-;; from Doom or MELPA/ELPA/Emacsmirror:
-;(package! builtin-package :recipe (:nonrecursive t))
-;(package! builtin-package-2 :recipe (:repo "myfork/package"))
-
-;; Specify a `:branch' to install a package from a particular branch or tag.
-;; This is required for some packages whose default branch isn't 'master' (which
-;; our package manager can't deal with; see radian-software/straight.el#279)
-;(package! builtin-package :recipe (:branch "develop"))
-
-;; Use `:pin' to specify a particular commit to install.
-;(package! builtin-package :pin "1a2b3c4d5e")
-
-
-;; Doom's packages are pinned to a specific commit and updated from release to
-;; release. The `unpin!' macro allows you to unpin single packages...
-;(unpin! pinned-package)
-;; ...or multiple packages
-;(unpin! pinned-package another-pinned-package)
-;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
-;(unpin! t)
-#+end_src
-*** Disable packages
-#+begin_src elisp :tangle packages.el
-;; (disable-packages! forge cua preview flyspell-lazy)
-(disable-packages! forge cua preview elfeed-goodies)
-#+end_src
-
-* Change a few defaults
-** Set some vars
-
-#+BEGIN_SRC elisp
 (setq
  ;; Personal data
  user-full-name "Laura Brustenga i Moncusí"
@@ -238,10 +61,7 @@ I’m rarely happier than when spending an entire day programming my computer
  ;; For visual-fill-mode see https://github.com/hlissner/doom-emacs/pull/1906/files
  +word-wrap-extra-indent 'single
  )
-#+END_SRC
 
-** Dashboard menu
-#+begin_src elisp
 (setq +doom-dashboard-menu-sections
       '(
         ;; ("Load workspace"
@@ -294,9 +114,7 @@ I’m rarely happier than when spending an entire day programming my computer
         ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
         ;;  :action =irc)))
         ))
-#+end_src
-** Lookup online
-#+begin_src elisp
+
 (setq +lookup-provider-url-alist
       '(;; ("Doom Emacs issues" "https://github.com/hlissner/doom-emacs/issues?q=is%%3Aissue+%s")
         ("Google"            +lookup--online-backend-google "https://google.com/search?q=%s")
@@ -313,50 +131,24 @@ I’m rarely happier than when spending an entire day programming my computer
         ("Google images"     "https://www.google.com/images?q=%s")
         ("Google maps"       "https://maps.google.com/maps?q=%s")
         ))
-#+end_src
 
-** Delete selection on type.
-#+BEGIN_SRC elisp
 (add-hook! 'emacs-startup-hook (delete-selection-mode 1))
 ;; (setq delete-selection-save-to-register 'kill-ring)
-#+END_SRC
-** Faces
-#+begin_src elisp :tangle no
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(highlight ((t (:background "#51afef" :foreground "black" :weight bold)))))
-#+end_src
-** Enabling
 
-#+begin_src elisp
 (put 'erase-buffer 'disabled nil)
-#+end_src
 
-* Mode Line
-** Do not show
-#+begin_src elisp
 (setq column-number-mode nil
       size-indication-mode nil
       ;; doom-modeline-buffer-encoding nil
       line-number-mode nil)
-#+end_src
 
-** Show size: Total number of lines
-*** New face (small and grey)
-#+begin_src elisp
 (make-face 'mode-line-top-line-number)
 
 (set-face-attribute
  'mode-line-top-line-number nil
  :inherit 'mode-line
  :foreground "gray60" :height 0.7)
-#+end_src
 
-*** Mode line string
-#+begin_src elisp
 (defsubst doom-modeline-spc nil
   "Text style with whitespace."
   (propertize " " 'face (if (doom-modeline--active)
@@ -380,10 +172,7 @@ I’m rarely happier than when spending an entire day programming my computer
                       ;; 'mouse-face 'mode-line-highlight
                       'local-map mode-line-column-line-number-mode-map)
           (doom-modeline-spc)))
-#+end_src
 
-*** Minor mode
-#+begin_src elisp
 (defgroup brust-line-number-mode nil "Show current and total number line.")
 
 (defcustom brust-line-number-mode-show-total t
@@ -411,15 +200,9 @@ and `line-number-display-limit-width'."
 
 ;; (add-hook! 'emacs-startup-hook
 ;;   (setq global-mode-string '("" (:eval (brust-line-number-mode--string)) display-time-string)))
-#+end_src
 
-*** Activate
-#+begin_src elisp
 (add-hook! 'emacs-startup-hook (brust-line-number-mode +1))
-#+end_src
 
-** Display time
-#+begin_src elisp
 (defun brust-kill-date nil
   (interactive)
   (kill-new (format-time-string "%e/%m/%Y" (current-time))))
@@ -445,30 +228,7 @@ Keymap to show or kill current date.")
 
 ;; Time format
 (add-hook! 'emacs-startup-hook (display-time-mode +1))
-#+end_src
 
-* Doom modules
-** Biblio
-
-- [ ] Learn to use local bibliography
-
-Usage:
-
-- In =LaTeX-mode=,
-  - Insert citation from my.bib call =SPC SPC b= (=citar-insert-citation=).
-    If no entry matches your search, you can try on internet with =C-:= (=embark-act=) + =B= (=embark-become=)
-    and choose fallback option: ArXiv, CrossRef, Bibretrive (MathSciNet, needs access), HAL,
-- Open pdf assoc call =C-:= (=embark-act=) in cite (e.g., "\cite{keyw|ord}") + =f= (=citar-open-library-file=).
-- Link and download (from Sci-hub) pdf to an entry,
-  - In .bib file call =brust-bibtex-link-pdf= inside the entry.
-  - In .tex file call =SPC SPC b= (=citar-insert-citation=) + =C-:= (=embark-act=) + =s= (=brust-citar-scihub=).
-- Download a pdf: call =biblio-lookup= (or any =biblio-crossref-lookup=) choose engine, find document in biblio buffer + =x= (=biblio--selection-extended-action=) pick =Sci-Hub=.
-
-*** Citar
-
-Search, insert, call... =.bib= keys, entries, pdfs...
-
-#+begin_src elisp
 (after! citar
   (setq
    ;; Use icons
@@ -506,13 +266,7 @@ Search, insert, call... =.bib= keys, entries, pdfs...
 (after! (embark citar)
   ;; tell embark about the keymap
   (add-to-list 'embark-become-keymaps #'citar-embark-become-map))
-#+end_src
 
-*** BibTeX
-
-Editing =.bib= files.
-
-#+begin_src elisp
 (after! (latex bibtex)
   (add-to-list 'auto-mode-alist '("\\.bib\\'"  . bibtex-mode))
   ;; Spell checking (requires the ispell software)
@@ -532,9 +286,7 @@ Editing =.bib= files.
                   last-comma
                   sort-fields)
                 (delq! 'required-fields bibtex-entry-format))))
-#+end_src
 
-#+begin_src elisp
 (defun brust-bibtex-link-pdf (&optional title doi)
   "Link pdf to a bib entrie. Download from Sci-Hub if pdf not found."
   (interactive (list
@@ -550,38 +302,14 @@ Editing =.bib= files.
     (if (file-exists-p fname)
         (find-file fname)
       (scihub doi fname))))
-#+end_src
 
-*** Getting bib from the web
-**** Bibretrive
-
-Getting bib entries from MathSciNet (or arxiv).
-
-#+begin_src elisp :tangle packages.el
-(package! bibretrieve :recipe (:host github :repo "pzorin/bibretrieve"))
-#+end_src
-
-#+BEGIN_SRC elisp
 ;; See https://github.com/pzorin/bibretrieve
 (use-package! bibretrieve
   :commands bibretrieve
   :config
   (setq bibretrieve-prompt-for-bibtex-file nil ;; use defaul bib file
         bibretrieve-backends '(("msn" . 10) ("arxiv" . 5))))
-#+END_SRC
 
-**** Biblio
-
-Getting bibtex entries from crossref and much more.
-
-Problem: MathSciNet uses author title... not a "everywhere" query.
-The package bibretrive is a mess, but it works for MathSciNet.
-
-#+begin_src elisp :tangle packages.el
-(package! biblio :recipe (:host github :repo "cpitclaudel/biblio.el"))
-#+end_src
-
-#+begin_src elisp
 (use-package! biblio
   :config
   (setq biblio-crossref-user-email-address user-mail-address)
@@ -599,9 +327,7 @@ The package bibretrive is a mess, but it works for MathSciNet.
           (find-file fname)
         (scihub doi fname))
     (message "No DOI or Title found for %s" (car entry))))
-#+end_src
 
-#+begin_src elisp
 (defun biblio-zbmath-backend (command &rest args)
   "A biblio.el backend for searching the zbmath.org database.
 
@@ -639,15 +365,7 @@ METADATA is a alist of metadata for the paper."
       (buffer-string))))
 
 (add-hook 'biblio-init-hook #'biblio-zbmath-backend)
-#+end_src
 
-**** Scihub
-
-#+begin_src elisp :tangle packages.el
-(package! scihub :recipe (:host github :repo "emacs-pe/scihub.el"))
-#+end_src
-
-#+begin_src elisp
 (use-package! scihub
   :commands scihub
   :config
@@ -672,33 +390,7 @@ With prefix, rebuild the cache before offering candidates."
         (citar-open-entry key-entry)
         (brust-bibtex-link-pdf title doi))
     (message "No DOI or Title found for %s" (car key-entry))))
-#+end_src
 
-***** COMMENT Download pdf from Sci-hub.
-See https://www.anghyflawn.net/blog/2014/emacs-give-a-doi-get-a-bibtex-entry/
-And see https://www.crossref.org/blog/dois-and-matching-regular-expressions/
-#+begin_src elisp :tangle no
-(defun get-bibtex-from-doi (doi)
- "Get a BibTeX entry from the DOI"
- (interactive "MDOI: ")
- (let ((url-mime-accept-string "text/bibliography;style=bibtex"))
-   (with-current-buffer
-     (url-retrieve-synchronously
-       (format "http://dx.doi.org/%s"
-       	(replace-regexp-in-string "http://dx.doi.org/" "" doi)))
-     (switch-to-buffer (current-buffer))
-     (goto-char (point-max))
-     (setq bibtex-entry
-     	  (buffer-substring
-          	(string-match "@" (buffer-string))
-              (point)))
-     (kill-buffer (current-buffer))))
- (insert (decode-coding-string bibtex-entry 'utf-8))
- (bibtex-fill-entry))
-#+end_src
-
-**** Citar-become map
-#+begin_src elisp
 ;; After calling =citar-insert-cite=, type =C-:= (=embark-act=), =B= (=embark-become=).
 (map!
  :after citar
@@ -710,61 +402,7 @@ And see https://www.crossref.org/blog/dois-and-matching-regular-expressions/
  :desc "CrossRef"   "c" #'biblio-crossref-lookup
  :desc "HAL"        "h" #'biblio-hal-lookup
  :desc "Insert doi" "i" #'biblio-doi-insert-bibtex)
-#+end_src
 
-**** COMMENT a la ivy-bibtex
-
-#+begin_src elisp :tangle no
-;; Use the same shortcut to search bib items on internet for all the engines.
-(after! bibtex-completion
-  (setq bibtex-completion-fallback-options
-        (append
-         '(("MathSciNet                                (bibretrive.el)"
-            . (lambda (search-expression) (bibretrieve)))
-           ("Download                                  (scihub.el)"
-            . (lambda (search-expression) (call-interactively 'scihub))))
-         bibtex-completion-fallback-options)
-        ;; CrossRef gives priority to queries that include an email address.
-        ;; bibtex-completion-bibliography "~/Dropbox/bibliography/my.bib"
-        bibtex-completion-additional-search-fields '(keywords tags)
-        bibtex-completion-pdf-extension '(".pdf" ".djvu")
-        ;; ivy-bibtex-default-action 'ivy-bibtex-insert-citation
-        ;; bibtex-completion-pdf-field "file" ;; pdf assoc a bib entry by field "file =
-        ;; {/path/to/article.pdf;:/path2...}"
-        ;; bibtex-completion-display-formats
-        ;; '((t . "${author:25} ${year:4} ${title:*} ${=has-pdf=:1} ${keywords:10} ${=type=:3}"))
-        )
-  ;; Show entries in the same order as in bibtex file
-  (advice-add 'bibtex-completion-candidates
-              :filter-return 'reverse)
-  )
-;; Using bibtex-completion fallbacks in citar via embark:
-(after! citar
-  (defun citar-fallback (search-expression)
-    "Select a fallback option for SEARCH-EXPRESSION.
-  This is meant to be used as an embark-action in `citar-*` commands."
-    (let* ((candidate (consult--read bibtex-completion-fallback-options
-                                     :prompt "Fallback options: "
-                                     ;; :caller 'ivy-bibtex-fallback
-                                     ))
-           (fallback (cdr (assoc candidate bibtex-completion-fallback-options))))
-      (bibtex-completion-fallback-action fallback search-expression)))
-
-  (define-key citar-map (kbd "s") #'("Fallback options" . citar-fallback))
-  )
-#+end_src
-
-*** COMMENT ox-bibtex
-Maintaining notes.org
-#+begin_src elisp :tangle no
-(after! org
-  (require 'ox-bibtex))
-#+end_src
-
-** Completion environment
-[[file:~/.emacs.d/modules/completion/vertico/README.org::*Table of Contents][Vertico module's README]]
-*** Bindings
-#+begin_src elisp
 ;; https://githubmemory.com/repo/minad/vertico/issues/156
 ;; (defun my/vertico-insert-or-exit ()
 ;;   "Insert the candidate if it's a directory, otherwise select it and exit."
@@ -811,13 +449,7 @@ Maintaining notes.org
  ;; Security
  ;; "<return>" #'nil
  )
-#+end_src
 
-*** Find files recursively
-
-With prefix argument all files (hidden, .gitignoreds, ....) are shown as candidates.
-
-#+begin_src elisp
 (defun brust-vertico/find-file-in--add-hidden-files-option (orig-fun &rest args)
   (if current-prefix-arg
       (let ((+vertico-consult-fd-args "fdfind --color=never -i -H -I --regex "))
@@ -835,41 +467,7 @@ With prefix argument all files (hidden, .gitignoreds, ....) are shown as candida
 ;; (advice-remove 'doom-project-find-file #'brust-doom-project-find-file--add-hidden-files-option)
 ;; (advice-add 'doom-project-find-file :around #'brust-doom-project-find-file--add-hidden-files-option)
 (advice-add 'doom-project-find-file :before-until #'brust-doom-project-find-file--add-hidden-files-option)
-#+end_src
 
-*** Jumping to specific dirs
-#+begin_src elisp :tangle no
-;; This is equivalent to #'+default/find-file-under-here
-;; (defun brust-counsel-fzf-dir nil
-;;   "fzf find file selecting a directory"
-;;   (interactive)
-;;   (let ((μdir (brust-ivy-read-directory-name)))
-;;     (counsel-fzf nil μdir (concat "fzf in " μdir ": "))))
-
-(defvar brust-find-file-recursively-default-dirs-alist
-  '(("~/" . "Home")
-    ("~/Dropbox/" . "Dropbox")
-    ("~/.emacs.d/" . "emacs.d")
-    ("~/.doom.d/" . ".doom.d"))
-  "Cons list of `(dir . name)' to auto-create fzf searches in.")
-
-(cl-loop for dirname in brust-find-file-recursively-default-dirs-alist do
-         ;; (message "dir %s, name %s" (car dirname) (cdr dirname))
-         (let* ((dir (car dirname))
-                (name (cdr dirname))
-                (bind (downcase (substring name 0 1)))
-                (fun-name (intern (format "brust-find-file-recursively-%s" (downcase name)))))
-           ;; (message "dir %s, name %s" dir name)
-           (fset fun-name
-                 `(lambda nil (interactive)
-                    (doom-project-find-file ,dir)))
-           (map! (:leader (:prefix "f" (:prefix "z"
-                                        :desc name bind fun-name))))))
-#+end_src
-
-** File templates
-
-#+begin_src elisp
 ;; +file-templates-dir
 
 ;; It is run once when upgrading or syncing doom (when .emacs.d/module/ folder might be modified).
@@ -882,46 +480,7 @@ With prefix argument all files (hidden, .gitignoreds, ....) are shown as candida
 (set-file-template! "[.]sing" :trigger "__sing" :mode 'c++-mode)
 (set-file-template! "[.]tex"  :trigger "__tex"  :mode 'latex-mode)
 (set-file-template! "[.]jl"   :trigger "__jl"   :mode 'julia-mode)
-#+end_src
 
-#+begin_src bash :tangle no
-cp -r ~/.doom.d/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates
-#+end_src
-
-** High light TODOS
-*** Making Items
-You can make a TODO item by simply writing
-+ =TODO=
-  For things that need to be done, just not today.
-+ =HACK=
-  For tidbits that are unconventional and not intended uses of the
-  constituent parts, and may break in a future update.
-+ =FIXME=
-  For problems that will become bigger problems later if not fixed ASAP.
-+ =REVIEW=
-  for things that were done hastily and/or hasn't been thoroughly
-  tested. it may not even be necessary!
-+ =NOTE=
-  For especially important gotchas with a given implementation,
-  directed at another user other than the author.
-+ =DEPRECATED=
-  For things that just gotta go and will soon be gone.
-+ =BUG=
-  For a known bug that needs a workaround
-+ =XXX=
-  For warning about a problematic or misguiding code
-
-*** Keybindings
-| keybind   | description                      |
-|-----------+----------------------------------|
-| =]t=      | go to next TODO item             |
-| =[t=      | go to previous TODO item         |
-| =SPC p t= | show all TODO items in a project |
-| =SPC s p= | search project for a string      |
-| =SPC s b= | search buffer for string         |
-
-*** Config
-#+begin_src elisp
 (after! hl-todo
   (setq hl-todo-keyword-faces
         `(
@@ -932,41 +491,7 @@ You can make a TODO item by simply writing
           ))
   )
 ;; TODO DONE DOING CANCELED
-#+end_src
 
-** TODO Rotate text
-Rotate text under cursor under pre-establish patterns
-For example, var1, var2, ... varN
-See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Rotate Text]]
-** TODO RSS (arXiv)
-*** Intro
-
-Usage:
-
-- Call =elfeed= retrieve a list of latest arxiv papers under AG and CA
-- Filter list of entries with =s= (delete or add filters).
-- Type =SPC= or =RET= on an entry to see further details.
-  - =o= opens the link on browse via avy.
-
-TODO:
-
-- Learn use filters.
-- Download pdf from the entry view and create a note.
-
-Obs.:
-- There are two modes/buffers/windows: the 'search' buffer and the 'show' buffer.
-  The 'search' displays the list of entries, which can be filtered (=s=).
-  The 'show' contains all details of a selected entry (=SPC=, =RET=).
-*** Packages
-
-Score my arXiv feed
-
-#+begin_src elisp :tangle packages.el
-(package! elfeed-score :recipe (:host github :repo "sp1ff/elfeed-score"))
-#+end_src
-
-*** Config
-#+begin_src elisp
 (after! elfeed
   (setq elfeed-search-filter "@1-week-ago +unread"
         ;; elfeed-search-print-entry-function #'my-search-print-fn
@@ -990,10 +515,7 @@ Score my arXiv feed
         )
 
   (add-hook! 'elfeed-search-mode-hook 'elfeed-update))
-#+end_src
 
-*** Print lines in search buffer
-#+begin_src elisp
 (defcustom elfeed-goodies/feed-source-column-width 16
   "Width of the feed source column."
   :type 'integer)
@@ -1062,10 +584,7 @@ Score my arXiv feed
      (propertize authors-column 'face authors-face 'kbd-help authors) " "
      (propertize title 'face title-faces 'kbd-help title))
     ))
-#+end_src
 
-*** Delete panel showing entry
-#+begin_src elisp
 (defun elfeed-goodies/delete-pane ()
   "Delete the *elfeed-entry* split pane."
   (interactive)
@@ -1073,12 +592,7 @@ Score my arXiv feed
          (window (get-buffer-window buff)))
     (kill-buffer buff)
     (delete-window window)))
-#+end_src
-*** TODO elfeed-score
 
-TODO: work on the file =elfeed.stats=.
-
-#+begin_src elisp
 (use-package! elfeed-score
   :after elfeed
   :config
@@ -1092,11 +606,7 @@ TODO: work on the file =elfeed.stats=.
   (elfeed-score-enable)
   (map! :map elfeed-search-mode-map
         :desc "Score" :n "=" elfeed-score-map))
-#+end_src
 
-*** TODO Download pdf (using biblio-arxiv-lookup)
-
-#+begin_src elisp
 (defun brust-elfeed-arxiv-send-entry-to-biblio (entry)
   "Fetch an arXiv paper into the local library from the current elfeed entry."
   (interactive (list (elfeed-search-selected :ignore-region)))
@@ -1198,29 +708,12 @@ From the PDF specification 1.7:
      ;; otherwise, return nil
      (t
       nil))))
-#+end_src
 
-#+RESULTS:
-: arxiv-maybe-arxiv-id-from-current-kill
-
-** Visual fill mode
-
-#+begin_src elisp
 (add-hook! 'emacs-startup-hook
   (+global-word-wrap-mode +1)
   (add-to-list '+word-wrap-disabled-modes 'emacs-lisp-mode)
   (add-to-list '+word-wrap-visual-modes 'org-mode))
-#+end_src
 
-** COMMENT Workspaces (presp)
-#+begin_src elisp :tangle no
-(setq persp-save-dir (expand-file-name "~/.doom.d/local/workspaces/")
-      persp-auto-save-persps-to-their-file-before-kill t)
-;; persp-save-to-file-by-names
-#+end_src
-
-* Bindings
-#+begin_src elisp
 (map!
  ;; s- commands: commands executed several times AND in several distinct modes.
  "s-s"      #'save-buffer
@@ -1296,43 +789,7 @@ From the PDF specification 1.7:
    "2" #'zoom-in ;; reduce font
    ))
  )
-#+end_src
 
-* My functions :noexport_1:
-** COMMENT Add blank pages to a pdf
-
-#+BEGIN_SRC elisp :tangle no
-(defun brust-pdf-add-blank-pages (-file init-page)
-  (interactive
-   (list  (read-file-name "Pdf to modify: ")
-          (read-number "Page to start adding blank pages: ")))
-  (let (-num -page (i init-page) -commstr)
-    (with-temp-buffer
-      (insert (shell-command-to-string (format "pdftk %s dump_data" -file)))
-      (goto-char (point-min))
-      (re-search-forward "NumberOfPages: \\([0-9]+\\)$" nil t)
-      (setq -num (- (string-to-number (match-string 1)) i))
-      (setq -page
-            (if (re-search-forward "PageMediaDimensions: \\([0-9]+\\) \\([0-9]+\\)$" nil t)
-                (concat (match-string 1) "x" (match-string 2))
-              "a4")))
-    (setq -commstr
-          (concat (format "A1-%d " i)
-                  (cl-loop repeat -num
-                           concat (format "B1 A%d " (setq i (1+ i))))))
-    (let ((-blanche (concat (file-name-directory -file) "pageblanche.pdf"))
-          (-mod (concat (file-name-directory -file) "mod_" (file-name-base -file) ".pdf"))
-          (-out (concat (file-name-directory -file) "print_" (file-name-base -file) ".pdf")))
-      (shell-command (format "convert xc:none -page %s %s" -page -blanche))
-      (shell-command (format "pdftk A=%s B=%s cat %s output %s" -file -blanche -commstr -mod))
-      (shell-command (format "rm %s" -blanche)))))
-;; (shell-command (format "pdfnup %s --nup 2x1 --landscape --outfile %s" -mod -out))
-;; (shell-command (format "rm %s && rm %s" -mod -blanche)))))
-#+END_SRC
-
-** Advise once
-
-#+begin_src elisp
 (defun advice-once (symbol where function &optional props)
   (let* ((name (symbol-name function))
          (fname (intern (concat name "--advice-once"))))
@@ -1341,17 +798,10 @@ From the PDF specification 1.7:
                    (funcall ',function)
                    (advice-remove ',symbol #',fname)))
     (advice-add symbol where fname props)))
-#+end_src
 
-** By five
-
-#+BEGIN_SRC elisp
 (defun brust-by-five (-function args)
   (funcall-interactively -function (if (numberp args) (* 5 args) 5)))
-#+END_SRC
 
-** Change font size
-#+begin_src elisp
 (defun zoom-in nil
   (interactive)
   (set-face-attribute 'default nil :height (+ (face-attribute 'default :height) 10)))
@@ -1359,11 +809,7 @@ From the PDF specification 1.7:
 (defun zoom-out nil
   (interactive)
   (set-face-attribute 'default nil :height (- (face-attribute 'default :height) 10)))
-#+end_src
 
-** Close<->open parents
-*** Parenthesis syntax.
-#+BEGIN_SRC elisp
 (defconst all-paren-syntax-table
   (let ((table (make-syntax-table)))
     (modify-syntax-entry ?{  "(}" table)
@@ -1377,10 +823,7 @@ From the PDF specification 1.7:
     ;; (modify-syntax-entry ?\> ")<" table)
     table)
   "A syntax table giving all parenthesis parenthesis syntax.")
-#+END_SRC
 
-*** Generic function
-#+BEGIN_SRC elisp
 (defun close-quoted-open-paren (args dir)
   "dir=0 -> right, dir=1 -> left"
   (with-syntax-table all-paren-syntax-table
@@ -1399,10 +842,7 @@ From the PDF specification 1.7:
                (insert closing)
                (backward-char (* dir i)))))
   t)
-#+END_SRC
 
-*** By right
-#+BEGIN_SRC elisp
 (defun close-quoted-open-paren-right (&optional args)
   (interactive "P")
   (close-quoted-open-paren (if (numberp args) args 1) 0))
@@ -1411,9 +851,6 @@ From the PDF specification 1.7:
   (interactive)
   (while (ignore-errors (close-quoted-open-paren-right))))
 
-#+END_SRC
-*** By left
-#+BEGIN_SRC elisp
 (defun close-quoted-open-paren-left (&optional args)
   (interactive "P")
   (close-quoted-open-paren (if (numberp args) args 1) 1))
@@ -1421,9 +858,7 @@ From the PDF specification 1.7:
 (defun close-all-open-paren-left nil
   (interactive)
   (while (ignore-errors (close-quoted-open-paren-left))))
-#+END_SRC
-*** By right or left
-#+BEGIN_SRC elisp
+
 (defun my-texmathp nil
   (interactive)
   (when (texmathp)
@@ -1451,15 +886,7 @@ From the PDF specification 1.7:
   (interactive "P")
   (when (not (string= (thing-at-point 'char) " ")) (move-end-of-line 1))
   (close-quoted-open-paren-right-or-left args))
-#+END_SRC
 
-** Colors RGB (get numbers)
-
-Functions similar to =counsel-colors-emacs= and =counsel-colors-web=.
-Insert color name from the list of supported colors or, via embark actions, insert RGB or HEX values.
-
-*** Consult colors functions
-#+begin_src elisp
 (defvar consult-colors-history nil
   "History for `consult-colors-emacs' and `consult-colors-web'.")
 
@@ -1501,12 +928,7 @@ selected color (it needs embrack)."
                         :history '(:input consult-colors-history)
                         )))
   (insert color))
-#+end_src
 
-*** Embark integration
-**** Convert color's names
-
-#+begin_src elisp
 (defun rounding-numbers (list-of-num decimal-points)
   "Return the list of numbers rounded up to decimal-points."
   (let ((rounding (expt 10 decimal-points)))
@@ -1541,13 +963,7 @@ Return nil if NAME does not designate a valid color."
               ;; Sets 2 digits per component.
               (hex (apply #'color-rgb-to-hex (append rgb '(2)))))
     hex))
-#+end_src
 
-**** Embark config
-
-Config using Doom emacs. For doomed users not using Doom, evaluate code in =(after! embark ... )= using =define-key= instead of =map!=.
-
-#+begin_src elisp
 (after! embark
   (embark-define-keymap embark-consult-color-action-map
     "Keymap for embark actions in the `color' category of marginalia.")
@@ -1590,17 +1006,7 @@ Used to define their `insert' and `kill-new' versions for embark actions.")
                    :desc desc bind newname)))
 
   (add-to-list 'embark-keymap-alist '(color . embark-consult-color-action-map)))
-#+end_src
 
-*** Marginalized
-
-Compatibility with Marginalized comes for free, since it already defines the category =color=, for which uses =marginalia-annotate-color=.
-
-** Customize face at point
-
-    A handy function for customization (from Singular web page).
-
-#+BEGIN_SRC elisp
 (defun customize-face-at-point nil
   "Customize face which point is at."
   (interactive)
@@ -1609,9 +1015,6 @@ Compatibility with Marginalized comes for free, since it already defines the cat
         (customize-face face)
       (message "No face defined at point"))))
 
-#+END_SRC
-** Delete region advise
-#+begin_src elisp
 (defun brust-return-buffer-substring-advice (orig-fun &rest args)
   "Same as 'delete-region' but returns the deleted string"
   (let ((str (apply 'buffer-substring args)))
@@ -1619,14 +1022,7 @@ Compatibility with Marginalized comes for free, since it already defines the cat
     str))
 
 (advice-add 'delete-region :around #'brust-return-buffer-substring-advice)
-#+end_src
 
-** Double Capitals
-    Convert words in DOuble CApitals to Single Capitals.
-    [[https://emacs.stackexchange.com/questions/13970/fixing-double-capitals-as-i-type][From StackExange]]
-
-*** The function
-#+BEGIN_SRC elisp
 (defun brust-dcaps-to-scaps nil
   (save-excursion
     (let ((end (point)))
@@ -1647,9 +1043,7 @@ Compatibility with Marginalized comes for free, since it already defines the cat
   (when (and (= ?w (char-syntax (char-before)))
              (not (texmathp)))
     (brust-dcaps-to-scaps)))
-#+END_SRC
-*** New minor mode
-#+BEGIN_SRC elisp
+
 (defun brust-dcaps-to-scaps-notinmath-p nil
   (or (derived-mode-p 'latex-mode)
       (eq major-mode 'org-mode)))
@@ -1665,16 +1059,9 @@ Single Capitals as you type."
         (add-hook 'post-self-insert-hook #'dcaps-to-scaps nil 'local))
     (remove-hook 'post-self-insert-hook #'dcaps-to-scaps 'local)
     (remove-hook 'post-self-insert-hook #'dcaps-to-scaps-notinmath 'local)))
-#+END_SRC
 
-*** Activation
-This is needed in =config.el=.
-#+BEGIN_SRC elisp
 (add-hook 'text-mode-hook #'dubcaps-mode)
-#+END_SRC
-** Eval elips blocks in org mode
 
-#+begin_src elisp
 ;; The following code is inspirated by
 ;; http://endlessparentheses.com/init-org-Without-org-mode.html
 (defvar endless/init.org-message-depth 5
@@ -1775,44 +1162,11 @@ Subtrees under a COMMENTed header are not evaluated."
 ;; (when (< 24 emacs-major-version)
 ;;   (brust-endless/org-eval-eblocks "~/.doom.d/MyConfig.org" "init.el" t))
 
-#+end_src
-** Evil inset --> normal --> insert
-Function to advice =TeX-insert-dollar=. While typing, save undo ring and more before inserting a math formula.
-
-#+begin_src elisp
 (defun brust-evil-insert--to-normal-to-insert-state (&optional ARG)
   (evil-normal-state)
   (evil-insert-state)
   (forward-char 1))
-#+end_src
 
-** COMMENT Read directory
-
-This command does the trick now: =(consult-dir--pick "In directory: ")=
-
-#+begin_src elisp :tangle no
-(defun brust-ivy-read-directory-name (&optional initial-input action initial-directory)
-  "Select a directory using `ivy-read'."
-  (interactive)
-  (let ((default-directory (or initial-directory
-                               (if (eq major-mode 'dired-mode)
-                                   (dired-current-directory)
-                                 default-directory))))
-    (ivy-read "Directory " #'read-file-name-internal
-              :matcher #'counsel--find-file-matcher
-              :predicate #'file-directory-p
-              :initial-input initial-input
-              :action action
-              :preselect (counsel--preselect-file)
-              :require-match 'confirm-after-completion
-              :history 'file-name-history
-              :keymap counsel-find-file-map
-              :caller 'brust-ivy-read-directory-name)))
-#+end_src
-
-** Line by line
-
-#+begin_src elisp
 (defun brust-apply-function-line-by-line (FUNCTION &rest ARGS)
   "Executes function FUNCTION, from point-min, and moves forward one line. Repeat until end of buffer."
   (save-excursion
@@ -1820,10 +1174,7 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
     (while (not (eobp))
       (apply FUNCTION ARGS)
       (forward-line +1))))
-#+end_src
 
-** Macro query
-#+BEGIN_SRC elisp
 (defun kmacro-query-my (arg)
   "Prompt for input using minibuffer during kbd macro execution.
    With prefix argument, allows you to select what prompt string to use.
@@ -1833,12 +1184,7 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
          (input (minibuffer-with-setup-hook (lambda nil (kbd-macro-query t))
                   (read-from-minibuffer prompt))))
     (unless (string= "" input) (insert input))))
-#+END_SRC
 
-** Mouse wheel
-    Mouse wheel: try it with S and C
-*** Functions
-#+BEGIN_SRC elisp
 (defun up-slightly (args) (interactive "p") (brust-by-five #'scroll-up args))
 (defun down-slightly (args) (interactive "p") (brust-by-five #'scroll-down args))
 
@@ -1847,10 +1193,7 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
 
 (defun up-a-lot nil (interactive) (scroll-up))
 (defun down-a-lot nil (interactive) (scroll-down))
-#+END_SRC
 
-*** Keybindings
-#+BEGIN_SRC elisp
 (global-set-key [mouse-4] 'down-slightly)
 (global-set-key [mouse-5] 'up-slightly)
 
@@ -1859,12 +1202,7 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
 
 (global-set-key [C-mouse-4] 'down-a-lot)
 (global-set-key [C-mouse-5] 'up-a-lot)
-#+END_SRC
 
-** Narrow or widen dwin
- There's a nice helper from [[http://endlessparentheses.com/emacs-narrow-or-widen-dwim.html][Endless Parentheses]] that defines a do-what-I-mean version
- of the narrow-or-widen so I don't have to keep remembering which is which.
-#+BEGIN_SRC elisp
 (defun endless/narrow-or-widen-dwim (args)
   "Widen if buffer is narrowed, narrow-dwim otherwise.
   Dwim means: region, org-src-block, org-subtree, or
@@ -1898,17 +1236,11 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
          (narrow-to-defun))
         (t
          (brust-narrow-to-paragraph))))
-#+END_SRC
 
-** Open my.org
-#+begin_src elisp
 (defun brust-open-my-org nil
   (interactive)
   (find-file (expand-file-name (concat org-directory  "/my.org"))))
-#+end_src
 
-** Prompt in Singular... Non-editable
-#+begin_src elisp
 (defvar brust-math-software-buffers-prompts
   '(("*julia*"    . "^julia>")
     ("*singular*" . "^>"))
@@ -1931,18 +1263,13 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
 (defun brust-math-software-hookfun-to-intangify-prompt nil
   (cursor-intangible-mode 1)
   (add-hook 'after-change-functions #'brust-math-software-intangify-cursor-on-prompt nil t))
-#+end_src
 
-** Spelling
-#+begin_src elisp
 (defun brust-correct-prev-spelling nil
   (interactive)
   (save-excursion
     (+spell/previous-error)
     (+spell/correct)))
-#+end_src
-** Title to file name
-#+begin_src elisp
+
 (defun brust-title-to-fname (title)
   (with-temp-buffer
     (insert (downcase title))
@@ -1956,10 +1283,7 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
       (replace-match "-"))
     ;; Get the file name
     (buffer-string)))
-#+end_src
 
-** Total number of lines
-#+begin_src elisp
 (defsubst brust--number-of-lines-current-buffer nil
   (let ((n (string-to-number
             (save-excursion
@@ -1971,11 +1295,7 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
       ((> n 1000) (format "%7.1fk" (/ n 1000.0)))
       ;;((> n 100) (format "%7.1fh" (/ n 100.0)))
       (t (format "%8d" n))))))
-#+end_src
 
-** Vterm
-*** Eval line or region
-#+begin_src elisp
 (defun brust-vterm--eval-string (string &optional paste-p)
   (with-current-buffer (process-buffer vterm--process)
     (vterm-send-string string paste-p)))
@@ -1988,10 +1308,7 @@ This command does the trick now: =(consult-dir--pick "In directory: ")=
 
 (defun brust-vterm--eval-line nil
   (brust-vterm--eval-buffer-substring (line-beginning-position) (line-end-position)))
-#+end_src
 
-*** Launch or link a vterm buffer
-#+begin_src elisp
 (defun brust-vterm--link (proc-buffer origin-buffer)
   "Copies the value of the local variable `vterm--process' from buffer `proc-buffer' to buffer `origin-buffer'.
 Then, in `origin-buffer' we can use such a process to execute code in terminal via ."
@@ -2007,50 +1324,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
     (let ((proc-buffer (concat origin-buffer sufix)))
       (vterm-other-window proc-buffer)
       (brust-vterm--link proc-buffer origin-buffer))))
-#+end_src
 
-** COMMENT Word count
-#+BEGIN_SRC elisp :tangle no
-(defun brust-wc-get-word-count-list-of-current-project nil
-  (let ((project-master (expand-file-name (TeX-master-file t nil t))))
-    (with-temp-buffer
-      (call-process-shell-command
-       (concat "texcount -opt="
-               (expand-file-name "~/Dropbox/config/TeXcount-emacs.txt")
-               " -dir="
-               (file-name-directory project-master)
-               " "
-               project-master)
-       nil t)
-      (re-search-backward
-       "new\\([0-9]+\\)w\\([0-9]+\\)im\\([0-9]+\\)dm\\([0-9]+\\)cd\\([0-9]+\\)h\\([0-9]+\\)file" nil t)
-      (cl-loop for xx from 1 to 6
-               if (= xx 3) collect (number-to-string (- (string-to-number (match-string-no-properties 3))
-                                                        (string-to-number (match-string-no-properties 4))))
-               else
-               collect (match-string-no-properties xx)))))
-
-(defun brust-wc-save-words nil
-  (interactive)
-  (let ((wc-sat (brust-wc-get-word-count-list-of-current-project)))
-    (find-file (concat
-                (file-name-directory (expand-file-name (TeX-master-file t nil t)))
-                "wc-statistics.txt"))
-    (goto-char (point-max))
-    (insert "\n" (format-time-string "%x, %X, ")
-            (cl-loop for xx in wc-sat
-                     concat (concat xx ", ")))
-    (save-buffer)
-    (kill-buffer)))
-
-(defun brust-wc-save-words-my-thesis nil
-  (interactive)
-  (find-file "~/Dropbox/Math/Doctorat_Laura/Thesis/master.tex")
-  (brust-wc-save-words))
-#+END_SRC
-
-** White space edit
-#+begin_src elisp
 (defvar brust-inline-whitespace-regexp  " \t\v\f")
 (defvar brust-whitespace-regexp  " \t\v\f\n")
 
@@ -2079,13 +1353,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
   (interactive)
   (let ((p0 (point)))
     (delete-region (or start p0) (skip-white-space-backward p0 inline-p))))
-#+end_src
 
-** White space cycle
-
-    This is a remake and merge of =cycle-spacing=, =delete-blank-lines= and =xah-shrink-whitespaces=.
-
-#+BEGIN_SRC elisp
 (defvar brust-cycle-whitespace--context nil
   "Store context used in consecutive calls to `brust-cycle-whitespace' command.
        The first time `brust-cycle-whitespace' runs, it saves in this variable:
@@ -2133,11 +1401,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
              ((< nline 3) (concat "\n" indent))
              (t (concat "\n\n" indent))))))))
 ;; (more-expansions #'(brust-cycle-whitespace)))
-#+END_SRC
 
-* TODO Org mode
-** Config
-#+BEGIN_SRC elisp
 (after! org
   (setq
    ;; org-edit-src-auto-save-idle-delay 20
@@ -2158,10 +1422,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
          :desc "vterm-julia launch new" "v" #'brust-julia--link-or-launch-and-link-vterm
          :desc "Babel" "B" org-babel-map
          )))
-#+END_SRC
 
-** TODO Agenda
-#+begin_src elisp
 (after! org
   (setq org-agenda-files (quote ("~/Dropbox/Org/" "~/Dropbox/bibliography/notes.org"))
         org-agenda-todo-list-sublevels nil
@@ -2173,26 +1434,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
         '(("h" "My agenda view"
            ((agenda "")
             (todo))))))
-#+end_src
-** Exports
-*** LaTeX
 
-# #+TITLE: 27 Cubics containing the reciprocal variety
-# #+AUTHOR: Laura Brustenga Moncusí
-# #+PROPERTY: header-args :eval never-export :cache no
-# #+PROPERTY: header-args+ :session *ob-ess-julia* :exports both
-# #+LATEX_HEADER: \usemintedstyle{tango}
-# #+LATEX_HEADER: \usepackage{polyglossia}
-# #+LATEX_HEADER: \setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
-# #+LATEX_HEADER: \usepackage{unicode-math}
-# #+LATEX_HEADER: \renewcommand{\P}{\mathbb{P}} % Projective space
-# #+LATEX_HEADER: \renewcommand{\O}{\mathcal{O}}   % Calligraphic E
-# #+LATEX_HEADER: \renewcommand{\S}{\mathbb{S}}     % linear space of symmetric matrices
-# #+LATEX_HEADER: \newcommand{\Cat}{\mathrm{Cat}}   % Catalecticant matrix
-# #+LATEX_HEADER: \newcommand{\PGL}{\mathrm{PGL}}     % Projective general linear group
-# #+LATEX_HEADER: \newcommand{\Adj}{\mathrm{Adj}} % Adjugate matrix
-# #+OPTIONS: toc:nil
-#+begin_src elisp
 (after! org
   (setq org-latex-listings 'minted
         org-latex-packages-alist '(("" "minted"))
@@ -2212,10 +1454,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
           ("framesep" "2mm")
           ;; ("fontsize" "\small")
           )))
-#+end_src
 
-** Captures
-#+BEGIN_SRC elisp
 (after! org
   (setq org-capture-templates
         (append
@@ -2248,11 +1487,7 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
             ;; symlink pointing to the actual location of all-posts.org!
             (file+olp "my.org" "Blog Ideas")
             (function org-hugo-new-subtree-post-capture-template))))))
-#+END_SRC
 
-*** Functions
-**** Hugo
-#+begin_src elisp
 ;; Populates only the EXPORT_FILE_NAME property in the inserted headline.
 (defun org-hugo-new-subtree-post-capture-template ()
   "Returns `org-capture' template string for new Hugo post.
@@ -2283,10 +1518,7 @@ See `org-capture-templates' for more information."
 ;;                  ":END:"
 ;;                  "%?\n")                ;Place the cursor here finally
 ;;                "\n")))
-#+end_src
 
-**** Ledger
-#+begin_src elisp
 (defvar my/org-ledger-card-template
   "%(org-read-date) %^{Payee}
        Expenses:%^{Account}  €%^{Amount}
@@ -2298,20 +1530,13 @@ See `org-capture-templates' for more information."
        Expenses:%^{Account}  €%^{Amount}
        Assets:Cash:Wallet"
   "Template for cash transaction with ledger.")
-#+end_src
 
-** Code blocks templates
-*** Delete unwanted
-#+begin_src elisp
 (after! org
   (setq org-structure-template-alist (delete '("e" . "example") org-structure-template-alist)
         ;; org-structure-template-alist (delete '("j" . "src ess-julia :results output :session *julia* :exports both") org-structure-template-alist)
         ;; org-structure-template-alist (delete '("jj" . "src ess-julia :results output") org-structure-template-alist)
         org-structure-template-alist (delete '("E" . "export") org-structure-template-alist)))
-#+end_src
 
-*** Add mines
-#+begin_src elisp
 (after! org
   (add-to-list 'org-structure-template-alist
                '("ee" . "src elisp"))
@@ -2337,10 +1562,7 @@ See `org-capture-templates' for more information."
   ;; Shortcut for well-formatted org table output within a session:
   (add-to-list 'org-structure-template-alist
                '("jtab" . "src julia :results value table :colnames yes")))
-#+end_src
 
-*** < inserts template
-#+begin_src elisp
 (defun brust-org< nil
   "Self insert command or expand org-insert-structure-template"
   (interactive)
@@ -2350,10 +1572,7 @@ See `org-capture-templates' for more information."
         (insert "\n")
         (backward-char 1))
     (self-insert-command 1)))
-#+end_src
 
-** Pretty headlines
-#+begin_src elisp
 (after! org
   (defun brust-org-mode-pretty-headers (keysymbol)
     (let ((key (car keysymbol))
@@ -2374,137 +1593,7 @@ See `org-capture-templates' for more information."
              ("6" . "☵")
              ("7" . "☶")
              ("8," . "☷")))))
-#+end_src
 
-** COMMENT ob languages
-*** COMMENT ob-ess-julia
-#+begin_src elisp :tangle no
-;; Load ob-ess-julia and dependencies
-(use-package! ob-ess-julia
-  :after org
-  :config
-  ;; Add ess-julia into supported languages:
-  (add-to-list 'org-babel-load-languages '(ess-julia . t))
-  (org-babel-do-load-languages 'org-babel-load-languages org-babel-load-languages)
-  ;; (org-babel-do-load-languages 'org-babel-load-languages
-  ;;                              (append org-babel-load-languages
-  ;;                                      '((ess-julia . t))))
-  ;; Link this language to ess-julia-mode (although it should be done by default):
-  ;; (setq org-src-lang-modes
-  ;;       (append org-src-lang-modes '(("ess-julia" . ess-julia))))
-  (setq org-src-lang-modes
-        (append org-src-lang-modes '(("ess-julia" . "julia"))))
-  )
-#+end_src
-*** COMMENT ob-julia-vterm
-
-#+begin_src elisp :tangle no
-;; Load ob-ess-julia and dependencies
-(use-package! ob-julia-vterm
-  :after (org julia-vterm)
-  :config
-  ;; Add ess-julia into supported languages:
-  (add-to-list 'org-babel-load-languages '(julia-vterm . t))
-  (org-babel-do-load-languages 'org-babel-load-languages org-babel-load-languages)
-  (add-to-list 'org-babel-tangle-lang-exts '("julia-vterm" . "jl"))
-  ;; (org-babel-do-load-languages 'org-babel-load-languages
-  ;;                              (append org-babel-load-languages
-  ;;                                      '((ess-julia . t))))
-  ;; Link this language to ess-julia-mode (although it should be done by default):
-  ;; (setq org-src-lang-modes
-  ;;       (append org-src-lang-modes '(("ess-julia" . ess-julia))))
-  )
-#+end_src
-*** COMMENT ob-julia
-#+begin_src elisp :tangle no
-(use-package! ob-julia
-  :commands org-babel-execute:julia
-  :config
-  (setq org-babel-julia-command-arguments
-        `("--sysimage"
-          ,(when-let ((img "~/.local/lib/julia.so")
-                      (exists? (file-exists-p img)))
-             (expand-file-name img))
-          "--threads"
-          ,(number-to-string (- (doom-system-cpus) 2))
-          "--banner=no")))
-#+end_src
-
-** COMMENT Pdf links org-pdftools
-     Org links for pdfs
-#+begin_src elisp :tangle no
-(use-package org-pdfview
-  :config ;;(setq org-pdftools-root-dir "~/Dropbox/bibliography/pdf")
-  )
-#+end_src
-
-** COMMENT Ledgers
-Mainly from [[https://www.reddit.com/r/emacs/comments/8x4xtt/tip_how_i_use_ledger_to_track_my_money/][Reddit discution]]
-*** Config
-#+BEGIN_SRC elisp :tangle no
-(use-package! ledger-mode
-  :mode ("\\.dat\\'"
-         "\\.ledger\\'")
-  :custom
-  (ledger-clear-whole-transactions t)
-  (add-hook 'ledger-mode-hook #'ledger-flymake-enable)
-  (add-hook 'ledger-mode-hook #'company-mode)
-  (ledger-post-auto-adjust-amounts t)
-  :bind
-  (:map ledger-mode-map
-   ("C-c C-a" . brust-ledger-add-transaction)))
-
-(with-eval-after-load 'ledger-mode
-  (define-key ledger-mode-map [remap save-buffer] #'std::ledger::save))
-#+END_SRC
-
-*** Functions
-#+BEGIN_SRC elisp :tangle no
-(defun brust-ledger-add-transaction (&optional -date)
-  "Add new transaction using `org-read-date'"
-  (interactive)
-  (ledger-add-transaction
-   (or -date (org-read-date))
-   nil)
-  (insert "?\n    Assets:DebitCard")
-  (cdlatex-position-cursor))
-
-(defun std::ledger::save nil
-  "First `ledger-mode-clean-buffer', then `save-buffer'."
-  (interactive)
-  (save-excursion
-    (when (buffer-modified-p)
-      (with-demoted-errors (ledger-mode-clean-buffer))
-      (save-buffer))))
-
-(defun brust-ledger-copy-transaction-from-extract nil
-  "`-string' is a line of my bank extract in cvs format"
-  (interactive)
-  (let ((-entry
-         (split-string
-          (buffer-substring-no-properties (point-at-bol) (point-at-eol))
-          "\,")))
-    (switch-to-buffer "ledger-2021.dat")
-    (brust-ledger-add-transaction
-     (brust-from-eur-ame-date (nth 0 -entry)))
-    (insert (capitalize (nth 1 -entry))
-            "\n    ?  €"
-            (nth 3 -entry))
-    (cdlatex-position-cursor)))
-
-
-(defun brust-from-eur-ame-date (-date)
-  (let ((-new-date (split-string -date "/")))
-    (concat (nth 2 -new-date)
-            "-"
-            (nth 1 -new-date)
-            "-"
-            (nth 0 -new-date))))
-#+END_SRC
-
-** Eval julia code blocks in vterm
-*** Send region or line
-#+begin_src elisp
 (defun brust-org-mode-vterm-julia-send-region-or-line nil
   (interactive)
   (org-babel-when-in-src-block
@@ -2512,10 +1601,7 @@ Mainly from [[https://www.reddit.com/r/emacs/comments/8x4xtt/tip_how_i_use_ledge
    (if (use-region-p)
        (brust-vterm--eval-region)
      (brust-vterm--eval-line))))
-#+end_src
 
-*** Send region or block or header
-#+begin_src elisp
 (defun brust-org-mode-vterm-julia--eval-block nil
   (org-babel-when-in-src-block
    ;; Format block-info = (language body arguments switches name start coderef)
@@ -2530,10 +1616,7 @@ Mainly from [[https://www.reddit.com/r/emacs/comments/8x4xtt/tip_how_i_use_ledge
   (cond ((use-region-p) (brust-vterm--eval-region))
         ((org-at-heading-p) (brust-endless/org-julia--eval-header))
         (t (brust-org-mode-vterm-julia--eval-block))))
-#+end_src
 
-*** Eval all blocks under current header
-#+BEGIN_SRC elisp
 ;; Julia blocks
 (defun brust-endless/org-julia--eval-header nil
   (save-excursion
@@ -2551,56 +1634,16 @@ Mainly from [[https://www.reddit.com/r/emacs/comments/8x4xtt/tip_how_i_use_ledge
 ;;  nil
 ;;  nil
 ;;  'brust-vterm--eval-buffer-substring))
-#+END_SRC
 
-** Eval elisp blocks
-#+begin_src elisp
 ;; Elisp blocks
 (defun brust-endless/org-eval-current-header nil
   (interactive)
   (brust-endless/org-eval-eblocks
    (and (org-copy-subtree)
         (pop kill-ring))))
-#+end_src
-** Import other formats
-Use pandoc to import files in .mw, .docs, ...
-#+begin_src elisp
+
 (use-package! org-pandoc-import :after org)
-#+end_src
-** COMMENT Org Ref
-#+begin_src elisp :tangle no
-(use-package! org-ref
 
-  ;; this bit is highly recommended: make sure Org-ref is loaded after Org
-  :after org
-
-  ;; Put any Org-ref commands here that you would like to be auto loaded:
-  ;; you'll be able to call these commands before the package is actually loaded.
-  :commands
-  (org-ref-cite-hydra/body
-   org-ref-bibtex-hydra/body)
-
-  ;; if you don't need any autoloaded commands, you'll need the following
-  ;; :defer t
-
-  ;; This initialization bit puts the `orhc-bibtex-cache-file` into `~/.doom/.local/cache/orhc-bibtex-cache
-  ;; Not strictly required, but Org-ref will pollute your home directory otherwise, creating the cache file in ~/.orhc-bibtex-cache
-  :init
-  (let ((cache-dir (concat doom-cache-dir "org-ref")))
-    (unless (file-exists-p cache-dir)
-      (make-directory cache-dir t))
-    (setq orhc-bibtex-cache-file (concat cache-dir "/orhc-bibtex-cache"))))
-
-(use-package! doi-utils
-  :after org
-  :commands (crossref-add-bibtex-entry doi-utils-add-entry-from-crossref-query)
-  :config
-  (setq doi-utils-download-pdf nil))
-#+end_src
-
-* LaTeX mode
-** AUCTeX
-#+BEGIN_SRC elisp
 ;; Add hooks and some basic variables declations
 (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "init" t)
 
@@ -2620,11 +1663,7 @@ Use pandoc to import files in .mw, .docs, ...
   ;; Add C-c C-q for clean and indent
   ;; (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "LaTeX-extra" t)
   )
-#+END_SRC
 
-** RefTeX
-Add interactive TOC and references manager at .tex files.
-#+begin_src elisp
 (after! (latex reftex)
   (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "RefTeX" t)
 
@@ -2648,27 +1687,13 @@ Add interactive TOC and references manager at .tex files.
           :e "6"  #'brust-reftex-toc-level-6
           :e "m"  #'describe-mode
           )))
-#+end_src
 
-** CDLaTeX
-#+begin_src elisp
 (after! (latex cdlatex)
   (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "cdLaTeX" t))
-#+end_src
-** Bratex
-*** Package
-#+begin_src elisp :tangle packages.el
-(package! bratex :recipe (:host github :repo "sbrisard/bratex"))
-#+end_src
 
-*** Load after auctex
-#+BEGIN_SRC elisp
 (use-package! bratex
   :after latex)
-#+END_SRC
 
-** Bindings
-#+begin_src elisp
 (map! :after latex
       (:map LaTeX-mode-map
        :gin "]"    #'brust-LaTeX-insert-math1
@@ -2704,150 +1729,7 @@ Add interactive TOC and references manager at .tex files.
       :i "TAB" #'cdlatex-tab
       :localleader
       "e" #'cdlatex-environment)
-#+end_src
 
-** COMMENT LSP LaTeX
-#+begin_src elisp :tangle no
-;; "texlab" must be located at a directory contained in `exec-path'.
-;; If you want to put "texlab" somewhere else,
-;; you can specify the path to "texlab" as follows:
-(setq lsp-latex-texlab-executable "~/src/texlab-git/target/release/texlab")
-
-(after!
-  (require 'lsp-latex)
-  (add-hook 'tex-mode-hook 'lsp)
-  (add-hook 'latex-mode-hook 'lsp))
-#+end_src
-* COMMENT Mu4e
-:PROPERTIES:
-:header-args: :tangle no
-:END:
-
-** General info
-    - Manual [[https://www.djcbsoftware.nl/code/mu/mu4e/index.html#Top][Mu4e's online manual]]
-    - TODOs [0/6]
-      - [ ] Install [[https://github.com/iqbalansari/mu4e-alert][mu4e alerts]]
-      - [ ] Improve keybinding
-      - [ ] Show links
-      - [ ] Show images
-      - [ ] Check autopudate (related to point one).
-      - [ ] Improve contact completion with ivy :) [[http://pragmaticemacs.com/emacs/even-better-email-contact-completion-in-mu4e/]]
-    - Helpful places [5/9]
-      - [X] [[https://webgefrickel.de/blog/a-modern-mutt-setup][A modern mutt setup with neomutt, mbsync, msmtp and mu]] (blog - interesting not just emacs)
-      - [ ] [[http://cachestocaches.com/2017/3/complete-guide-email-emacs-using-mu-and-][A Complete Guide to Email in Emacs using Mu and Mu4e]] (blog interesting by itself - really fancy emacs stuff)
-      - [ ] [[https://www.djcbsoftware.nl/code/mu/mu4e/Example-configurations.html#Example-configurations][Example config (from mu4e the manual)]]
-      - [ ] [[http://xenodium.com/#trying-out-mu4e-and-offlineimap][Albaro]] & [[http://xenodium.com/#trying-out-mu4e-with-mbsync][Albaro2]] (here there are many nice links) (blog - interesting not just emacs).
-      - [X] [[https://stackoverflow.com/questions/50199837/mu4e-with-msmtp-does-not-store-mail-sent-directory-after-sending-mails][How to config mu4e to send mail using msmtp]]
-      - [X] [[https://blog.programster.org/ubuntu-install-gpg-2][Install gpg2 (much better)]] to encript your mail password (echo password | gpg2 -c) then delete the corresponding line on bash history ;)
-      - [ ] [[http://pragmaticemacs.com/mu4e-tutorials/][mu4e tutorials (form pragmatic emacs)]]
-      - [X] [[https://wiki.archlinux.org/index.php/msmtp][Archlnux msmpt config page]]
-      - [X] [[https://wiki.archlinux.org/index.php/Isync#Troubleshooting][Archlinux mbsync config page]]
-      -
-** COMMENT Install
-Just in case to generate a certificate:
-# openssl s_client -connect mail.mat.uab.cat:993 -showcerts 2>&1 < /dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sed -ne '1,/-END CERTIFICATE-/p' > ~/mail.uab.cat.ctr
-
-#+BEGIN_SRC bash :tangle no
-# Install things
-sudo apt install msmtp-gnome msmtp-mta isync gnupg2
-cd src
-git clone https://github.com/djcb/mu.git
-./autogen.sh
-make
-
-# Paswords
-## UAB
-cd
-echo PASSWORD > .mathuab
-gpg2 -c .mathuab
-rm .mathuab
-## Gmail
-echo PASSWORD > .gmailpass
-gpg2 -c .gmailpass
-rm .gmailpass
-# Delete corresponding lines of .bash_history
-
-mkdir Maildir
-# Copy from Dropbox/config/Maildir
-#+END_SRC
-
-** Add Path
-#+BEGIN_SRC elisp
-(add-to-list 'load-path (expand-file-name "~/src/mu/mu4e/"))
-#+END_SRC
-
-** Config
-[[file:lisp/brusts-mu4e-config.org][Mu4e config file]]
-#+begin_src elisp
-(use-package! mu4e
-  :commands (mu4e)
-  :config
-  ;; The setq's
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-mu4e-config.org" "Basic" t)
-
-  ;; My contexts
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-mu4e-config.org" "Contexts" t)
-
-  ;; Actions
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-mu4e-config.org" "Actions" t)
-
-  ;; My Main menu
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-mu4e-config.org" "Main Menu" t)
-
-  ;; Marking emails for new actions
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-mu4e-config.org" "Marks" t)
-  (map! (:map mu4e-headers-mode-map
-         "g" #'mu4e-headers-mark-for-tag
-         "A" #'mu4e-headers-mark-for-moveUAB)
-        (:map mu4e-view-mode-map
-         "g" #'mu4e-headers-mark-for-tag
-         "A" #'mu4e-headers-mark-for-moveUAB))
-
-  ;; Fixing 'evil-collection-mu4e', see update in https://github.com/emacs-evil/evil-collection/issues/309
-  (defun brust-workaround-fixing-evil-collection-mu4e nil
-    (remove-hook 'mu4e-main-mode-hook 'evil-collection-mu4e-update-main-view))
-  (remove-hook 'mu4e-main-mode-hook 'evil-collection-mu4e-update-main-view)
-  (advice-add 'evil-collection-mu4e-setup :after #'brust-workaround-fixing-evil-collection-mu4e)
-
-  (map! :map mu4e-headers-mode-map
-        ;; "." #'hydra-mu4e-headers/body ; This hydra is for headers mode
-        "o" #'my/org-capture-mu4e                 ; differs from built-in
-        "A" #'mu4e-headers-mark-for-action        ; differs from built-in
-        "|" #'mu4e-view-pipe                         ; does not seem to be built in any longer
-        ))
-#+end_src
-
-* Programming
-** Julia mode
-*** TODO Intro [update]
-julia-mode is just for editing .jl files (every other julia related mode uses it for this propose).
-
-ESS julia provides ESS[julia] mode to edit .jl files, which uses julia-mode for syntaxis.
-It also provides an interaction with Julia REPL, but with limited functionality:
-Starts a julia process whose output is print in a buffer, but the buffer is not a terminal.
-Problems:
-  - Polymake does not load (I do not know the reason)
-  - It has no colors
-  - The functionalities ; ] of julia does not work and ? works but prompt does not changes.
-    see[[https://github.com/emacs-ess/ESS/issues/143][Terminal not fully functional]]
-Good things
-  - It creates a backend for company (it requires to start the julia process)
-  - The backend (sometimes?) even incorporates user defined variables!
-  - Full integration with Doom emacs (eval region/line... under localleader key)
-
-julia-repl is another way to communicate with julia.
-It creates a julia process running in a term terminal in Emacs.
-Good
-  - Polymake load
-  - has colors
-  - has the functionalities ; ] ? and the prompt changes.
-Bad
-  - zero integration with company
-  - zero integration with Doom emacs
-    see [[https://github.com/tpapp/julia-repl/issues/81][problem with executable]]
-
-*** Julia repl mode
-#+begin_src elisp
 ;; (setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
 
 ;; `ob-julia' needs this variable to be defined, but it's defined in
@@ -2885,54 +1767,7 @@ Bad
         (:map vterm-mode-map
          :prefix "C-c"
          :desc "Clear buffer" "d" #'comint-clear-buffer)))
-#+end_src
 
-*** COMMENT eglot-jl
-#+begin_src elisp :tangle no
-(after! eglot
-  ;; (defun brust-lsp-ask-before-activating nil
-  ;;   (let ((buffer (current-buffer)))
-  ;;     (if (y-or-n-p (format "Activate LSP server for buffer %s " buffer))
-  ;;         t
-  ;;       (message "LSP server not activated.")
-  ;;       nil)))
-  ;; (advice-add 'lsp! :before-while #'brust-lsp-ask-before-activating)
-
-  (setq eglot-connect-timeout (* 60 2)
-        lsp-julia-default-environment "~/.julia/environments/v1.7"
-        eglot-jl-julia-command "~/src/julia/bin/julia"
-        ;; Activate LSP server when I want to
-        julia-mode-local-vars-hook nil ;; To use my LanguageServer and Symbols...
-        ;; eglot-jl-language-server-project "~/.julia/environments/v1.6"
-        ;; To use eglot's LanguageServer and Symbols... (ther is no way to make it work)
-        eglot-jl-language-server-project eglot-jl-base
-        ))
-#+end_src
-*** LSP mode
-
-Run =doom build= to make it work, install local version of =LanguageServer.jl=.
-It stopped working. Install both =LanguageServer= and =SymbolServer= master branch with =add LanguageServer#master= in =.emacs.d/.local/...= in =lsp-julia-package-dir=.
-
-#+begin_src bash :tangle no
-cd ~/.emacs.d/.local/straight/repos/lsp-julia/languageserver/
-#+end_src
-
-#+begin_src julia :results output :tangle no
-import Pkg
-# Pkg.add(name="LanguageServer", rev="master")
-Pkg.activate("~/.emacs.d/.local/straight/repos/lsp-julia/languageserver/")
-Pkg.add(name="LanguageServer", rev="master")
-Pkg.add(name="SymbolServer", rev="master")
-#+end_src
-
-This command should give no error: (from [[file:~/.emacs.d/modules/lang/julia/doctor.el][Julia module's doctor]])
-#+begin_src bash :tangle no :results output
-julia --project=/home/laury/.emacs.d/.local/straight/repos/lsp-julia/languageserver --startup-file=no --history-file=no -e "using LanguageServer, SymbolServer"
-#+end_src
-
-#+RESULTS:
-
-#+begin_src elisp
 (use-package! lsp-julia
   ;; :after lsp
   :config
@@ -2943,36 +1778,7 @@ julia --project=/home/laury/.emacs.d/.local/straight/repos/lsp-julia/languageser
         lsp-julia-format-indents nil
         lsp-julia-format-calls t
         ))
-#+end_src
 
-#+begin_src elisp :tangle no
-(defun lsp-julia--rls-command ()
-  "The command to lauch the Julia Language Server."
-  `(,lsp-julia-command
-    ,@lsp-julia-flags
-    ,(concat "-e "
-             "\""
-             "import Pkg; Pkg.instantiate(); "
-             "using LanguageServer, LanguageServer.SymbolServer; "
-             ;; "Union{Int64, String}(x::String) = x; "
-             "server = LanguageServer.LanguageServerInstance("
-             "stdin, stdout, "
-             (lsp-julia--get-root) ", "
-             (lsp-julia--get-depot-path) ", "
-             "nothing, "
-             (lsp-julia--symbol-server-store-path-to-jl) ");"
-             " run(server);"
-             "\"")))
-#+end_src
-
-#+RESULTS:
-: lsp-julia--rls-command
-
-(lsp-julia--rls-command)
-*** ad-hoc functions
-**** Launch or link a julia process in vterm buffer
-
-#+begin_src elisp
 (defun brust-julia--launch-and-link-vterm nil
   (brust-vterm--launch-and-link (buffer-name) "--vjulia")
   (brust-vterm--eval-string "julia\n"))
@@ -2986,19 +1792,13 @@ julia --project=/home/laury/.emacs.d/.local/straight/repos/lsp-julia/languageser
          (buffer-name))
        (buffer-name))
     (brust-julia--launch-and-link-vterm)))
-#+end_src
 
-**** Ensure a running julia process is linked
-#+begin_src elisp
 (defun brust-julia--ensure-vterm-process-alive nil
   ;; When process is not alive, always launch a new one without asking.
   ;; If I wanted to link (unlikely), I can kill the new process and
   ;; call brust-..-link-or-launch-and-link.
   (unless (process-live-p vterm--process) (brust-julia--launch-and-link-vterm)))
-#+end_src
 
-**** Input manipulation
-#+begin_src elisp
 (defun brust--julia-input-bounds nil
   (save-excursion
     (move-beginning-of-line 1)
@@ -3020,11 +1820,7 @@ julia --project=/home/laury/.emacs.d/.local/straight/repos/lsp-julia/languageser
          (N (- (cdr -bounds) (car -bounds))))
     (dotimes (i N) (term-send-left))
     (dotimes (i N) (term-send-del))))
-#+end_src
 
-**** Send common functions
-
-#+begin_src elisp
 (defun brust-julia--add-function (-fun)
   ;; (move-end-of-line 1)
   ;; (dotimes (i (point-at-eol) (point)) (term-send-right))
@@ -3053,10 +1849,7 @@ List if julia functions names to define wrap for.")
                     (:prefix "C-c"
                      (:prefix ("f" . "Wrap fun")
                       :desc desc bind fun-name)))))))
-#+end_src
 
-**** Generate 'exports'
-#+begin_src elisp
 (defun brust-julia-update-exports nil
   (interactive)
   (save-excursion
@@ -3075,27 +1868,11 @@ List if julia functions names to define wrap for.")
       (pushnew! defunlist (julia-repl--symbols-at-point))
       (move-beginning-of-line 1))
     defunlist))
-#+end_src
 
-** Maple
-
-#+begin_src elisp :tangle packages.el
-(package! maplev :recipe (:host github :repo "JoeRiel/maplev"))
-#+end_src
-
-#+begin_src elisp
 ;; (add-load-path! "~/src/maplev-master/lisp")
 (autoload 'maplev-mode "maplev" "Maple editing mode" 'interactive)
 (add-to-list 'auto-mode-alist '("\\.mpl\\'" . maplev-mode))
-#+end_src
 
-** POV-Ray
-
-#+begin_src elisp :tangle packages.el
-(package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
-#+end_src
-
-#+begin_src elisp
 (defun brust-pov-ray-compile nil
   (interactive)
   (save-buffer)
@@ -3117,11 +1894,7 @@ List if julia functions names to define wrap for.")
       "e" #'pov-menu-external-viewer
       "v" #'pov-menu-internal-viewer
       )
-#+end_src
 
-** TODO Singular
-*** Config
-#+BEGIN_SRC elisp
 (setq singular-emacs-home-directory "/usr/share/singular/emacs/")
 ;; (add-load-path! singular-emacs-home-directory)
 (cl-pushnew singular-emacs-home-directory load-path :test #'string=)
@@ -3156,10 +1929,6 @@ List if julia functions names to define wrap for.")
 (defadvice singular-send-or-copy-input (before finish-line activate)
   (brust-singular-finish-line-interaction-mode))
 
-#+END_SRC
-
-*** Maps
-#+begin_src elisp
 (map! (:map c++-mode-map
        "C-<return>" #'newline
        "<return>" #'brust-singular-finish-line-singular-edit-mode
@@ -3177,10 +1946,6 @@ List if julia functions names to define wrap for.")
       (:map singular-interactive-mode-map
        "C-p" #'brust-singular-add-print
        "C-s" #'brust-singular-add-std))
-#+end_src
-
-*** function to send the working file.
-#+BEGIN_SRC elisp
 
 (defvar brust-singular-fixed-region-poss nil "Cons of positions delimiting the fixed region")
 
@@ -3337,11 +2102,7 @@ List if julia functions names to define wrap for.")
 ;;      (insert -str)
 ;;      (append-to-file (point-min) (point-max) -temp-file))
 ;;    -temp-file))
-#+END_SRC
 
-*** functions for *singular*
-**** Add print std...
-#+BEGIN_SRC elisp
 (defun brust-singular-add-print nil
   (interactive)
   (brust-singular-add-function "print"))
@@ -3366,10 +2127,7 @@ List if julia functions names to define wrap for.")
     (insert -fun "(" -str ")")
     (move-end-of-line 1)
     (insert ";")))
-#+END_SRC
 
-**** Finish line
-#+BEGIN_SRC elisp
 (defun brust-singular-finish-line-singular-edit-mode nil
   (interactive)
   (if (or (bolp) (eobp)) (insert "\n")
@@ -3405,10 +2163,6 @@ List if julia functions names to define wrap for.")
   (close-all-open-paren-right)
   (widen))
 
-#+END_SRC
-
-**** Dynamic expand in non-running Singular buffer
-#+BEGIN_SRC elisp
 (defun brust-singular-dynamic-complete ()
   "Dynamic complete word before point.
       Performs completion of Singular commands."
@@ -3426,11 +2180,7 @@ List if julia functions names to define wrap for.")
           (singular-completion-do str beg end singular-commands-alist)
         (message "Completion of Singular commands disabled.")
         (ding)))))
-#+END_SRC
 
-** Macaulay2 M2
-*** Config.
-#+begin_src elisp
 ;; Setup M2.el for autoloading
 ;; add "/usr/share/info" to Info-default-directory-list if it isn't there (it is already there)
 ;; (add-to-list 'Info-default-directory-list "/usr/share/info")
@@ -3446,19 +2196,13 @@ List if julia functions names to define wrap for.")
 ;; Uncomment these lines to enable syntax highlighting for the interpreter language
 ;;(autoload 'D-mode "D-mode" "Editing mode for the interpreter language" t)
 ;;(add-to-list 'auto-mode-alist '("\\.dd?\\'" . D-mode))
-#+end_src
 
-*** Map
-#+begin_src elisp
 (map! (:map M2-mode-map
        :n "= Q" #'brust-M2-indent-buffer
        (:localleader
         "SPC" #'brust-M2-M2-or-M2-send-to-program
         "Q" #'brust-M2-indent-buffer)))
-#+end_src
 
-*** Indent buffer
-#+begin_src elisp
 (defun brust-M2-electric-tab-inerit-indentation nil
   (let ((context (delete-white-space)))
     (M2-electric-tab)
@@ -3467,36 +2211,13 @@ List if julia functions names to define wrap for.")
 (defun brust-M2-indent-buffer nil
   (interactive)
   (brust-apply-function-line-by-line 'brust-M2-electric-tab-inerit-indentation))
-#+end_src
-*** M2 or send line
-#+begin_src elisp
+
 (defun brust-M2-M2-or-M2-send-to-program nil
   (interactive)
   (if (get-buffer "*M2*")
       (call-interactively 'M2-send-to-program)
     (call-interactively 'M2)))
-#+end_src
 
-** COMMENT SAGE
-
-#+BEGIN_SRC elisp :tangle no
-(use-package! sage-shell-mode
-  :defer t
-  :init
-  (setq sage-shell:sage-root "~/SageMath")
-  :config
-  ;; Run SageMath by M-x run-sage instead of M-x sage-shell:run-sage
-  (sage-shell:define-alias)
-
-  ;; Turn on eldoc-mode in Sage terminal and in Sage source files
-  (add-hook 'sage-shell-mode-hook #'eldoc-mode)
-  (add-hook 'sage-shell:sage-mode-hook #'eldoc-mode))
-#+END_SRC
-
-* Build-in modes
-** Abbrev's
-*** Setting
-#+BEGIN_SRC elisp
 (setq pre-abbrev-expand-hook (quote (ignore))
       save-abbrevs 'silently)
 (when (file-exists-p "~/Dropbox/config/abbrev-def.el")
@@ -3504,95 +2225,19 @@ List if julia functions names to define wrap for.")
 
 (setq-default abbrev-mode t)
 (add-hook 'emacs-startup-hook #'quietly-read-abbrev-file)
-#+END_SRC
 
-*** COMMENT Endless ispell & abbrev
-     It comes from [[http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html][Ispell and abbrev]], to find the misspelled work plain =ispell= is used, I adapted it to use =flyspell=, now I just get words which are underlined as misspelled (red curvi line under the word).
-     That's useful in TeX files where plain ispell has many false misspellings, but it could be a problem on buffers without =flyspell= minormode.
-#+BEGIN_SRC elisp :tangle no
-(defun endless/simple-get-word ()
-  (car-safe (save-excursion (ispell-get-word nil))))
-
-(defun endless/ispell-word-then-abbrev (p)
-  "Call `ispell-word', then create an abbrev for it.
-  With prefix P, create local abbrev. Otherwise it will
-  be global.
-  If there's nothing wrong with the word at point, keep
-  looking for a typo until the beginning of buffer. You can
-  skip typos you don't want to fix with `SPC', and you can
-  abort completely with `C-g'."
-  (interactive "P")
-
-  (let ((top (window-start))
-        (bot (window-end))
-        (position (point))
-        incorrect-word-pos
-        position-at-incorrect-word
-        bef aft)
-    (save-excursion
-      (save-restriction
-        ;; make sure that word under point is checked first
-        (forward-word)
-
-        ;; narrow the region
-        (narrow-to-region top bot)
-        (overlay-recenter (point))
-
-        (let ((overlay-list (overlays-in (point-min) (+ position 1)))
-              (overlay 'dummy-value))
-
-          (while overlay
-            (setq overlay (car-safe overlay-list))
-            (setq overlay-list (cdr-safe overlay-list))
-            (when (and overlay
-                       (flyspell-overlay-p overlay))
-              (setq incorrect-word-pos (overlay-start overlay))
-
-              ;; try to correct word
-              (save-excursion
-                (goto-char incorrect-word-pos)
-                (setq bef (endless/simple-get-word))
-                ;; `flyspell-correct-at-point' returns t when there is
-                ;; nothing to correct. In such case we just skip current word.
-                (unless (flyspell-correct-at-point)
-                  (setq overlay nil)
-                  (setq aft (endless/simple-get-word)))))))))
-    (if (and aft bef (not (equal aft bef)))
-        (let ((aft (downcase aft))
-              (bef (downcase bef)))
-          (define-abbrev
-            (if p local-abbrev-table global-abbrev-table)
-            bef aft)
-          (message "\"%s\" now expands to \"%s\" %sally"
-                   bef aft (if p "loc" "glob")))
-      (user-error "No typo at or before point"))))
-#+END_SRC
-
-** Auto revert
-    I need this to work with Git and branching.
-    Auto refresh all buffers when files have changed on disk.
-#+BEGIN_SRC elisp
 (setq global-auto-revert-ignore-modes (quote (PDFView))
       auto-revert-check-vc-info t)
 
 (add-hook! 'emacs-startup-hook (global-auto-revert-mode +1))
-#+END_SRC
 
-** Ediff
-   The default Ediff behavior is confusing and not desirable. This fixes it.
-#+BEGIN_SRC elisp
 (setq ediff-window-setup-function 'ediff-setup-windows-plain
       ediff-split-window-function 'split-window-horizontally)
-#+END_SRC
 
-   Make it compatible with =org-mode=
-#+BEGIN_SRC elisp
 (defun ora-ediff-prepare-buffer nil
   (when (memq major-mode '(org-mode emacs-lisp-mode))
     (outline-show-all)))
-#+END_SRC
 
-#+BEGIN_SRC elisp
 (defun ediff-copy-both-to-C nil
   (interactive)
   (ediff-copy-diff
@@ -3605,44 +2250,26 @@ List if julia functions names to define wrap for.")
 
 (defun add-d-to-ediff-mode-map nil
   (define-key ediff-mode-map "d" #'ediff-copy-both-to-C))
-#+END_SRC
 
-#+begin_src elisp
 (after! ediff
   (add-hook 'ediff-keymap-setup-hook #'add-d-to-ediff-mode-map)
   (add-hook 'ediff-prepare-buffer-hook 'ora-ediff-prepare-buffer))
-#+end_src
-** Eldoc
-#+begin_src elisp
+
 (setq eldoc-echo-area-use-multiline-p nil)
-#+end_src
-** Elisp
-#+begin_src elisp
+
 (add-hook! 'emacs-lisp-mode-hook (modify-syntax-entry ?- "w"))
-#+end_src
 
-** High light TODO
-Package to highlight TODO's in comments and so.
-#+begin_src elisp
 (setq hl-todo-highlight-punctuation ":")
-#+end_src
-** Ispell
 
-#+begin_src elisp
 ;; (setq ispell-highlight-face 'flyspell-incorrect)
 
 ;; See https://github.com/doomemacs/doomemacs/issues/4239
 ;; Useful for spell-fu
 ;; Notice the lack of "--run-together"
 (setq ispell-extra-args '("--sug-mode=ultra"))
-#+end_src
-** Recentf
-#+begin_src elisp
+
 (add-hook! 'emacs-startup-hook (recentf-mode 1))
-#+end_src
-** Show parentheses
-*** In =org-mode=
-#+begin_src elisp
+
 (after! org
   ;; Doom disables =show-paren-mode= because:
   ;;  ;; `show-paren-mode' causes flickering with indent overlays made by
@@ -3677,11 +2304,7 @@ Add this function to `org-mode-hook'."
   (make-local-variable 'syntax-propertize-function)
   (setq syntax-propertize-function 'org-mode-<>-syntax-fix)
   (syntax-propertize (point-max)))
-#+end_src
-*** Display lines matching off-screen parentheses at the top of the window.
-https://with-emacs.com/posts/ui-hacks/show-matching-lines-when-parentheses-go-off-screen/
 
-#+begin_src elisp
 ;; we will call `blink-matching-open` ourselves...
 (remove-hook 'post-self-insert-hook
              #'blink-paren-post-self-insert-function)
@@ -3768,10 +2391,7 @@ FACE defaults to inheriting from default and highlight."
     (overlay-put ol 'face
                  (or face '(:inherit default :inherit highlight)))
     ol))
-#+end_src
 
-** Tramp
-#+begin_src elisp
 (setq password-cache-expiry nil
       remote-file-name-inhibit-cache nil
       tramp-completion-reread-directory-timeout nil
@@ -3790,19 +2410,7 @@ FACE defaults to inheriting from default and highlight."
       (delete-file -temp-file))))
 
 ;; (add-hook! 'emacs-startup-hook (brust-decrypt "~/.authinfo.gpg"))
-#+end_src
 
-* External modes
-** Avy
-#+begin_src elisp :tangle no
-(setq avy-flyspell-correct-function #'+spell/correct)
-#+end_src
-
-** Ibuffer
-
-- [[http://martinowen.net/blog/2010/02/03/tips-for-emacs-ibuffer.html][Blog nice config]]
-
-#+begin_src elisp
 (after! ibuffer
   ;; Redefine size Ibuffer's column to display the total number of lines,
   ;; a humanly understandable measure of size.
@@ -3890,11 +2498,7 @@ FACE defaults to inheriting from default and highlight."
           ibuffer-hidden-filter-groups nil)
     (ibuffer-update nil t))
   )
-#+end_src
 
-** Company
-*** Bindings
-#+BEGIN_SRC elisp
 (map! :after company
       :map company-active-map
       "TAB"    #'company-abort
@@ -3906,10 +2510,7 @@ FACE defaults to inheriting from default and highlight."
       "C-k"    #'company-previous-page
       "C-l"    #'company-show-location
       )
-#+END_SRC
-*** Aux functions
 
-#+begin_src elisp
 ;; (defun brust-company--cdlatex-or-yas-on-abort (result)
 ;;   (when result
 ;;     (cond ((fboundp 'cdlatex-tab) (cdlatex-tab))
@@ -3924,27 +2525,13 @@ FACE defaults to inheriting from default and highlight."
   (when (and (company-manual-begin) company-selection)
     (let ((result (nth company-selection company-candidates)))
       (company--insert-candidate result))))
-#+end_src
-*** Tabnine
-- [[https://www.tabnine.com/][Tabnine]]
-- [[https://github.com/TommyX12/company-tabnine][Company backend]]
-- [[https://codingstruggles.com/emacs,/tabnine/setting-tabnine-emacs.html][Setting up tabnine emacs]]
 
-#+begin_src elisp :tangle packages.el
-(package! company-tabnine :recipe (:host github :repo "TommyX12/company-tabnine"))
-#+end_src
-
-#+begin_src elisp
 (after! company
   (setq +lsp-company-backends '(company-tabnine :separate company-capf company-yasnippet))
   (setq company-show-numbers t)
   (setq company-idle-delay 0)
 )
-#+end_src
 
-** Evil mode
-*** Settings
-#+BEGIN_SRC elisp
 (setq evil-cross-lines t
       ;; Use both =jk= and =kj= to esc insert mode
       ;; (equivalent to key-chords jk kj) Press them as single key!
@@ -3956,41 +2543,13 @@ FACE defaults to inheriting from default and highlight."
       evil-move-beyond-eol t
       evil-vsplit-window-right t)
 (global-evil-visualstar-mode +1)
-#+END_SRC
 
-*** Del char
-Do not add single deleted chars to =kill-ring=
-[[https://github.com/syl20bnr/spacemacs/issues/6977]]
-
-#+begin_src elisp
 (defun bb/evil-delete--black-hole-register (orig-fn beg end &optional type _ &rest args)
   (apply orig-fn beg end type ?_ args))
 
 (advice-add 'evil-delete-char :around 'bb/evil-delete--black-hole-register)
 (advice-add 'evil-delete-backward-char :around 'bb/evil-delete--black-hole-register)
-#+end_src
 
-** COMMENT Formater
-I just want auto format in a few modes.
-#+begin_src elisp :tangle no
-(add-hook 'julia-mode-hook #'format-all-mode)
-(add-hook 'emacs-lisp-mode-hook #'format-all-mode)
-
-;; (setq +format-on-save-enabled-modes
-;;       '(not emacs-lisp-mode  ; elisp's mechanisms are good enough
-;;             sql-mode         ; sqlformat is currently broken
-;;             tex-mode         ; latexindent is broken
-;;             c-mode
-;;             latex-mode))
-#+end_src
-
-** Key-frequency
-
-#+begin_src elisp :tangle packages.el
-(package! keyfreq :recipe (:host github :repo "dacap/keyfreq"))
-#+end_src
-
-#+BEGIN_SRC elisp
 (use-package! keyfreq
   :init
   (keyfreq-mode 1)
@@ -4001,15 +2560,7 @@ I just want auto format in a few modes.
           backward-char
           previous-line
           next-line)))
-#+END_SRC
 
-** LSP mode
-[[https://github.com/emacs-lsp/lsp-mode/blob/2d41848dde2fdcb1a85546302c4b842a12a68ef9/docs/tutorials/how-to-turn-off.md][How to turn off futures]]
-*** LSP ui
-
-This package contains all the higher level UI modules of =lsp-mode=, like =flycheck= support and code lenses.
-
-#+begin_src elisp
 (use-package! lsp-ui
   :after lsp
   :hook (lsp-mode . lsp-ui-mode)
@@ -4018,18 +2569,11 @@ This package contains all the higher level UI modules of =lsp-mode=, like =flych
   (setq lsp-ui-sideline-show-hover nil)
   (setq lsp-ui-doc-position 'bottom)
   (lsp-ui-doc-show))
-#+end_src
-*** LSP treemacs
 
-#+begin_src elisp
 (use-package! lsp-treemacs
   :after lsp
   :commands lsp-treemacs-errors-list)
-#+end_src
 
-** Magit
-    For a git and github integration with emacs!
-#+BEGIN_SRC elisp
 (after! magit
   (setq magit-turn-on-auto-revert-mode nil
         magit-diff-hide-trailing-cr-characters t
@@ -4047,27 +2591,7 @@ This package contains all the higher level UI modules of =lsp-mode=, like =flych
             (map! :map magit-mode-map
                   :n "n" #'magit-section-forward-sibling
                   :n "p" #'magit-section-backward-sibling)))
-#+END_SRC
-** Org pandoc import
 
-Import any file to org mode
-
-#+begin_src elisp :tangle packages.el
-(package! org-pandoc-import
-  :recipe (:host github
-           :repo "tecosaur/org-pandoc-import"
-           :files ("*.el" "filters" "preprocessors")))
-#+end_src
-
-** Nyan
-    Show the rainbow progres line.
-
-#+begin_src elisp :tangle packages.el
-(package! nyan-mode)
-(package! zone-nyan)
-#+end_src
-
-#+BEGIN_SRC elisp
 (use-package! nyan-mode
   :defer t
   :init
@@ -4093,10 +2617,7 @@ Import any file to org mode
   :config
   (setq zone-programs [zone-nyan]
         zone-nyan-hide-progress t))
-#+END_SRC
 
-** Pdf tools
-#+BEGIN_SRC elisp
 (after! pdf-tools
   ;; open pdfs scaled to fit page
   ;; (setq-default pdf-view-display-size 'fit-page)
@@ -4146,18 +2667,7 @@ Import any file to org mode
 (defun brust-pdf-view-previous-line-or-previous-page-5 (args)
   (interactive "p")
   (brust-by-five #'pdf-view-previous-line-or-previous-page args))
-#+END_SRC
 
-** TODO Screenshot
-
-Handy tecosaur's packages.
-Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][screenshot.el]].
-
-#+begin_src elisp :tangle packages.el
-(package! screenshot :recipe (:host github :repo "tecosaur/screenshot"))
-#+end_src
-
-#+begin_src elisp
 (use-package! screenshot
   :commands screenshot
   :init
@@ -4166,34 +2676,16 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
   (defun load-screenshot nil
     (load-file (locate-library "screenshot.el")))
   )
-#+end_src
 
-** Turn grep "writable" buffer
-#+BEGIN_SRC elisp
 (use-package! wgrep
   :defer t
   :config
   (setq wgrep-auto-save-buffer t
         wgrep-enable-key "r"))
-#+END_SRC
 
-** Visual regexp
-
-#+begin_src elisp :tangle packages.el
-(package! visual-regexp)
-#+end_src
-
-#+BEGIN_SRC elisp
 (use-package! visual-regexp
   :commands (vr/replace vr/query-replace))
-#+END_SRC
 
-** Zoom
-#+begin_src elisp :tangle packages.el
-(package! zoom)
-#+end_src
-
-#+begin_src elisp
 (use-package! zoom
   :defer t
   :init
@@ -4209,525 +2701,3 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
 (after! ediff
   (add-hook! 'ediff-before-setup-hook (zoom-mode -1))
   (add-hook! 'ediff-cleanup-hook (zoom-mode +1)))
-#+end_src
-* Unusal packages
-:PROPERTIES:
-:header-args: :tangle no
-:END:
-
-Load each with =brust-endless/org-eval-current-header=
-
-** Maxima
-*** Load-path
-#+BEGIN_SRC elisp
-(push "/usr/share/emacs/site-lisp/maxima/" load-path)
-#+END_SRC
-
-*** Auto-load
-#+BEGIN_SRC elisp
-(autoload 'maxima-mode "maxima" "Maxima mode" t)
-(autoload 'maxima "maxima" "Maxima interaction" t)
-(autoload 'imaxima "imaxima" "Frontend for maxima with Image support" t)
-;(autoload 'imath-mode "imath" "Imath mode for math formula input" t)
-;(autoload 'imath "imath" "Interactive Math mode" t)
-;(autoload 'imath-mode "imath" "Interactive Math mode" t);;
-
-#+END_SRC
-*** Auto-mode
-#+BEGIN_SRC elisp
-(add-to-list 'auto-mode-alist '("\\.ma[cx]" . maxima-mode))
-
-#+END_SRC
-*** Config:
-**** COMMENT setq
-#+BEGIN_SRC elisp
-  (setq imaxima-fnt-size "huge"
-        ;;  imaxima-latex-preamble "\\usepackage{concrete}\\usepackage{euler}"
-        imaxima-use-maxima-mode-flag t
-        maxima-save-input-history t
-        ;; maxima-use-full-color-in-process-buffer t
-        maxima-minibuffer-2d t
-        imaxima-pt-size 12)
-
-#+END_SRC
-**** COMMENT An advice
-     For a correct use of imaxima.
-#+BEGIN_SRC elisp
-(defadvice maxima-send-region (before maxima-start-imaxima first)
-  "Ensures that imaxima is running and the correct flag is set."
-  (setq imaxima-use-maxima-mode-flag t)
-  (unless (get-buffer "*maxima*")
-    (with-temp-buffer (imaxima))))
-(ad-activate 'maxima-send-region)
-
-#+END_SRC
-*** Keybindings
-**** COMMENT Maxima
-#+BEGIN_SRC elisp
-(defun customize-maxima-mode nil
-  (interactive)
-  (local-set-key (kbd "TAB") 'maxima-complete)
-  (local-set-key (kbd "C-2") 'AcMe-new-parameter))
-
-(add-hook 'maxima-mode-hook 'customize-maxima-mode)
-
-#+END_SRC
-**** COMMENT iMaxima
-#+BEGIN_SRC elisp
-(defun customize-imaxima nil
- "For the imaxima buffer"
-  (interactive)
-  (local-set-key (kbd "TAB") 'maxima-complete)
-  (local-set-key (kbd "<f6>") 'transpose-buffers))
-(add-hook 'imaxima-startup-hook 'customize-imaxima)
-
-#+END_SRC
-*** DeFuns AcMe
-**** COMMENT AcMe-max-to-xml
-#+BEGIN_SRC elisp
-(defun AcMe-max-to-xml (xmlFileName); pNumber)
-  "Convert standard maxima file to xml, you need an xml template.
-   This function only changes the math content of the xml file.
-   The xml template doesn't need to have the same number of parameters that
-   your code, but must have some parameter defined.
-   In your .max file, each parameter must be enclosed between the lines <parameter> and <end code>
-   and the solution between <solution> and <end code>"
- (interactive (list (read-file-name "Path to the .xml \"tamplete\":"))); (read-number "Number of parameters:")))
- (let (maxbuffer xmlbuffer (xmlpos1 1) (xmlpos2 1) (maxpos1 1) (maxpos2 1) (i 1))
-   (setq maxbuffer (buffer-name))
-   (find-file xmlFileName)
-   (setq xmlbuffer (buffer-name))
-   (goto-char 1)
-(if (y-or-n-p "Erase the parameters of the .xml?")
-    (progn
-      (re-search-forward "<parameters>") (forward-line) (setq xmlpos1 (line-beginning-position))
-      (re-search-forward "</parameters>") (forward-line -1); (setq xmlpos2 (line-end-position))
-      (delete-region xmlpos1 (line-end-position))
-      (set-buffer maxbuffer)
-   (goto-char 1)
-   (while (re-search-forward "<parameter>" nil t)
-     (forward-line) (setq maxpos1 (line-beginning-position))
-     (re-search-forward "<end code>") (forward-line -1) (setq maxpos2 (line-end-position))
-     (set-buffer xmlbuffer)
-     (insert (concat "                       <parameter>
-         <number>" (number-to-string i) "</number>
-         <type>calculated</type>
-         <value>
-            <program>2</program>
-            <mathCode>
-
-            </mathCode>
-         </value>
-      </parameter>\n"))
-     (re-search-backward "<mathCode>") (forward-line)
-     (insert-buffer-substring-no-properties maxbuffer maxpos1 maxpos2)
-     (set-buffer maxbuffer)
-     (setq i (+ i 1))))
-  (progn
-    (set-buffer maxbuffer)
-    (goto-char 1)
-    (while (re-search-forward "<parameter>" nil t)
-     (forward-line) (setq maxpos1 (line-beginning-position))
-     (re-search-forward "<end code>") (forward-line -1) (setq maxpos2 (line-end-position))
-     (set-buffer xmlbuffer)
-     (re-search-forward "<mathCode>") (forward-line) (setq xmlpos1 (line-beginning-position))
-     (re-search-forward "</mathCode>") (forward-line -1); (setq xmlpos2 (line-end-position))
-     (delete-region xmlpos1 (line-end-position))
-     (insert-buffer-substring-no-properties maxbuffer maxpos1 maxpos2)
-     (set-buffer maxbuffer) )))
-   (set-buffer xmlbuffer)
-   (goto-char 1)
-   (set-buffer maxbuffer)
-   (goto-char 1)
-   (while (search-forward "<solution>" nil t)
-     (forward-line) (setq maxpos1 (line-beginning-position))
-     (search-forward "<end code>") (forward-line -1) (setq maxpos2 (line-end-position))
-     (set-buffer xmlbuffer)
-   (re-search-forward "<solution>")
-   (re-search-forward "<text>") (forward-line) (setq xmlpos1 (line-beginning-position))
-   (re-search-forward "</text>") (forward-line -1) ;(setq xmlpos2 (line-end-position))
-   (delete-region xmlpos1 (line-end-position))
-   (insert-buffer-substring-no-properties maxbuffer maxpos1 maxpos2)
-   (set-buffer maxbuffer))
-   (set-buffer xmlbuffer) (save-buffer)
-   (if (y-or-n-p "Kill .xml buffer?") (kill-buffer xmlbuffer) ())))
-
-#+END_SRC
-**** COMMENT AcMe-xml-to-max
-#+BEGIN_SRC elisp
-  (defun AcMe-xml-to-max (maxFileName); pNumber)
-    "Convert AcMe standard .xml file to a maxima file with the conventions to the reverse convertion.
-     Any content of the .max file is deleted. Puts the solution on top."
-    (interactive (list (read-file-name "Path to the .max file:"))); (read-number "Number of parameters:")))
-    (let (maxbuffer xmlbuffer (xmlpos1 1) (xmlpos2 1) (maxpos1 1) (maxpos2 1) maxStr moreLines (i 1))
-      (setq xmlbuffer (buffer-name))
-      (find-file maxFileName)
-      (setq maxbuffer (buffer-name))
-      (if (y-or-n-p "Erase the file .max?") (erase-buffer) (goto-char 1))
-      (set-buffer xmlbuffer)
-      (goto-char 1)
-      (while (re-search-forward "<solution>" nil t)
-        (re-search-forward "<text>") (forward-line) (setq xmlpos1 (line-beginning-position))
-        (re-search-forward "</text>") (forward-line -1) (setq xmlpos2 (line-end-position))
-        (set-buffer maxbuffer)
-        (insert "/************ <solution> <"(number-to-string i)">***************/\n")
-        (insert-buffer-substring-no-properties xmlbuffer xmlpos1 xmlpos2)
-        (insert "\n/********* <end code> solution <"(number-to-string i)"> *************/\n\n\n\n")
-        (set-buffer xmlbuffer)
-        (setq i (+ i 1)))
-      (goto-char 1)
-      (setq i 1)
-      (while (re-search-forward "<mathCode>" nil t)
-                 ;      (goto-char 1) (re-serch-forward (concat "<number>"(number-to-string i)"</number>"))
-        (forward-line) (setq xmlpos1 (line-beginning-position))
-        (re-search-forward "</mathCode>") (forward-line -1) (setq xmlpos2 (line-end-position))
-        (setq maxStr (buffer-substring-no-properties xmlpos1 xmlpos2))
-        (set-buffer maxbuffer)
-        (insert (concat "/******** <parameter> <" (number-to-string i) ">  ****************/\n" maxStr
-              "\n/*********** <end code> parameter <"(number-to-string i)"> ***************/\n\n\n\n"))
-        (setq i (+ 1 i))
-        (set-buffer xmlbuffer))
-      (set-buffer maxbuffer)
-      (goto-char 1)
-      (setq moreLines t)
-      (while moreLines
-        (setq maxStr (buffer-substring-no-properties (line-beginning-position) (line-end-position))
-              maxStr (replace-regexp-in-string "\&quot;" "\"" maxStr)
-              maxStr (replace-regexp-in-string "\&gt;" ">" maxStr)
-              maxStr (replace-regexp-in-string "\&lt;" "<" maxStr))
-        (insert (s-trim maxStr))
-        (delete-region (point) (line-end-position))
-        (setq moreLines (= 0 (forward-line 1))))
-      (save-buffer)
-    (if (y-or-n-p "Kill .xml buffer?") (kill-buffer xmlbuffer) ())))
-
-#+END_SRC
-**** COMMENT AcMe-new-parameter
-#+BEGIN_SRC elisp
-(defun AcMe-new-parameter (paramater_num)
-  "Example function taking a prefix arg, or reading a number if no prefix arg"
-  (interactive
-   (if (and current-prefix-arg (not (consp current-prefix-arg)))
-       (list (prefix-numeric-value current-prefix-arg))
-     (list (read-number "Paramater number: "))))
-  (let ((char 1))
-    (insert (concat "/******** <parameter> <" (number-to-string paramater_num) ">  ****************/\n"))
-    (setq char (point))
-    (insert (concat "\n valor_calcul : $\nvalor_visual :  $\nprint(\"#\",valor_visual,\"#\",valor_calcul,\"#\")$\n/*********** <end code> parameter <"(number-to-string paramater_num)"> ***************/\n\n\n\n"))
-    (goto-char char)))
-
-
-#+END_SRC
-** Yanki
-#+BEGIN_SRC elisp
-  (setq auto-mode-alist
-        (append '(("\\.yanki\\'"    . Yanki-mode)
-                  ("\\.yanki-b\\'"  . Yanki-build-mode))
-                auto-mode-alist))
-  (with-temp-buffer
-    (insert-file-contents "~/.emacs.d/Yanki/Yanki-mode.el")
-    (eval-buffer))
-
-#+END_SRC
-
-** Table org duplicates into columns
-  #+BEGIN_SRC elisp
-      (defun brust-org-table-delete-duplicates-by-current-column (args)
-        (interactive "P")
-        (unless (org-at-table-p) (user-error "No table at point"))
-        (org-table-align)          ; Make sure we have everything we need.
-        (narrow-to-region (org-table-begin) (org-table-end))
-        (let ((nn (current-column)) (lines (line-number-at-pos (point-max))) (str (brust-org-table-field)))
-          (while (not (eobp))
-            (delete-matching-lines str)
-            (brust-down-vertically nn)
-            (setq str (brust-org-table-field)))
-          (message "I've deleted %d lines." (- lines (line-number-at-pos (point-max))))
-          (widen)))
-
-
-  (defun brust-down-vertically (nn)
-    (interactive "nColumn number:")
-        (ignore-errors
-          (forward-line 1)
-          (forward-char nn)))
-
-  (defun brust-down-vertically nil
-    (interactive)
-    (ignore-errors
-      (goto-char (+ (1- (line-end-position)) (current-column)))))
-
-
-      (defun brust-org-table-field nil
-        (let ((n0 (point)))
-          (org-forward-sentence)
-          (s-trim (buffer-substring-no-properties n0 (point)))))
-
-  (defun brust-org-table-leave-only-Si nil
-      (interactive)
-      (unless (org-at-table-p) (user-error "No table at point"))
-      (org-table-align)          ; Make sure we have everything we need.
-      (narrow-to-region (org-table-begin) (org-table-end))
-      (let ((nn (current-column)) (lines (line-number-at-pos (point-max))))
-          (while (not (eobp))
-            (unless (looking-at-p "S[ií] ")
-              (message "%s" (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
-              (delete-region (line-beginning-position) (line-end-position)))
-            (brust-down-vertically nn))
-      (message "The table has %d lines." (- lines (line-number-at-pos (point-max)))))
-      (widen))
-
-    (defun brust-org-table-count-lines nil
-      (interactive)
-      (unless (org-at-table-p) (user-error "No table at point"))
-      (org-table-align)          ; Make sure we have everything we need.
-      (narrow-to-region (org-table-begin) (org-table-end))
-      (message "The table has %d lines."  (line-number-at-pos (point-max)))
-      (widen))
-
-#+END_SRC
-
-** My-dictionary
-#+BEGIN_SRC elisp
-  (global-set-key (kbd "<C-M-return>") 'brust-my-dictionary-edit-an-entry)
-
-  (global-set-key (kbd "<s-return>") 'brust-my-dictionary-new-entry)
-
-  (defvar brust-my-dictionary-dir "Directory where is the dictionary")
-
-  (setq brust-my-dictionary-dir "~/Dropbox/English/My-dictionary/")
-
-  (defun brust-my-dictionary-open-an-entry (header)
-    (let ((TeX-master t))
-      (find-file (concat brust-my-dictionary-dir
-                       "sections/"
-                       (capitalize (substring header 0 1))
-                       "/"
-                       (replace-regexp-in-string "[ ]" "-" header)
-                       ".tex"))))
-
-    (defun brust-my-dictionary-new-entry (header)
-      (interactive (list
-                    (read-string "Give me the header:")))
-      (brust-my-dictionary-open-an-entry header)
-      (erase-buffer)
-      (insert-file-contents (concat brust-my-dictionary-dir "tamplate-new-entry.tex"))
-      (goto-char (point-min))
-      (search-forward "entry{}{}{}{}" nil t)
-      (backward-char 7)
-      (insert header)
-      (forward-char 2)
-      (save-buffer))
-
-  (defun brust-my-dictionary-edit-an-entry (header)
-    (interactive
-     (list
-      (headlong-with
-       (completing-read
-        "Give me the entry to edit:"
-        (cl-remove-duplicates
-         (mapcar (lambda (x) (replace-regexp-in-string "[-]" " " (file-name-base x)))
-                 (directory-files-recursively (concat brust-my-dictionary-dir "sections") ".+[.]tex"))
-         :test (lambda (x y) (string= x y)))
-        nil t))))
-    (brust-my-dictionary-open-an-entry header))
-
-  ;; From abo-abo, his headlong.el
-  (defmacro headlong-with (&rest forms)
-    "Execute FORMS with completion headlong."
-    `(if (window-minibuffer-p)
-         (user-error "Already in minibuffer")
-       (let ((minibuffer-local-must-match-map headlong-minibuffer-map)
-             (completing-read-function 'completing-read-default))
-         ,@forms)))
-
-  (defvar headlong-minibuffer-map
-    (let ((map (copy-keymap minibuffer-local-must-match-map)))
-      (define-key map [remap self-insert-command] 'headlong-self-insert-complete-and-exit)
-      (define-key map "\C-i" (lambda nil
-                               (interactive)
-                               (minibuffer-complete)
-                               (minibuffer-completion-help)))
-      map)
-    "Keymap for headlong minibuffer completion.")
-
-  (defun headlong-self-insert-complete-and-exit (n)
-    "Insert the character you type and try to complete.
-                                               If this results in:
-                                               - zero candidates: remove char and show completions
-                                               - one candidate: immediately exit the minibuffer.
-                                               N is passed to `self-insert-command'."
-    (interactive "p")
-    (self-insert-command n)
-    (let ((candidates (completion-all-sorted-completions)))
-      (cond
-       ((null candidates)
-        (backward-delete-char-untabify 1)
-        (minibuffer-complete))
-       ((eq 1 (safe-length candidates))
-        (minibuffer-complete-and-exit)))))
-
-  (defun headlong-bookmark-jump (bookmark)
-    "Jump to BOOKMARK headlong."
-    (interactive
-     (list (headlong-with
-            (completing-read "Jump to bookmark: " bookmark-alist nil t))))
-    (ignore-errors
-      (bookmark-jump bookmark)))
-
-  ;; end abo-abo.
-
-#+END_SRC
-
-#+RESULTS:
-: headlong-bookmark-jump
-
-** Teaching
-   From Excel save the table in csv format into /"tmp/my-table.csv"/ using {tab} as separators.
-   Eval =C-c C-c=:
-#+BEGIN_SRC elisp
-  (find-file (concat temporary-file-directory "new-notes.org"))
-  (insert "#+NAME: alumnes\n")
-  (org-table-import (concat temporary-file-directory "my-table.csv") nil)
-  (goto-char (point-max))
-  (insert "\n\n")
-#+END_SRC
-
-  And copy the following subtree =C-c C-x M-w= under the table and eval the code.
-
-*** Teaching functions
-#+BEGIN_SRC elisp :command export :var data=alumnes
-(require 's)
-
-(defvar brust-mark-column "Column number (starting from 1) where to insert marks (hard-code)")
-(defvar brust-niu-column "Column number (starting from 1) where nius are (hard-code)")
-(defvar brust-whatever-to-comma-p "It has to be a string or nil. If it is nil do nothing, if not, then replace whatever string or char using as separator into its value")
-(defvar brust-time-if-there-was-a-mark "Time in seconds to wait for an acction if the studen had a mark")
-;;  (defvar brust-marks-let-line-highlight-p "t doen't turn down the highlighted line between NIUs")
-(defvar brust-do-visible-bell-p)
-
-(setq brust-whatever-to-comma-p ",")
-(setq brust-mark-column 4)
-(setq brust-niu-column 1)
-(setq brust-time-if-there-was-a-mark 0)
-;;  (setq brust-marks-let-line-highlight-p t)
-(setq brust-do-visible-bell-p t)
-
-(global-set-key (kbd "<s-return>") 'brust-call-niu-insert-mark)
-
-(defvar brust-niu-list "List with nius (autoload)")
-(defvar brust-marks-hist "The history of inserted marks (auxiliar)")
-(setq brust-marks-hist '("5"))
-
-
-;; From abo-abo, his headlong.el
-(defmacro headlong-with (&rest forms)
-  "Execute FORMS with completion headlong."
-  `(if (window-minibuffer-p)
-       (user-error "Already in minibuffer")
-     (let ((minibuffer-local-must-match-map headlong-minibuffer-map)
-           (completing-read-function 'completing-read-default))
-       ,@forms)))
-
-(defvar headlong-minibuffer-map
-  (let ((map (copy-keymap minibuffer-local-must-match-map)))
-    (define-key map [remap self-insert-command] 'headlong-self-insert-complete-and-exit)
-    (define-key map "\C-i" (lambda nil
-                             (interactive)
-                             (minibuffer-complete)
-                             (minibuffer-completion-help)))
-    map)
-  "Keymap for headlong minibuffer completion.")
-
-(defun headlong-self-insert-complete-and-exit (n)
-  "Insert the character you type and try to complete.
-                                           If this results in:
-                                           - zero candidates: remove char and show completions
-                                           - one candidate: immediately exit the minibuffer.
-                                           N is passed to `self-insert-command'."
-  (interactive "p")
-  (self-insert-command n)
-  (let ((candidates (completion-all-sorted-completions)))
-    (cond
-     ((null candidates)
-      (backward-delete-char-untabify 1)
-      (minibuffer-complete))
-     ((eq 1 (safe-length candidates))
-      (minibuffer-complete-and-exit)))))
-
-(defun headlong-bookmark-jump (bookmark)
-  "Jump to BOOKMARK headlong."
-  (interactive
-   (list (headlong-with
-          (completing-read "Jump to bookmark: " bookmark-alist nil t))))
-  (ignore-errors
-    (bookmark-jump bookmark)))
-;; end abo-abo.
-
-(defun string-reverse (str)
-  "Reverse the str where str is a string"
-  (apply #'string
-         (reverse
-          (string-to-list str))))
-
-(defun number-to-string-reverse (num)
-  "Reverse the num where num is a number"
-  (string-reverse
-   (number-to-string num)))
-
-(setq brust-niu-list
-      (mapcar 'number-to-string-reverse
-              (cl-remove-if-not 'numberp
-                                (mapcar '(lambda (x) (nth (1- brust-niu-column) x))
-                                        data))))
-
-(defun brust-do-visible-bell nil
-  (and brust-do-visible-bell-p
-       (let ((visible-bell t))
-         (ding))))
-
-(defun brust-replace-whatever-into-comma (str)
-  (if (and brust-whatever-to-comma-p (string-match-p "[^0-9]" str))
-      (let ((number (split-string str "[^0-9]+")))
-        (concat (if (string= "" (car number)) "0" (car number))
-                brust-whatever-to-comma-p
-                (if (string= "" (car (cdr number))) "0" (car (cdr number)))))
-    str))
-
-(defun brust-search-new-niu (NIU)
-  (unless (org-at-table-p) (user-error "No table at point"))
-  (org-table-align)          ; Make sure we have everything we need.
-  (narrow-to-region (org-table-begin) (org-table-end))
-  (goto-char (point-min))
-  (let ((p (if (search-forward NIU nil t)
-               (hl-line-mode 1)
-             nil)))
-    (widen)
-    p))
-
-(defun brust-call-niu-insert-mark nil
-  (interactive)
-  (hl-line-mode 0)
-  (let ((NIU (string-reverse
-              (headlong-with
-               (completing-read "Insert NIU: "
-                                brust-niu-list nil t)))))
-    (brust-do-visible-bell)
-    (if (brust-search-new-niu NIU)
-        (let ((old-mark (s-trim (org-table-get-field brust-mark-column))))
-          (when (or (s-blank? old-mark)
-                    (y-or-n-p-with-timeout
-                     (format "This stundent had the mark %s. Continue? (default yes)" old-mark)
-                     brust-time-if-there-was-a-mark
-                     t))
-            (org-table-get-field brust-mark-column
-                                 (brust-replace-whatever-into-comma
-                                  (read-string "Enter mark:" nil 'brust-marks-hist)))
-            (org-table-align)))
-      (user-error "Error: NIU %d is in the list but not in the table!! (Reload all)" niu))))
-
-(advice-add 'brust-call-niu-insert-mark :after #'brust-call-niu-insert-mark)
-#+END_SRC
-
-#+RESULTS:
-: brust-call-niu-insert-mark
