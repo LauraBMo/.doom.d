@@ -66,6 +66,8 @@
 
 (package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
 
+(package! company-tabnine :recipe (:host github :repo "TommyX12/company-tabnine"))
+
 (package! keyfreq :recipe (:host github :repo "dacap/keyfreq"))
 
 (package! org-pandoc-import
