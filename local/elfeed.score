@@ -1,0 +1,17 @@
+;;; Elfeed score file                                     -*- lisp -*-
+((version 10)
+ ("title")
+ ("content")
+ ("title-or-content"
+  ;; (:text "disease" :title-value -100 :content-value -10 :type s)
+  )
+ ("tag")
+ ("authors"
+  (:text "Rick Miranda" :value 300 :type S)
+  (:text "Roe" :value 300 :type S)
+  (:text "Homs" :value 300 :type S))
+ ("feed")
+ ("link")
+ ("udf")
+ (mark -600)
+ ("adjust-tags"))

@@ -601,6 +601,46 @@ The package bibretrive is a mess, but it works for MathSciNet.
     (message "No DOI or Title found for %s" (car entry))))
 #+end_src
 
+#+begin_src elisp
+(defun biblio-zbmath-backend (command &rest args)
+  "A biblio.el backend for searching the zbmath.org database.
+
+COMMAND is a symbol specifying the backend command to execute.
+ARGS are the arguments for the command."
+  (pcase command
+    (`name "ZBMath")
+    (`prompt "ZBMath search: ")
+    (`url (format "https://www.zbmath.org/search/?q=%s" (url-encode-url (car args))))
+    (`parse-buffer
+     (let ((results '()))
+       (with-current-buffer (current-buffer)
+         (goto-char (point-min))
+         (while (re-search-forward "class=\"title\"><a href=\"/api/v2/entry/\\([0-9]+\\)\">\\(.*?\\)</a>" nil t)
+           (let* ((id (match-string-no-properties 1))
+                  (title (match-string-no-properties 2))
+                  (metadata `((id . ,id)
+                              (title . ,title))))
+             (push metadata results))))
+       results))
+    (`forward-bibtex
+     (let ((metadata (car args))
+           (forward-to (cadr args)))
+       (let ((bibtex (biblio-zbmath-get-bibtex metadata)))
+         (funcall forward-to bibtex))))
+    (_ (error "Invalid command"))))
+
+(defun biblio-zbmath-get-bibtex (metadata)
+  "Retrieve the BibTeX record for the paper with METADATA from zbmath.org.
+
+METADATA is a alist of metadata for the paper."
+  (let ((id (alist-get 'id metadata)))
+    (with-temp-buffer
+      (url-insert-file-contents (format "https://www.zbmath.org/api/v2/entry/%s/bibtex" id))
+      (buffer-string))))
+
+(add-hook 'biblio-init-hook #'biblio-zbmath-backend)
+#+end_src
+
 **** Scihub
 
 #+begin_src elisp :tangle packages.el
@@ -2873,6 +2913,10 @@ Bad
 Run =doom build= to make it work, install local version of =LanguageServer.jl=.
 It stopped working. Install both =LanguageServer= and =SymbolServer= master branch with =add LanguageServer#master= in =.emacs.d/.local/...= in =lsp-julia-package-dir=.
 
+#+begin_src bash :tangle no
+cd ~/.emacs.d/.local/straight/repos/lsp-julia/languageserver/
+#+end_src
+
 #+begin_src julia :results output :tangle no
 import Pkg
 # Pkg.add(name="LanguageServer", rev="master")
@@ -2882,7 +2926,7 @@ Pkg.add(name="SymbolServer", rev="master")
 #+end_src
 
 This command should give no error: (from [[file:~/.emacs.d/modules/lang/julia/doctor.el][Julia module's doctor]])
-#+begin_src bash :tangle no
+#+begin_src bash :tangle no :results output
 julia --project=/home/laury/.emacs.d/.local/straight/repos/lsp-julia/languageserver --startup-file=no --history-file=no -e "using LanguageServer, SymbolServer"
 #+end_src
 
@@ -2901,6 +2945,30 @@ julia --project=/home/laury/.emacs.d/.local/straight/repos/lsp-julia/languageser
         ))
 #+end_src
 
+#+begin_src elisp :tangle no
+(defun lsp-julia--rls-command ()
+  "The command to lauch the Julia Language Server."
+  `(,lsp-julia-command
+    ,@lsp-julia-flags
+    ,(concat "-e "
+             "\""
+             "import Pkg; Pkg.instantiate(); "
+             "using LanguageServer, LanguageServer.SymbolServer; "
+             ;; "Union{Int64, String}(x::String) = x; "
+             "server = LanguageServer.LanguageServerInstance("
+             "stdin, stdout, "
+             (lsp-julia--get-root) ", "
+             (lsp-julia--get-depot-path) ", "
+             "nothing, "
+             (lsp-julia--symbol-server-store-path-to-jl) ");"
+             " run(server);"
+             "\"")))
+#+end_src
+
+#+RESULTS:
+: lsp-julia--rls-command
+
+(lsp-julia--rls-command)
 *** ad-hoc functions
 **** Launch or link a julia process in vterm buffer
 
@@ -3825,11 +3893,12 @@ FACE defaults to inheriting from default and highlight."
 #+end_src
 
 ** Company
+*** Bindings
 #+BEGIN_SRC elisp
 (map! :after company
       :map company-active-map
-      "TAB"    #'brust-company-abort-cdlatex-or-yas
-      "<tab>"  #'brust-company-abort-cdlatex-or-yas
+      "TAB"    #'company-abort
+      "<tab>"  #'company-abort
       ;; "M-o"    #'counsel-company
       "<left>" #'company-complete-common
       "<right>" #'brust-company-insert-selection
@@ -3837,12 +3906,17 @@ FACE defaults to inheriting from default and highlight."
       "C-k"    #'company-previous-page
       "C-l"    #'company-show-location
       )
+#+END_SRC
+*** Aux functions
 
-(defun brust-company-abort-cdlatex-or-yas nil
-  (interactive)
-  (company-abort)
-  (cond ((fboundp 'cdlatex-tab) (cdlatex-tab))
-        ((fboundp 'yas-expand) (yas-expand))))
+#+begin_src elisp
+;; (defun brust-company--cdlatex-or-yas-on-abort (result)
+;;   (when result
+;;     (cond ((fboundp 'cdlatex-tab) (cdlatex-tab))
+;;           ((fboundp 'yas-expand) (yas-expand)))))
+
+;; (defun brust-company--cdlatex-or-yas-on-abort (result))
+;; (add-hook 'company-completion-cancelled-hook #'brust-company--cdlatex-or-yas-on-abort)
 
 (defun brust-company-insert-selection nil
   "Insert the selected candidate and continue company."
@@ -3850,7 +3924,23 @@ FACE defaults to inheriting from default and highlight."
   (when (and (company-manual-begin) company-selection)
     (let ((result (nth company-selection company-candidates)))
       (company--insert-candidate result))))
-#+END_SRC
+#+end_src
+*** Tabnine
+- [[https://www.tabnine.com/][Tabnine]]
+- [[https://github.com/TommyX12/company-tabnine][Company backend]]
+- [[https://codingstruggles.com/emacs,/tabnine/setting-tabnine-emacs.html][Setting up tabnine emacs]]
+
+#+begin_src elisp :tangle packages.el
+(package! company-tabnine :recipe (:host github :repo "TommyX12/company-tabnine"))
+#+end_src
+
+#+begin_src elisp
+(after! company
+  (setq +lsp-company-backends '(company-tabnine :separate company-capf company-yasnippet))
+  (setq company-show-numbers t)
+  (setq company-idle-delay 0)
+)
+#+end_src
 
 ** Evil mode
 *** Settings
