@@ -857,8 +857,8 @@ With prefix argument all files (hidden, .gitignoreds, ....) are shown as candida
 (defvar brust-find-file-recursively-default-dirs-alist
   '(("~/" . "Home")
     ("~/Dropbox/" . "Dropbox")
-    ("~/.emacs.d/" . "emacs.d")
-    ("~/.doom.d/" . ".doom.d"))
+    ("~/.config/emacs/" . "Emacs")
+    ("~/.config/doom/" . "Config_Doom"))
   "Cons list of `(dir . name)' to auto-create fzf searches in.")
 
 (cl-loop for dirname in brust-find-file-recursively-default-dirs-alist do
@@ -881,9 +881,9 @@ With prefix argument all files (hidden, .gitignoreds, ....) are shown as candida
 ;; +file-templates-dir
 
 ;; It is run once when upgrading or syncing doom (when .emacs.d/module/ folder might be modified).
-;; cp -r ~/.doom.d/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates
+;; cp -r ~/.config/doom/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates
 ;; alias doom-sync='~/.emacs.d/bin/doom sync && \
-;;     cp -r ~/.doom.d/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates && \
+;;     cp -r ~/.config/doom/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates && \
 ;;     echo > Templates sync'
 ;; alias doom-up='~/.emacs.d/bin/doom upgrade && doom-sync'
 
@@ -893,8 +893,10 @@ With prefix argument all files (hidden, .gitignoreds, ....) are shown as candida
 #+end_src
 
 #+begin_src bash :tangle no
-cp -r ~/.doom.d/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates
+cp -r ~/.config/doom/local/templates/* ~/.config/emacs/modules/editor/file-templates/templates
 #+end_src
+
+#+RESULTS:
 
 ** High light TODOS
 *** Making Items
@@ -1091,12 +1093,12 @@ TODO: work on the file =elfeed.stats=.
   :after elfeed
   :config
   (setq
-   elfeed-score-rule-stats-file "~/.doom.d/local/elfeed.stats"
-   elfeed-score-score-file "~/.doom.d/local/elfeed.score"
-   elfeed-score-serde-score-file  "~/.doom.d/local/elfeed.score"
+   elfeed-score-rule-stats-file "~/.config/doom/local/elfeed.stats"
+   elfeed-score-score-file "~/.config/doom/local/elfeed.score"
+   elfeed-score-serde-score-file  "~/.config/doom/local/elfeed.score"
    )
   ;; (setq elfeed-score-serde-score-file nil) ;;
-  ;; (elfeed-score-load-score-file "~/.doom.d/local/elfeed.score") ; See the elfeed-score documentation for the score file syntax
+  ;; (elfeed-score-load-score-file "~/.config/doom/local/elfeed.score") ; See the elfeed-score documentation for the score file syntax
   (elfeed-score-enable)
   (map! :map elfeed-search-mode-map
         :desc "Score" :n "=" elfeed-score-map))
@@ -1222,7 +1224,7 @@ From the PDF specification 1.7:
 
 ** COMMENT Workspaces (presp)
 #+begin_src elisp :tangle no
-(setq persp-save-dir (expand-file-name "~/.doom.d/local/workspaces/")
+(setq persp-save-dir (expand-file-name "~/.config/doom/local/workspaces/")
       persp-auto-save-persps-to-their-file-before-kill t)
 ;; persp-save-to-file-by-names
 #+end_src
@@ -1781,7 +1783,7 @@ Subtrees under a COMMENTed header are not evaluated."
         (buffer-substring-no-properties beg end)))))
 
 ;; (when (< 24 emacs-major-version)
-;;   (brust-endless/org-eval-eblocks "~/.doom.d/MyConfig.org" "init.el" t))
+;;   (brust-endless/org-eval-eblocks "~/.config/doom/MyConfig.org" "init.el" t))
 
 #+end_src
 ** Evil inset --> normal --> insert
@@ -2610,7 +2612,7 @@ Use pandoc to import files in .mw, .docs, ...
 ** AUCTeX
 #+BEGIN_SRC elisp
 ;; Add hooks and some basic variables declations
-(brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "init" t)
+(brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "init" t)
 
 ;; + variables has to be declared before loading module
 (setq +latex-bibtex-file "~/Dropbox/bibliography/my.bib"
@@ -2624,9 +2626,9 @@ Use pandoc to import files in .mw, .docs, ...
   (remove-hook 'TeX-mode-hook #'TeX-fold-mode)
   ;; Settings
   ;; Config options
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "config" t)
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "config" t)
   ;; Add C-c C-q for clean and indent
-  ;; (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "LaTeX-extra" t)
+  ;; (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "LaTeX-extra" t)
   )
 #+END_SRC
 
@@ -2634,7 +2636,7 @@ Use pandoc to import files in .mw, .docs, ...
 Add interactive TOC and references manager at .tex files.
 #+begin_src elisp
 (after! (latex reftex)
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "RefTeX" t)
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "RefTeX" t)
 
   (add-hook! 'reftex-select-label-mode-hook
     (map! :map reftex-select-label-mode-map
@@ -2661,7 +2663,7 @@ Add interactive TOC and references manager at .tex files.
 ** CDLaTeX
 #+begin_src elisp
 (after! (latex cdlatex)
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "cdLaTeX" t))
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "cdLaTeX" t))
 #+end_src
 ** Bratex
 *** Package
@@ -2791,19 +2793,19 @@ mkdir Maildir
   :commands (mu4e)
   :config
   ;; The setq's
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-mu4e-config.org" "Basic" t)
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-mu4e-config.org" "Basic" t)
 
   ;; My contexts
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-mu4e-config.org" "Contexts" t)
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-mu4e-config.org" "Contexts" t)
 
   ;; Actions
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-mu4e-config.org" "Actions" t)
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-mu4e-config.org" "Actions" t)
 
   ;; My Main menu
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-mu4e-config.org" "Main Menu" t)
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-mu4e-config.org" "Main Menu" t)
 
   ;; Marking emails for new actions
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-mu4e-config.org" "Marks" t)
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-mu4e-config.org" "Marks" t)
   (map! (:map mu4e-headers-mode-map
          "g" #'mu4e-headers-mark-for-tag
          "A" #'mu4e-headers-mark-for-moveUAB)
@@ -2922,13 +2924,14 @@ Run =doom build= to make it work, install local version of =LanguageServer.jl=.
 It stopped working. Install both =LanguageServer= and =SymbolServer= master branch with =add LanguageServer#master= in =.emacs.d/.local/...= in =lsp-julia-package-dir=.
 
 #+begin_src bash :tangle no
-cd ~/.emacs.d/.local/straight/repos/lsp-julia/languageserver/
+cd ~/.config/emacs/.local/straight/repos/lsp-julia/languageserver/
 #+end_src
 
 #+begin_src julia :results output :tangle no
 import Pkg
 # Pkg.add(name="LanguageServer", rev="master")
-Pkg.activate("~/.emacs.d/.local/straight/repos/lsp-julia/languageserver/")
+# Pkg.activate("~/.config/emacs/.local/straight/repos/lsp-julia/languageserver/")
+Pkg.activate("~/.config/emacs/.local/straight/build-28.1/lsp-julia/languageserver")
 Pkg.add(name="LanguageServer", rev="master")
 Pkg.add(name="SymbolServer", rev="master")
 #+end_src
@@ -4082,7 +4085,7 @@ Import any file to org mode
   :config
   (setq nyan-minimum-window-width 90
         ;;nyan-cat-face-number 3
-        +nyan-outerspace-image+ "~/.doom.d/local/outerspace.xpm"
+        +nyan-outerspace-image+ "~/.config/doom/local/outerspace.xpm"
         nyan-wavy-trail nil
         nyan-animate-nyancat nil
         ;; nyan-animation-frame-interval 0.2
