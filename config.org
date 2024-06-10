@@ -1236,7 +1236,8 @@ From the PDF specification 1.7:
  "s-s"      #'save-buffer
  "s-w"      #'evil-window-next
  ;; "s-c"      #'close-quoted-open-paren-right-or-left-end-of-line
- "s-f"      #'close-quoted-open-paren-right-or-left
+ "s-,"      #'close-quoted-open-paren-right-or-left
+ "s-f"      #'evil-avy-goto-char-timer
  ;; "s-SPC"    #'brust-cycle-whitespace ;; I am used to 'g SPC'
  "s-h"      #'recenter-top-bottom
  ;; "s-f"      #'flyspell-correct-previous ;; Learning to use z=
