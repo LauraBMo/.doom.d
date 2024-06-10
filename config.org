@@ -253,13 +253,14 @@ I’m rarely happier than when spending an entire day programming my computer
         ;;  (all-the-icons-octicon "rocket" :face 'doom-dashboard-menu-title)
         ;;  :action +workspace/load)
         ("Open my org"
-         :icon
-         (all-the-icons-fileicon "org" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-faicon "nf-fa-file_text" :face 'doom-dashboard-menu-title)
+         ;; :icon (all-the-icons-fileicon "org" :face 'doom-dashboard-menu-title)
          :when (file-exists-p (expand-file-name "~/Dropbox/Org/my.org"))
          :action brust-open-my-org)
         ;; :action (lambda nil (open-file (expand-file-name "~/Dropbox/Org/my.org"))))
         ("Email"
-         :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
+         :icon (nerd-icons-octicon "nf-oct-calendar" :face 'doom-dashboard-menu-title)
+         ;; :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
          :action mu4e)
         ;; ("Open register" :icon
         ;;  (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
@@ -268,8 +269,8 @@ I’m rarely happier than when spending an entire day programming my computer
         ;;  :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
         ;;  :action bookmark-jump)
         ("Open org-agenda"
-         :icon
-         (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-calendar" :face 'doom-dashboard-menu-title)
+         ;; :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
          :when (fboundp 'org-agenda)
          :action org-agenda)
         ;; ("Reload last session"
@@ -281,7 +282,8 @@ I’m rarely happier than when spending an entire day programming my computer
         ;;   (doom-dashboard-menu-title bold))
         ;;  :action doom/quickload-session)
         ("Open private configuration"
-         :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-tools" :face 'doom-dashboard-menu-title)
+         ;; :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
          :when (file-directory-p doom-private-dir)
          :action doom/open-private-config)
         ;; ("Notes"
@@ -293,6 +295,12 @@ I’m rarely happier than when spending an entire day programming my computer
         ;; ("IRC"
         ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
         ;;  :action =irc)))
+        ("Open project"
+         :icon (nerd-icons-octicon "nf-oct-briefcase" :face 'doom-dashboard-menu-title)
+         :action projectile-switch-project)
+        ("Jump to bookmark"
+         :icon (nerd-icons-octicon "nf-oct-bookmark" :face 'doom-dashboard-menu-title)
+         :action bookmark-jump)
         ))
 #+end_src
 ** Lookup online
@@ -472,10 +480,10 @@ Search, insert, call... =.bib= keys, entries, pdfs...
 (after! citar
   (setq
    ;; Use icons
-   citar-symbols
-   `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
-     (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
-     (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
+   ;; citar-symbols
+   ;; `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
+   ;;   (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
+   ;;   (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
    citar-symbol-separator "  "
    ;; My biblio files
    citar-bibliography '("~/Dropbox/bibliography/my.bib")
@@ -3846,23 +3854,22 @@ FACE defaults to inheriting from default and highlight."
   (setq ibuffer-saved-filter-groups
         (list (cons "home"
                     `((,(concat
-                         (all-the-icons-icon-for-mode 'org-mode :v-adjust -0.05)
+                         (nerd-icons-icon-for-mode 'org-mode :v-adjust -0.05)
                          " Org")
                        (or (mode . org-mode)
                            (name . "Org")
                            (filename . "Org")))
                       (,(concat
-                         (all-the-icons-octicon
-                          "file-directory"
+                         (nerd-icons-octicon "nf-oct-file_directory"
                           :face ibuffer-filter-group-name-face
                           :v-adjust -0.05)
                          " Files") (filename . ".*"))
                       (,(concat
-                         (all-the-icons-icon-for-mode 'dired-mode :v-adjust -0.05)
+                         (nerd-icons-icon-for-mode 'dired-mode :v-adjust -0.05)
                          " Dired")
                        (mode . dired-mode))
                       (,(concat
-                         (all-the-icons-icon-for-mode 'vterm-mode :v-adjust -0.05)
+                         (nerd-icons-icon-for-mode 'vterm-mode :v-adjust -0.05)
                          " Vterm")
                        (mode . vterm-mode))
                       ("Magit" (name . "\*magit"))
