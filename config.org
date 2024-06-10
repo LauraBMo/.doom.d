@@ -2339,15 +2339,18 @@ See `org-capture-templates' for more information."
   ;;              '("jj" . "src julia"))
   (add-to-list 'org-structure-template-alist
                ;; '("j" . "src ess-julia :results output :session *julia* :exports both"))
-               '("jj" . "src julia :results output"))
+               '("jj" . "src julia"))
   ;; Shortcut for inline graphical output within a session:
   ;; (add-to-list 'org-structure-template-alist
   ;;              '("jpic" . "src ess-julia :results output graphics file :file FILENAME.png"))
   (add-to-list 'org-structure-template-alist
                '("jvterm" . "src julia-vterm :session"))
+  ;; Julia + tangle to some file
+  (add-to-list 'org-structure-template-alist
+               '("jt" . "src julia :tangle"))
   ;; Shortcut for well-formatted org table output within a session:
   (add-to-list 'org-structure-template-alist
-               '("jtab" . "src julia :results value table :colnames yes")))
+               '("jorg" . "src julia :results value table :colnames yes")))
 #+end_src
 
 *** < inserts template
@@ -2864,7 +2867,9 @@ Bad
 ;; `ob-julia' needs this variable to be defined, but it's defined in
 ;; `ess-custom', which won't be available if you're using :lang julia and not
 ;; :lang ess.
-(defvar inferior-julia-program-name (or (executable-find "julia") "julia"))
+;; (defvar inferior-julia-program-name (or (executable-find "julia") "julia"))
+;; Now I use "juliaup", so ...
+(defvar inferior-julia-program-name "julia")
 
 (after! julia-repl
   (julia-repl-set-terminal-backend 'vterm)
@@ -2873,10 +2878,10 @@ Bad
   ;; treat underscores as word delimiters, see https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#how-do-i-get-motions-to-treat-underscores-as-word-delimiters
   (add-hook! 'julia-mode-hook (progn (modify-syntax-entry ?_ "w")
                                      (modify-syntax-entry ?! "w")))
-  (when (executable-find "julia")
-    (setq julia-repl-executable-records
-          `(;; (default "julia")
-            (master ,(executable-find "julia")))))
+  ;; (when (executable-find "julia")
+  ;;   (setq julia-repl-executable-records
+  ;;         `(;; (default "julia")
+  ;;           (master ,(executable-find "julia")))))
 
   ;; (add-hook! 'julia-repl-hook (julia-repl--send-string (concat "include(\"" (expand-file-name "~/.julia/config/startup.jl") "\")")))
   ;; It cause a problem, execute julia-repl--send-string in this hook (outside hook there is no problem, not realted to doom, emacs -q and install julia-repl reproduce it) Actually, not needed, now julia-repl loads startup.jl
@@ -2948,12 +2953,13 @@ julia --project=/home/laury/.emacs.d/.local/straight/repos/lsp-julia/languageser
 (use-package! lsp-julia
   ;; :after lsp
   :config
-  (setq ;; lsp-julia-package-dir nil
+  (setq lsp-julia-package-dir nil
         lsp-julia-default-environment "~/.julia/environments/v1.8"
         ;; lsp-enable-folding t
         lsp-julia-lint-nothingcomp nil ;; Do not check for nothing === something
         lsp-julia-format-indents nil
         lsp-julia-format-calls t
+        lsp-julia-flags '("--startup-file=no" "--history-file=no")
         ))
 #+end_src
 
