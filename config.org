@@ -1248,7 +1248,7 @@ From the PDF specification 1.7:
  ;; "C-P"      #'brust-evil-paste-pop-backwards ;; see C-n
  "M-p"      #'consult-yank-pop
  ;; :ier "M-i" #'evil-normal-state ;; it was tab-to-tab-stop
- ;; Now I use evil-escape (equivalent to key-chords jk kj) Press them a single key!
+ ;; Now I use evil-escape (equivalent to key-chords jk kj) Press them as a single key!
 
  ;; Insert mode
  :i "C-,"   #'+spell/correct
@@ -1560,8 +1560,8 @@ Config using Doom emacs. For doomed users not using Doom, evaluate code in =(aft
 
 #+begin_src elisp
 (after! embark
-  (embark-define-keymap embark-consult-color-action-map
-    "Keymap for embark actions in the `color' category of marginalia.")
+  (defvar-keymap embark-consult-color-action-map
+    :doc "Keymap for embark actions in the `color' category of marginalia.")
 
   ;; Kill and insert versions
   (defvar embark-consult-color-functions-alist
@@ -2977,10 +2977,6 @@ julia --project=/home/laury/.emacs.d/.local/straight/repos/lsp-julia/languageser
              "\"")))
 #+end_src
 
-#+RESULTS:
-: lsp-julia--rls-command
-
-(lsp-julia--rls-command)
 *** ad-hoc functions
 **** Launch or link a julia process in vterm buffer
 
@@ -3966,6 +3962,18 @@ FACE defaults to inheriting from default and highlight."
       ;; cursor is allowed to move one character past the end of the line
       evil-move-beyond-eol t
       evil-vsplit-window-right t)
+
+;; Swap evil surround default space insertion.
+;; (after! evil-surround
+;;   (evil--add-to-alist
+;;    'evil-surround-pairs-alist
+;;    ?\( '("(" . ")")
+;;    ?\[ '("[" . "]")
+;;    ?\{ '("{" . "}")
+;;    ?\) '("( " . " )")
+;;    ?\] '("[ " . " ]")
+;;    ?\} '("{ " . " }")))
+
 (global-evil-visualstar-mode +1)
 #+END_SRC
 
@@ -4036,6 +4044,14 @@ This package contains all the higher level UI modules of =lsp-mode=, like =flych
 (use-package! lsp-treemacs
   :after lsp
   :commands lsp-treemacs-errors-list)
+#+end_src
+*** Syntax checker (Flycheck)
+
+#+begin_src elisp
+(add-hook! flycheck-mode #'brust-flycheck-no-underline-info-warns)
+(defun brust-flycheck-no-underline-info-warns nil
+  (set-face-attribute 'flycheck-info nil :underline nil)
+  (set-face-attribute 'flycheck-warning nil :underline nil))
 #+end_src
 
 ** Magit
