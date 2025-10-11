@@ -4,6 +4,7 @@
  ;; Personal data
  user-full-name "Laura Brustenga i Moncusí"
  user-mail-address "laurea987@gmail.com"
+ user-emacs-directory "~/.config/doom/local/"
 
  ;; Scratch buffer
  initial-scratch-message ";; ╔═╗┌─┐┬─┐┌─┐┌┬┐┌─┐┬ ┬\n;; ╚═╗│  ├┬┘├─┤ │ │  ├─┤\n;; ╚═╝└─┘┴└─┴ ┴ ┴ └─┘┴ ┴\n"
@@ -43,13 +44,16 @@
  ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
  ;; font string. You generally only need these two:
  ;; doom-font (font-spec :family "IBM Plex Mono" :size 16 :weight 'light)
- doom-font (font-spec :family "IBM Plex Mono" :size 16)
+ doom-font (font-spec :family "IBM Plex Mono" :size 20)
 
  ;; There are two ways to load a theme. Both assume the theme is installed and
  ;; available. You can either set `doom-theme' or manually load a theme with the
  ;; `load-theme' function. This is the default:
- doom-theme 'doom-one
+ ;; doom-theme 'doom-one
  ;; doom-theme 'doom-sakura-light
+ ;; doom-theme 'doom-sakura-light
+ doom-theme 'doom-solarized-light
+ ;; doom-theme 'doom-zenburn
  ;; doom-theme 'doom-fairy-floss
 
  ;; If you use `org' and don't want your org files in the default location below,
@@ -73,13 +77,14 @@
         ;;  (all-the-icons-octicon "rocket" :face 'doom-dashboard-menu-title)
         ;;  :action +workspace/load)
         ("Open my org"
-         :icon
-         (all-the-icons-fileicon "org" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-faicon "nf-fa-file_text" :face 'doom-dashboard-menu-title)
+         ;; :icon (all-the-icons-fileicon "org" :face 'doom-dashboard-menu-title)
          :when (file-exists-p (expand-file-name "~/Dropbox/Org/my.org"))
          :action brust-open-my-org)
         ;; :action (lambda nil (open-file (expand-file-name "~/Dropbox/Org/my.org"))))
         ("Email"
-         :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
+         :icon (nerd-icons-octicon "nf-oct-calendar" :face 'doom-dashboard-menu-title)
+         ;; :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
          :action mu4e)
         ;; ("Open register" :icon
         ;;  (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
@@ -88,8 +93,8 @@
         ;;  :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
         ;;  :action bookmark-jump)
         ("Open org-agenda"
-         :icon
-         (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-calendar" :face 'doom-dashboard-menu-title)
+         ;; :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
          :when (fboundp 'org-agenda)
          :action org-agenda)
         ;; ("Reload last session"
@@ -101,7 +106,8 @@
         ;;   (doom-dashboard-menu-title bold))
         ;;  :action doom/quickload-session)
         ("Open private configuration"
-         :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-tools" :face 'doom-dashboard-menu-title)
+         ;; :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
          :when (file-directory-p doom-private-dir)
          :action doom/open-private-config)
         ;; ("Notes"
@@ -113,6 +119,12 @@
         ;; ("IRC"
         ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
         ;;  :action =irc)))
+        ("Open project"
+         :icon (nerd-icons-octicon "nf-oct-briefcase" :face 'doom-dashboard-menu-title)
+         :action projectile-switch-project)
+        ("Jump to bookmark"
+         :icon (nerd-icons-octicon "nf-oct-bookmark" :face 'doom-dashboard-menu-title)
+         :action bookmark-jump)
         ))
 
 (setq +lookup-provider-url-alist
@@ -135,73 +147,23 @@
 (add-hook! 'emacs-startup-hook (delete-selection-mode 1))
 ;; (setq delete-selection-save-to-register 'kill-ring)
 
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ ;; '(highlight ((t (:background "#454545" :foreground "black" :weight bold))))
+ '(org-block-begin-line ((t (:underline "#5d595f" :foreground "#aeaab2")))
+   "Face used for the line delimiting the begin of source blocks.")
+ '(org-block-end-line ((t (:overline "#5d595f" :foreground "#aeaab2")))
+   "Face used for the line delimiting the end of source blocks."))
+
 (put 'erase-buffer 'disabled nil)
 
-(setq column-number-mode nil
-      size-indication-mode nil
-      ;; doom-modeline-buffer-encoding nil
-      line-number-mode nil)
-
-(make-face 'mode-line-top-line-number)
-
-(set-face-attribute
- 'mode-line-top-line-number nil
- :inherit 'mode-line
- :foreground "gray60" :height 0.7)
-
-(defsubst doom-modeline-spc nil
+(defsubst brust-mode-line-doom-space nil
   "Text style with whitespace."
-  (propertize " " 'face (if (doom-modeline--active)
-                            'mode-line
-                          'mode-line-inactive)))
-
-(defsubst brust-line-number-mode--string nil
-  "Show current line/buffer total number of lines."
-  (concat (doom-modeline-spc)
-          ;; (:propertize "\[" face mode-line-bars-face)
-          (propertize "%l"
-                      'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive)
-                      'help-echo "Buffer size mouse-1: Display Line and Column Mode Menu"
-                      'mouse-face 'mode-line-highlight
-                      'local-map mode-line-column-line-number-mode-map)
-          (propertize (if brust-line-number-mode-show-total
-                          (concat "/" (brust--number-of-lines-current-buffer))
-                        "")
-                      'face 'mode-line-top-line-number
-                      'help-echo "Buffer size mouse-1: Display Line and Column Mode Menu"
-                      ;; 'mouse-face 'mode-line-highlight
-                      'local-map mode-line-column-line-number-mode-map)
-          (doom-modeline-spc)))
-
-(defgroup brust-line-number-mode nil "Show current and total number line.")
-
-(defcustom brust-line-number-mode-show-total t
-  "Show buffer's total number of lines in mode-line"
-  :group 'brust-line-number-mode
-  :type 'bool)
-
-(define-minor-mode brust-line-number-mode
-  "Toggle show current and total number line in the mode line (Brust Line Number mode).
-With a prefix argument ARG, enable it if ARG is
-positive, and disable it otherwise.  If called from Lisp, enable
-the mode if ARG is omitted or nil.
-
-Line numbers do not appear for very large buffers and buffers
-with very long lines; see variables `line-number-display-limit'
-and `line-number-display-limit-width'."
-  :init-value t :global t :group 'brust-line-number-mode
-  (or global-mode-string (setq global-mode-string '("")))
-  (setq global-mode-string
-        (delete '(:eval (brust-line-number-mode--string)) global-mode-string))
-  (if brust-line-number-mode
-      (unless (member '(:eval (brust-line-number-mode--string)) global-mode-string)
-        (setq global-mode-string
-              (append global-mode-string '((:eval (brust-line-number-mode--string))))))))
-
-;; (add-hook! 'emacs-startup-hook
-;;   (setq global-mode-string '("" (:eval (brust-line-number-mode--string)) display-time-string)))
-
-(add-hook! 'emacs-startup-hook (brust-line-number-mode +1))
+  ;; From doom-mode-line
+  (propertize " " 'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive)))
 
 (defun brust-kill-date nil
   (interactive)
@@ -211,31 +173,42 @@ and `line-number-display-limit-width'."
   (interactive)
   (message (format-time-string "w%Wd%j %A, %e %B %Y, (%e/%m/%Y - %R %Z) -- %s" (current-time))))
 
-(defvar mode-line-display-time-mode-map
+(defvar brust-mode-line-get-date-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map [mode-line mouse-1] #'brust-message-date)
     (define-key map [mode-line mouse-3] #'brust-kill-date)
     map) "\
 Keymap to show or kill current date.")
 
-(customize-set-variable 'display-time-string-forms
-                        '((propertize (concat " " 12-hours ":" minutes am-pm " ")
-                                      'face 'mode-line
-                                      'help-echo "Current date: mouse 1 show, mouse 3 kill"
-                                      'local-map mode-line-display-time-mode-map)))
+(customize-set-variable
+ 'display-time-string-forms
+ '((propertize (concat " " 12-hours ":" minutes am-pm " ")
+    'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive)
+    'help-echo "Current date: mouse 1 show, mouse 3 kill"
+    'mouse-face 'mode-line-highlight
+    'local-map brust-mode-line-get-date-mode-map)))
 
 (setq display-time-default-load-average nil)
 
-;; Time format
-(add-hook! 'emacs-startup-hook (display-time-mode +1))
+(defun brust-mode-line-set-number-modes nil
+  (load-file
+   (expand-file-name "~/.config/doom/local/lisp/brust-line-number.el"))
+  (brust-line-number-mode +1)
+  ;; doom-modeline-buffer-encoding nil
+  (line-number-mode -1)
+  (display-time-mode +1)
+  (column-number-mode -1)
+  (size-indication-mode -1))
+
+(add-hook 'emacs-startup-hook #'brust-mode-line-set-number-modes)
 
 (after! citar
   (setq
    ;; Use icons
-   citar-symbols
-   `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
-     (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
-     (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
+   ;; citar-symbols
+   ;; `((file ,(all-the-icons-faicon "file-o" :face 'all-the-icons-green :v-adjust -0.1) . " ")
+   ;;   (note ,(all-the-icons-material "speaker_notes" :face 'all-the-icons-blue :v-adjust -0.3) . " ")
+   ;;   (link ,(all-the-icons-octicon "link" :face 'all-the-icons-orange :v-adjust 0.01) . " "))
    citar-symbol-separator "  "
    ;; My biblio files
    citar-bibliography '("~/Dropbox/bibliography/my.bib")
@@ -414,8 +387,18 @@ With prefix, rebuild the cache before offering candidates."
 
 (map!
  "C-:" #'embark-act
+ (:map vertico-map ;; Its parent is minibuffer-mode-map
+       ;; But it defines: "TAB" #'vertico-insert
+       ;; So, we need force rebind it back.
+       "TAB" #'vertico-next)
  :map minibuffer-mode-map
  ;; Motion: LOWER from keyboard
+ "s-j" #'vertico-next
+ ;; "TAB" #'vertico-next
+ "s-k" #'vertico-previous
+ "s-l" #'vertico-insert
+ "s-SPC" #'vertico-insert
+ "s-h" #'vertico-first
  ;; "M-j" #'ivy-next-line
  ;; "M-k" #'ivy-previous-line
  ;;
@@ -424,6 +407,8 @@ With prefix, rebuild the cache before offering candidates."
  ;; "<right>"  #'my/vertico-insert-or-exit
  ;; ";"   #'ivy-immediate-done
  ;; "<return>" #'vertico-exit-input
+ "s-m" #'embark-select
+ "C-." #'embark-act
  "C-:" #'embark-act
  ;; Current bind  "M-<return>" ;; good enough
  ;;
@@ -461,19 +446,22 @@ With prefix, rebuild the cache before offering candidates."
 
 (defun brust-doom-project-find-file--add-hidden-files-option (orig-fun &rest args)
   (and current-prefix-arg
-      (+vertico/find-file-in default-directory)
-      t))
+       (+vertico/find-file-in default-directory)
+       t))
 
 ;; (advice-remove 'doom-project-find-file #'brust-doom-project-find-file--add-hidden-files-option)
 ;; (advice-add 'doom-project-find-file :around #'brust-doom-project-find-file--add-hidden-files-option)
 (advice-add 'doom-project-find-file :before-until #'brust-doom-project-find-file--add-hidden-files-option)
 
+(setq +corfu-want-tab-prefer-expand-snippets t
+      +corfu-want-tab-prefer-navigating-snippets t)
+
 ;; +file-templates-dir
 
 ;; It is run once when upgrading or syncing doom (when .emacs.d/module/ folder might be modified).
-;; cp -r ~/.doom.d/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates
+;; cp -r ~/.config/doom/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates
 ;; alias doom-sync='~/.emacs.d/bin/doom sync && \
-;;     cp -r ~/.doom.d/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates && \
+;;     cp -r ~/.config/doom/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates && \
 ;;     echo > Templates sync'
 ;; alias doom-up='~/.emacs.d/bin/doom upgrade && doom-sync'
 
@@ -482,7 +470,8 @@ With prefix, rebuild the cache before offering candidates."
 (set-file-template! "[.]jl"   :trigger "__jl"   :mode 'julia-mode)
 
 (after! hl-todo
-  (setq hl-todo-keyword-faces
+  (setq hl-todo-highlight-punctuation ":"
+        hl-todo-keyword-faces
         `(
           ("TODO"     . '(warning bold))
           ("DONE"     . "#afd8af")
@@ -492,223 +481,6 @@ With prefix, rebuild the cache before offering candidates."
   )
 ;; TODO DONE DOING CANCELED
 
-(after! elfeed
-  (setq elfeed-search-filter "@1-week-ago +unread"
-        ;; elfeed-search-print-entry-function #'my-search-print-fn
-        elfeed-search-print-entry-function #'elfeed-goodies/entry-line-draw
-        elfeed-show-entry-delete #'elfeed-goodies/delete-pane
-        ;; elfeed-search-date-format '("%y-%m-%d" 10 :left)
-        elfeed-search-title-max-width 90)
-
-  (map! :map elfeed-search-mode-map
-        :desc "Open entry" :n "SPC" #'elfeed-search-show-entry
-        :desc "Download pdf" :n "x" #'robo/elfeed-entry-to-arxiv
-        :desc "Biblio" :n "X" #'brust-elfeed-arxiv-send-entry-to-biblio
-        )
-
-
-  ;;        (:map elfeed-show-mode-map
-  ;;         :desc "Fetch arXiv paper to the local library" "a" #'robo/elfeed-entry-to-arxiv)))
-  (map! :map elfeed-show-mode-map
-        :desc "Quit" :n "q" #'elfeed-goodies/delete-pane
-        :desc "Open web" :n "o" #'link-hint-open-link
-        )
-
-  (add-hook! 'elfeed-search-mode-hook 'elfeed-update))
-
-(defcustom elfeed-goodies/feed-source-column-width 16
-  "Width of the feed source column."
-  :type 'integer)
-
-(defcustom elfeed-goodies/tag-column-width 24
-  "Width of the tags column."
-  :type 'integer)
-
-(defun brust-elfeed-get-nth-name (n list)
-  (plist-get (nth n list) :name))
-
-(defun concatenate-authors (list)
-  "Given AUTHORS-LIST, list of plists; return string of all authors concatenated."
-  (concat
-   (brust-elfeed-get-nth-name 0 list)
-   (if (> (length list) 1) (concat ", " (brust-elfeed-get-nth-name 1 list)))
-   (if (> (length list) 2) (concat ", " (brust-elfeed-get-nth-name 2 list)))
-   (if (> (length list) 3) " et al")
-   "."))
-
-(defun elfeed-goodies/entry-line-draw (entry)
-  "Print ENTRY to the buffer."
-  (let* (;; Title
-         (title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
-         (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
-         (title-width (- (window-width) 10 elfeed-search-trailing-width))
-         ;; (title-width (- (window-width) elfeed-goodies/feed-source-column-width
-         ;;                 elfeed-goodies/tag-column-width 4))
-         (title-column (elfeed-format-column
-                        title (elfeed-clamp
-                               elfeed-search-title-min-width
-                               title-width
-                               title-width)
-                        :left))
-         ;; Authors
-         (authors (concatenate-authors (elfeed-meta entry :authors)))
-         (authors-column (elfeed-format-column authors 45 :left))
-         (authors-face (if (memq 'unread (elfeed-entry-tags entry))
-                           'default
-                         'font-lock-comment-face))
-         ;; Score (requires elfeed-score.el)
-         (entry-score (elfeed-format-column (number-to-string (elfeed-score-scoring-get-score-from-entry entry)) 10 :left))
-         ;; Feed
-         (feed (elfeed-entry-feed entry))
-         (feed-title
-          (when feed
-            (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
-         (feed-column (elfeed-format-column
-                       feed-title (elfeed-clamp elfeed-goodies/feed-source-column-width
-                                                elfeed-goodies/feed-source-column-width
-                                                elfeed-goodies/feed-source-column-width)
-                       :left))
-         ;; Tags
-         (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
-         (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
-         (tag-column (elfeed-format-column
-                      tags-str (elfeed-clamp (length tags-str)
-                                             elfeed-goodies/tag-column-width
-                                             elfeed-goodies/tag-column-width)
-                      :left)))
-    (insert
-     (propertize feed-column 'face 'elfeed-search-feed-face) " "
-     ;; entry-score  " "
-     (propertize entry-score 'face 'elfeed-search-tag-face) " "
-     ;; (propertize tag-column 'face 'elfeed-search-tag-face) " "
-     (propertize authors-column 'face authors-face 'kbd-help authors) " "
-     (propertize title 'face title-faces 'kbd-help title))
-    ))
-
-(defun elfeed-goodies/delete-pane ()
-  "Delete the *elfeed-entry* split pane."
-  (interactive)
-  (let* ((buff (get-buffer "*elfeed-entry*"))
-         (window (get-buffer-window buff)))
-    (kill-buffer buff)
-    (delete-window window)))
-
-(use-package! elfeed-score
-  :after elfeed
-  :config
-  (setq
-   elfeed-score-rule-stats-file "~/.doom.d/local/elfeed.stats"
-   elfeed-score-score-file "~/.doom.d/local/elfeed.score"
-   elfeed-score-serde-score-file  "~/.doom.d/local/elfeed.score"
-   )
-  ;; (setq elfeed-score-serde-score-file nil) ;;
-  ;; (elfeed-score-load-score-file "~/.doom.d/local/elfeed.score") ; See the elfeed-score documentation for the score file syntax
-  (elfeed-score-enable)
-  (map! :map elfeed-search-mode-map
-        :desc "Score" :n "=" elfeed-score-map))
-
-(defun brust-elfeed-arxiv-send-entry-to-biblio (entry)
-  "Fetch an arXiv paper into the local library from the current elfeed entry."
-  (interactive (list (elfeed-search-selected :ignore-region)))
-  (require 'elfeed-show)
-  (when (elfeed-entry-p entry)
-    (when-let* ((link (elfeed-entry-link entry))
-                (match-idx (string-match "arxiv.org/abs/\\([0-9.]*\\)" link))
-                (matched-arxiv-number (match-string 1 link)))
-      (biblio-arxiv-lookup matched-arxiv-number))))
-
-(defun robo/elfeed-entry-to-arxiv (entry)
-  "Fetch an arXiv paper into the local library from the current elfeed entry."
-  (interactive (list (elfeed-search-selected :ignore-region)))
-  (require 'elfeed-show)
-  (when (elfeed-entry-p entry)
-    (when-let* ((link (elfeed-entry-link entry))
-                (match-idx (string-match "arxiv.org/abs/\\([0-9.]*\\)" link))
-                (matched-arxiv-number (match-string 1 link))
-                (title (elfeed-entry-title entry))
-                (fname (brust-citar-title-to-fname-default title)))
-      (message "Going to arXiv: %s" matched-arxiv-number)
-      (arxiv-get-pdf matched-arxiv-number fname))))
-
-;; From https://github.com/jkitchin/org-ref/blob/cbe9e870a5f488cdfc5e6a3b5478845ea8acdcde/org-ref-arxiv.el#L216
-(defun arxiv-get-pdf (arxiv-number pdf)
-  "Retrieve a pdf for ARXIV-NUMBER and save it to PDF."
-  (interactive
-   (list (read-string
-          "arxiv: "
-          (arxiv-maybe-arxiv-id-from-current-kill))
-         (read-string
-          "PDF: ")))
-  (let ((pdf-url (with-current-buffer
-                     (url-retrieve-synchronously
-                      (concat
-                       "http://arxiv.org/abs/" arxiv-number))
-                   ;; <meta name="citation_pdf_url" content="http://arxiv.org/pdf/0801.1144" />
-                   (goto-char (point-min))
-                   (search-forward-regexp
-                    "name=\\\"citation_pdf_url\\\" content=\\\"\\(.*\\)\\\"")
-                   (match-string 1))))
-    (url-copy-file pdf-url pdf)
-    ;; now check if we got a pdf
-    (unless (org-ref-pdf-p pdf)
-      (delete-file pdf)
-      (message "Error downloading arxiv pdf %s" pdf-url))))
-
-;; From https://github.com/jkitchin/org-ref/blob/cbe9e870a5f488cdfc5e6a3b5478845ea8acdcde/org-ref-utils.el#L457
-(defun org-ref-pdf-p (filename)
-  "Check if FILENAME is PDF file.
-From the PDF specification 1.7:
-    The first line of a PDF file shall be a header consisting of
-    the 5 characters %PDF- followed by a version number of the
-    form 1.N, where N is a digit between 0 and 7."
-  (let* ((header (with-temp-buffer
-                   (set-buffer-multibyte nil)
-                   (insert-file-contents-literally filename nil 0 5)
-                   (buffer-string)))
-         (valid (string-equal (encode-coding-string header 'utf-8) "%PDF-")))
-    (if valid
-        valid
-      (message "Invalid pdf. Header = %s" header)
-      nil)))
-
-;; From https://github.com/jkitchin/org-ref/blob/cbe9e870a5f488cdfc5e6a3b5478845ea8acdcde/org-ref-arxiv.el#L153
-(defun arxiv-maybe-arxiv-id-from-current-kill ()
-  "Try to get an arxiv ID from the current kill."
-  (let* ((the-current-kill (ignore-errors (current-kill 0 t)))  ;; nil if empty kill ring
-         (arxiv-url-prefix-regexp "^https?://arxiv\\.org/\\(pdf\\|abs\\|format\\)/")
-         (arxiv-cite-prefix-regexp "^\\(arXiv\\|arxiv\\):")
-         (arxiv-id-old-regexp "[a-z-]+\\(\\.[A-Z]\\{2\\}\\)?/[0-9]\\{5,7\\}") ; Ex: math.GT/0309136
-         (arxiv-id-new-regexp "[0-9]\\{4\\}[.][0-9]\\{4,5\\}\\(v[0-9]+\\)?") ; Ex: 1304.4404v2
-         (arxiv-id-regexp (concat "\\(" arxiv-id-old-regexp "\\|" arxiv-id-new-regexp "\\)")))
-    (cond
-     (;; make sure current-kill has something in it
-      ;; if current-kill is not a string, return nil
-      (not (stringp the-current-kill))
-      nil)
-     (;; check if current-kill looks like an arxiv ID
-      ;; if so, return it
-      ;; Ex: 1304.4404v2
-      (s-match (concat "^" arxiv-id-regexp) the-current-kill)
-      the-current-kill)
-     (;; check if current-kill looks like an arxiv cite
-      ;; if so, remove the prefix and return
-      ;; Ex: arXiv:1304.4404v2 --> 1304.4404v2
-      (s-match (concat arxiv-cite-prefix-regexp arxiv-id-regexp "$") the-current-kill)
-      (replace-regexp-in-string arxiv-cite-prefix-regexp "" the-current-kill))
-     (;; check if current-kill looks like an arxiv url
-      ;; if so, remove the url prefix and return
-      ;; Ex: https://arxiv.org/abs/1304.4404 --> 1304.4404
-      (s-match (concat arxiv-url-prefix-regexp arxiv-id-regexp "$") the-current-kill)
-      (replace-regexp-in-string arxiv-url-prefix-regexp "" the-current-kill))
-     (;; check if current-kill looks like an arxiv PDF url
-      ;; if so, remove the url prefix, the .pdf suffix, and return
-      ;; Ex: https://arxiv.org/pdf/1304.4404.pdf --> 1304.4404
-      (s-match (concat arxiv-url-prefix-regexp arxiv-id-regexp "\\.pdf$") the-current-kill)
-      (replace-regexp-in-string arxiv-url-prefix-regexp "" (substring the-current-kill 0 (- (length the-current-kill) 4))))
-     ;; otherwise, return nil
-     (t
-      nil))))
-
 (add-hook! 'emacs-startup-hook
   (+global-word-wrap-mode +1)
   (add-to-list '+word-wrap-disabled-modes 'emacs-lisp-mode)
@@ -717,9 +489,11 @@ From the PDF specification 1.7:
 (map!
  ;; s- commands: commands executed several times AND in several distinct modes.
  "s-s"      #'save-buffer
- "s-w"      #'evil-window-next
+ ;; "s-w"      #'evil-window-next
+ "s-w"      #'ace-window
  ;; "s-c"      #'close-quoted-open-paren-right-or-left-end-of-line
- "s-f"      #'close-quoted-open-paren-right-or-left
+ "s-,"      #'close-quoted-open-paren-right-or-left
+ "s-f"      #'evil-avy-goto-char-timer
  ;; "s-SPC"    #'brust-cycle-whitespace ;; I am used to 'g SPC'
  "s-h"      #'recenter-top-bottom
  ;; "s-f"      #'flyspell-correct-previous ;; Learning to use z=
@@ -730,7 +504,7 @@ From the PDF specification 1.7:
  ;; "C-P"      #'brust-evil-paste-pop-backwards ;; see C-n
  "M-p"      #'consult-yank-pop
  ;; :ier "M-i" #'evil-normal-state ;; it was tab-to-tab-stop
- ;; Now I use evil-escape (equivalent to key-chords jk kj) Press them a single key!
+ ;; Now I use evil-escape (equivalent to key-chords jk kj) Press them as a single key!
 
  ;; Insert mode
  :i "C-,"   #'+spell/correct
@@ -776,6 +550,7 @@ From the PDF specification 1.7:
  (:leader
   :desc "locleader" "SPC" nil ;; Unbind "SPC SPC"
   :desc "Delete other windows" "w 0" #'delete-other-windows
+  :desc "Transpose frames" "w t" #'transpose-frame
   ;; :desc "Rotate anticlockwise" "w a" #'rotate-frame-anticlockwise
   ;;
   ;; My global bindings of Laura: functions used everywhere but not so often.
@@ -890,9 +665,9 @@ From the PDF specification 1.7:
 (defvar consult-colors-history nil
   "History for `consult-colors-emacs' and `consult-colors-web'.")
 
-;; No longer preloaded in Emacs 28.
+;; No longer autoload in Emacs >28.
 (autoload 'list-colors-duplicates "facemenu")
-;; No preloaded in consult.el
+;; No autoload in consult.el
 (autoload 'consult--read "consult")
 
 (defun consult-colors-emacs (color)
@@ -965,8 +740,8 @@ Return nil if NAME does not designate a valid color."
     hex))
 
 (after! embark
-  (embark-define-keymap embark-consult-color-action-map
-    "Keymap for embark actions in the `color' category of marginalia.")
+  (defvar-keymap embark-consult-color-action-map
+    :doc "Keymap for embark actions in the `color' category of marginalia.")
 
   ;; Kill and insert versions
   (defvar embark-consult-color-functions-alist
@@ -1160,7 +935,7 @@ Subtrees under a COMMENTed header are not evaluated."
         (buffer-substring-no-properties beg end)))))
 
 ;; (when (< 24 emacs-major-version)
-;;   (brust-endless/org-eval-eblocks "~/.doom.d/MyConfig.org" "init.el" t))
+;;   (brust-endless/org-eval-eblocks "~/.config/doom/MyConfig.org" "init.el" t))
 
 (defun brust-evil-insert--to-normal-to-insert-state (&optional ARG)
   (evil-normal-state)
@@ -1306,24 +1081,63 @@ Subtrees under a COMMENTed header are not evaluated."
 (defun brust-vterm--eval-region nil
   (brust-vterm--eval-buffer-substring (region-beginning) (region-end) 1))
 
-(defun brust-vterm--eval-line nil
-  (brust-vterm--eval-buffer-substring (line-beginning-position) (line-end-position)))
+;; (defun brust-vterm--eval-line nil
+;;   (brust-vterm--eval-buffer-substring (line-beginning-position) (line-end-position)))
+
+(defun brust-vterm--launch (proc-buffer)
+  "Launches a new instance of vterm in buffer `vterm--buffer-name'."
+  (save-excursion (vterm-other-window proc-buffer)))
 
 (defun brust-vterm--link (proc-buffer origin-buffer)
   "Copies the value of the local variable `vterm--process' from buffer `proc-buffer' to buffer `origin-buffer'.
-Then, in `origin-buffer' we can use such a process to execute code in terminal via ."
+Then, in `origin-buffer' we can use such a process to execute code in terminal via `brust-vterm--eval-string' or any `brust-vterm--eval-*'."
   (save-excursion
     (set-buffer proc-buffer)
     (let ((proc vterm--process))
       (set-buffer origin-buffer)
       (setq-local vterm--process proc))))
 
-(defun brust-vterm--launch-and-link (origin-buffer sufix)
-  "Launches a new instance of vterm in buffer `origin-buffer-sufix' and links its process to `origin-buffer'."
+(defun brust-vterm--launch-and-link (suffix)
+  (let ((origin-buffer (buffer-name))
+        (proc-buffer (concat (buffer-name) suffix)))
+    (brust-vterm--launch proc-buffer)
+    (brust-vterm--link proc-buffer origin-buffer)))
+
+(defun brust-vterm-link-current-buffer-to-process nil
+  (interactive)
+  (let ((origin-buffer (buffer-name))
+        (proc-buffer (save-window-excursion (consult-buffer) (buffer-name))))
+    (brust-vterm--link proc-buffer origin-buffer)))
+
+(defun brust-vterm--ensure-process-alive (suffix &optional call)
+  ;; When process is not alive, always launch a new one without asking.
+  ;; If I wanted to link (unlikely), I can kill the new process and
+  ;; call brust-..-link-or-launch-and-link.
+  (unless (process-live-p vterm--process)
+    (brust-vterm--launch-and-link suffix)
+    (when call (brust-vterm--eval-string call))))
+
+(defun brust-vterm--input-bounds nil
   (save-excursion
-    (let ((proc-buffer (concat origin-buffer sufix)))
-      (vterm-other-window proc-buffer)
-      (brust-vterm--link proc-buffer origin-buffer))))
+    (move-beginning-of-line 1)
+    (search-forward "> " (point-at-eol) t)
+    ;; (message "  Input bounds are %i %i"
+    ;;          (car (cons (point) (point-at-eol)))
+    ;;          (cdr (cons (point) (point-at-eol))))
+    (cons (point) (point-at-eol))))
+
+(defun brust-vterm--input-string nil
+  (let* ((-bounds (brust-vterm--input-bounds))
+         (-str (buffer-substring (car -bounds) (cdr -bounds))))
+    ;; (message "  Input string is \"%s\"" -str)
+    -str))
+
+(defun brust-vterm-input-delete nil
+  (interactive)
+  (let* ((-bounds (brust-vterm--input-bounds))
+         (N (- (cdr -bounds) (car -bounds))))
+    (dotimes (i N) (term-send-left))
+    (dotimes (i N) (term-send-del))))
 
 (defvar brust-inline-whitespace-regexp  " \t\v\f")
 (defvar brust-whitespace-regexp  " \t\v\f\n")
@@ -1418,8 +1232,9 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
         "<" 'brust-org<
         (:localleader
          ;; "SPC" (kbd "C-c C-c")
-         :desc "vterm-julia send" "SPC" #'brust-org-mode-vterm-julia-send-region-or-block
-         :desc "vterm-julia launch new" "v" #'brust-julia--link-or-launch-and-link-vterm
+         :desc "mark src-bloc" "C-c ." #'org-babel-mark-block
+         :desc "vterm julia send" "SPC" #'brust-org-mode-vterm-julia-eval
+         :desc "vterm link" "v" #'brust-vterm-link-current-buffer-to-process
          :desc "Babel" "B" org-babel-map
          )))
 
@@ -1531,37 +1346,84 @@ See `org-capture-templates' for more information."
        Assets:Cash:Wallet"
   "Template for cash transaction with ledger.")
 
+;;; Code:
+;; (use-package jupyter
+;;   :ensure t
+;;   :defer t)
+
+(after! org
+  (defun cape-sage-block (&optional interactive)
+    "Complete SageMath in Org or Markdown code block.
+This Capf is particularly useful for literate Emacs configurations.
+If INTERACTIVE is nil the function acts like a Capf."
+    (interactive (list t))
+    (cond
+     (interactive
+      ;; No code block check. Always complete Elisp when command was
+      ;; explicitly invoked interactively.
+      (cape-interactive #'sage-shell-edit:completion-at-point-func))
+     ((cape--inside-block-p "sage" "sagemath" "jupyter-sage")
+      (sage-shell-edit:completion-at-point-func))))
+
+  (add-hook! '(org-mode-hook markdown-mode-hook)
+    (defun +corfu-add-cape-sage-block-h ()
+      (add-hook 'completion-at-point-functions #'cape-sage-block 0 t)))
+
+  ;; (cl-pushnew (cons "jupyter-sage" 'sage-shell:sage)
+  ;;             org-src-lang-modes :key #'car)
+
+  ;; (setq org-babel-default-header-args:jupyter-sage '((:async . "yes")
+  ;;                                                    (:session . "*Sage*")
+  ;;                                                    (:kernel . "sage")))
+
+  ;; Ob-sagemath supports only evaluating with a session.
+  (require 'ob-sagemath)
+  (setq org-babel-default-header-args:sage '((:session . t)
+                                             (:results . "output")))
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (julia . t)
+     ;; (sagemath . t)
+     (sage . t)
+     (latex . t)
+     (python . t)
+     ;; (jupyter . t)
+     ))
+  )
+
 (after! org
   (setq org-structure-template-alist (delete '("e" . "example") org-structure-template-alist)
         ;; org-structure-template-alist (delete '("j" . "src ess-julia :results output :session *julia* :exports both") org-structure-template-alist)
         ;; org-structure-template-alist (delete '("jj" . "src ess-julia :results output") org-structure-template-alist)
         org-structure-template-alist (delete '("E" . "export") org-structure-template-alist)))
 
+(defun brust-org-mode--add-structure-template-alist (templates)
+  "Adds to `org-structure-template-alist' the list of templates `templates'."
+  (cl-loop for temp in templates do
+           (add-to-list 'org-structure-template-alist temp)))
+
 (after! org
-  (add-to-list 'org-structure-template-alist
-               '("ee" . "src elisp"))
-  (add-to-list 'org-structure-template-alist
-               '("ep" . "src elisp :tangle packages.el"))
-  (add-to-list 'org-structure-template-alist
-               '("E" . "example"))
-  (add-to-list 'org-structure-template-alist
-               '("b" . "src bash"))
-  (add-to-list 'org-structure-template-alist
-               '("L" . "LaTeX"))
-  ;; Shortcut for "normal" session evaluation with verbatim output:
-  ;; (add-to-list 'org-structure-template-alist
-  ;;              '("jj" . "src julia"))
-  (add-to-list 'org-structure-template-alist
-               ;; '("j" . "src ess-julia :results output :session *julia* :exports both"))
-               '("jj" . "src julia :results output"))
-  ;; Shortcut for inline graphical output within a session:
-  ;; (add-to-list 'org-structure-template-alist
-  ;;              '("jpic" . "src ess-julia :results output graphics file :file FILENAME.png"))
-  (add-to-list 'org-structure-template-alist
-               '("jvterm" . "src julia-vterm :session"))
-  ;; Shortcut for well-formatted org table output within a session:
-  (add-to-list 'org-structure-template-alist
-               '("jtab" . "src julia :results value table :colnames yes")))
+  (brust-org-mode--add-structure-template-alist
+   (list (cons "ps" "src sage")
+         (cons "pp" "src python")
+         (cons "ee" "src elisp")
+         (cons "ep" "src elisp :tangle packages.el")
+         (cons "E" "example")
+         (cons "b" "src bash")
+         (cons "L" "LaTeX")
+         ;; Shortcut for "normal" session evaluation with verbatim output:
+         ;; (cons "jj" "src julia")
+         ;; (cons "j" "src ess-julia :results output :session *julia* :exports both")
+         (cons "jj" "src julia")
+         ;; Shortcut for inline graphical output within a session:
+         ;; (cons "jpic" "src ess-julia :results output graphics file :file FILENAME.png")
+         ;; (cons "jvterm" "src julia-vterm :session ")
+         ;; Julia + tangle to some file
+         ;; (cons "jt" "src julia :tangle ")
+         ;; Shortcut for well-formatted org table output within a session:
+         ;; (cons "jorg" "src julia :results value table :colnames yes")
+         )))
 
 (defun brust-org< nil
   "Self insert command or expand org-insert-structure-template"
@@ -1594,15 +1456,7 @@ See `org-capture-templates' for more information."
              ("7" . "☶")
              ("8," . "☷")))))
 
-(defun brust-org-mode-vterm-julia-send-region-or-line nil
-  (interactive)
-  (org-babel-when-in-src-block
-   (brust-julia--ensure-vterm-process-alive)
-   (if (use-region-p)
-       (brust-vterm--eval-region)
-     (brust-vterm--eval-line))))
-
-(defun brust-org-mode-vterm-julia--eval-block nil
+(defun brust-org-mode-vterm--eval-block nil
   (org-babel-when-in-src-block
    ;; Format block-info = (language body arguments switches name start coderef)
    (let* ((block-info (org-babel-get-src-block-info t))
@@ -1610,62 +1464,79 @@ See `org-capture-templates' for more information."
           (body (nth 1 block-info)))
      (brust-vterm--eval-string (concat body "\n") 1))))
 
-(defun brust-org-mode-vterm-julia-send-region-or-block nil
-  (interactive)
-  (brust-julia--ensure-vterm-process-alive)
-  (cond ((use-region-p) (brust-vterm--eval-region))
-        ((org-at-heading-p) (brust-endless/org-julia--eval-header))
-        (t (brust-org-mode-vterm-julia--eval-block))))
-
-;; Julia blocks
-(defun brust-endless/org-julia--eval-header nil
+(defun brust-org-mode-vterm--eval-buffer nil
+  "Eval all code blocks in buffer."
   (save-excursion
-    (org-narrow-to-subtree)
-    ;; (brust-endless/org-eval-eblocks-delete-commented-subtrees)
-    ;; (goto-char (point-min))
+    (goto-char (point-min))
     (while (not (eobp))
       (when (looking-at brust-endless/org-babel-src-block-regexp)
         (brust-vterm--eval-buffer-substring (match-beginning 5) (match-end 5) 1))
       (forward-line +1))
     (widen)))
 
-;; (brust-endless/org-eval-eblocks
-;;  nil
-;;  nil
-;;  nil
-;;  'brust-vterm--eval-buffer-substring))
+(defun brust-org-mode-vterm--eval-header nil
+  (org-narrow-to-subtree)
+  (brust-org-mode-vterm--eval-buffer)
+  (widen))
 
-;; Elisp blocks
+(defun brust-org-vterm--eval-region nil
+  "Eval either a few lines of code or the blocks of a few headers in region."
+  (if (org-in-src-block-p t)
+      (brust-vterm--eval-region)
+    (narrow-to-region (region-beginning) (region-end))
+    (brust-org-mode-vterm--eval-buffer)
+    (widen)))
+
+(defun brust-org-mode-vterm--eval-region-header-or-block nil
+  (cond ((use-region-p) (brust-org-vterm--eval-region))
+        ((org-at-heading-p) (brust-org-mode-vterm--eval-header))
+        (t (brust-org-mode-vterm--eval-block))))
+
+(defun brust-org-mode-vterm-julia-eval nil
+  (interactive)
+  (if current-prefix-arg ;; When prefix, open in server
+      (brust-vterm--ensure-process-alive "--julia" "cd && ssh ferrissa\n")
+    (brust-vterm--ensure-process-alive "--julia" "julia\n")
+    (brust-org-mode-vterm--eval-region-header-or-block)))
+
+(defun brust-org-mode-vterm-sage-eval nil
+  (interactive)
+  (brust-vterm--ensure-process-alive "--sage" "conda activate sage && sage\n")
+  (brust-org-mode-vterm--eval-region-header-or-block)
+  (with-current-buffer (process-buffer vterm--process)
+    (vterm-send-return)))
+
 (defun brust-endless/org-eval-current-header nil
   (interactive)
   (brust-endless/org-eval-eblocks
    (and (org-copy-subtree)
         (pop kill-ring))))
 
-(use-package! org-pandoc-import :after org)
-
-;; Add hooks and some basic variables declations
-(brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "init" t)
-
 ;; + variables has to be declared before loading module
 (setq +latex-bibtex-file "~/Dropbox/bibliography/my.bib"
       +latex-viewers '(pdf-tools))
 
+;; File types
+(add-to-list 'auto-mode-alist '("\\.sty\\'"  . LaTeX-mode))
+(add-to-list 'auto-mode-alist '("\\.tex\\'"  . LaTeX-mode))
+
 (after! latex
-  ;; File types
-  (add-to-list 'auto-mode-alist '("\\.sty\\'"  . LaTeX-mode))
+  ;; Add hooks and some basic variables declations
+  (add-hook 'LaTeX-mode-hook #'brust-LaTeX--hook t)
+  ;; ::TODO Mirà que conecta el customize-map-.... de outline.
 
   ;; Doom stuff
   (remove-hook 'TeX-mode-hook #'TeX-fold-mode)
+
   ;; Settings
   ;; Config options
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "config" t)
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "Config" t)
   ;; Add C-c C-q for clean and indent
-  ;; (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "LaTeX-extra" t)
+  ;; (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "LaTeX-extra" t)
   )
 
 (after! (latex reftex)
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "RefTeX" t)
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "RefTeX" t)
 
   (add-hook! 'reftex-select-label-mode-hook
     (map! :map reftex-select-label-mode-map
@@ -1689,7 +1560,7 @@ See `org-capture-templates' for more information."
           )))
 
 (after! (latex cdlatex)
-  (brust-endless/org-eval-eblocks "~/.doom.d/local/lisp/brusts-latex-config.org" "cdLaTeX" t))
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "cdLaTeX" t))
 
 (use-package! bratex
   :after latex)
@@ -1725,7 +1596,7 @@ See `org-capture-templates' for more information."
       :map cdlatex-mode-map
       "`" nil
       :i ";"   #'cdlatex-math-symbol
-      :i "C-;" (lambda nil (insert ";"))
+      ;; :i "M-;" (lambda nil (insert ";"))
       :i "TAB" #'cdlatex-tab
       :localleader
       "e" #'cdlatex-environment)
@@ -1735,97 +1606,64 @@ See `org-capture-templates' for more information."
 ;; `ob-julia' needs this variable to be defined, but it's defined in
 ;; `ess-custom', which won't be available if you're using :lang julia and not
 ;; :lang ess.
-(defvar inferior-julia-program-name (or (executable-find "julia") "julia"))
+;; (defvar inferior-julia-program-name (or (executable-find "julia") "julia"))
+;; Now I use "juliaup", so ...
+(defvar inferior-julia-program-name "julia")
 
 (after! julia-repl
   (julia-repl-set-terminal-backend 'vterm)
+  (setq vterm-kill-buffer-on-exit nil)
   ;; (add-hook 'term-mode-hook #'visual-line-mode)
   ;; (setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
   ;; treat underscores as word delimiters, see https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#how-do-i-get-motions-to-treat-underscores-as-word-delimiters
   (add-hook! 'julia-mode-hook (progn (modify-syntax-entry ?_ "w")
                                      (modify-syntax-entry ?! "w")))
-  (when (executable-find "julia")
-    (setq julia-repl-executable-records
-          `(;; (default "julia")
-            (master ,(executable-find "julia")))))
+  ;; (when (executable-find "julia")
+  ;;   (setq julia-repl-executable-records
+  ;;         `(;; (default "julia")
+  ;;           (master ,(executable-find "julia")))))
 
   ;; (add-hook! 'julia-repl-hook (julia-repl--send-string (concat "include(\"" (expand-file-name "~/.julia/config/startup.jl") "\")")))
   ;; It cause a problem, execute julia-repl--send-string in this hook (outside hook there is no problem, not realted to doom, emacs -q and install julia-repl reproduce it) Actually, not needed, now julia-repl loads startup.jl
   (map! (:map julia-mode-map
-         (:localleader
-          :desc "Generate exports"    "x" #'brust-julia-update-exports))
+              (:localleader
+               :desc "Generate exports"    "x" #'brust-julia-update-exports))
         (:map julia-repl-mode-map
-         (:localleader
-          :desc "line or region"      "SPC" #'julia-repl-send-region-or-line
-          :desc "Start process"       "o" #'+julia/open-repl
-          :desc "Start eglot server"  "." #'+lsp!
-          :desc "Set dir to buffer's" "d" #'julia-repl-cd
-          :desc "Doc symbol"          "h" #'julia-repl-doc
-          :desc "Call \\@edit"        "e" #'julia-repl-edit
-          :desc "Send buffer"         "b" #'julia-repl-send-buffer
-          :desc "Methods symbol"      "m" #'julia-repl-list-methods))
+              (:localleader
+               :desc "line or region"      "SPC" #'julia-repl-send-region-or-line
+               :desc "Start process"       "o" #'+julia/open-repl
+               :desc "Start eglot server"  "." #'+lsp!
+               :desc "Set dir to buffer's" "d" #'julia-repl-cd
+               :desc "Doc symbol"          "h" #'julia-repl-doc
+               :desc "Call \\@edit"        "e" #'julia-repl-edit
+               :desc "Send buffer"         "b" #'julia-repl-send-buffer
+               :desc "Methods symbol"      "m" #'julia-repl-list-methods))
         (:map vterm-mode-map
          :prefix "C-c"
          :desc "Clear buffer" "d" #'comint-clear-buffer)))
 
 (use-package! lsp-julia
   ;; :after lsp
+  :init
+  ;; (setq lsp-julia-default-environment "~/.julia/environments/v1.11"
+  ;;       lsp-julia-package-dir nil
+  ;;       )
+  ;; (setq lsp-julia-package-dir nil
+  ;;       lsp-julia-flags '("--startup-file=no" "--history-file=no" "-J/home/laury/.julia/languageserver.so"))
   :config
-  (setq ;; lsp-julia-package-dir nil
-        lsp-julia-default-environment "~/.julia/environments/v1.8"
-        ;; lsp-enable-folding t
+  (setq lsp-enable-folding t
         lsp-julia-lint-nothingcomp nil ;; Do not check for nothing === something
         lsp-julia-format-indents nil
         lsp-julia-format-calls t
+        lsp-julia-format-ops nil
+        ;; lsp-julia-flags '("--startup-file=no" "--history-file=no")
         ))
-
-(defun brust-julia--launch-and-link-vterm nil
-  (brust-vterm--launch-and-link (buffer-name) "--vjulia")
-  (brust-vterm--eval-string "julia\n"))
-
-(defun brust-julia--link-or-launch-and-link-vterm nil
-  (interactive)
-  (if (y-or-n-p "Link buffer to a julia process [y] or launch and link a new one [n]")
-      (brust-vterm--link
-       (save-window-excursion
-         (consult-buffer)
-         (buffer-name))
-       (buffer-name))
-    (brust-julia--launch-and-link-vterm)))
-
-(defun brust-julia--ensure-vterm-process-alive nil
-  ;; When process is not alive, always launch a new one without asking.
-  ;; If I wanted to link (unlikely), I can kill the new process and
-  ;; call brust-..-link-or-launch-and-link.
-  (unless (process-live-p vterm--process) (brust-julia--launch-and-link-vterm)))
-
-(defun brust--julia-input-bounds nil
-  (save-excursion
-    (move-beginning-of-line 1)
-    (search-forward "> " (point-at-eol) t)
-    ;; (message "  Input bounds are %i %i"
-    ;;          (car (cons (point) (point-at-eol)))
-    ;;          (cdr (cons (point) (point-at-eol))))
-    (cons (point) (point-at-eol))))
-
-(defun brust--julia-input-string nil
-  (let* ((-bounds (brust--julia-input-bounds))
-         (-str (buffer-substring (car -bounds) (cdr -bounds))))
-    ;; (message "  Input string is \"%s\"" -str)
-    -str))
-
-(defun brust--julia-input-delete nil
-  (interactive)
-  (let* ((-bounds (brust--julia-input-bounds))
-         (N (- (cdr -bounds) (car -bounds))))
-    (dotimes (i N) (term-send-left))
-    (dotimes (i N) (term-send-del))))
 
 (defun brust-julia--add-function (-fun)
   ;; (move-end-of-line 1)
   ;; (dotimes (i (point-at-eol) (point)) (term-send-right))
-  (let ((input (brust--julia-input-string)))
-    (brust--julia-input-delete)
+  (let ((input (brust-vterm--input-string)))
+    (brust-vterm-input-delete)
     (julia-repl--send-string (concat -fun "(" input ")"))))
 
 (defvar brust-julia-add-function-alist
@@ -1846,9 +1684,9 @@ List if julia functions names to define wrap for.")
                    `(lambda nil (interactive)
                       (brust-julia--add-function ,fun)))
              (map! (:map vterm-mode-map
-                    (:prefix "C-c"
-                     (:prefix ("f" . "Wrap fun")
-                      :desc desc bind fun-name)))))))
+                         (:prefix "C-c"
+                                  (:prefix ("f" . "Wrap fun")
+                                   :desc desc bind fun-name)))))))
 
 (defun brust-julia-update-exports nil
   (interactive)
@@ -1868,6 +1706,95 @@ List if julia functions names to define wrap for.")
       (pushnew! defunlist (julia-repl--symbols-at-point))
       (move-beginning-of-line 1))
     defunlist))
+
+(defgroup brust-ollama-buddy-julia nil
+  "AI-powered coding assistance for Julia using Ollama."
+  :group 'tools
+  :prefix "brust-ollama-buddy-julia-")
+
+;; (defcustom brust-ollama-buddy-julia-ollama-host "http://localhost:11434"
+;;   "Host URL for Ollama API."
+;;   :type 'string
+;;   :group 'brust-ollama-buddy-julia)
+
+(defcustom brust-ollama-buddy-julia-default-model "deepseek-coder:1.3b"
+  "Default Ollama model to use for code generation."
+  :type 'string
+  :group 'brust-ollama-buddy-julia)
+
+(defcustom brust-ollama-buddy-julia-system-prompt
+  "You are an expert Julia programmer specializing in scientific computing and numerical analysis.
+Provide concise, idiomatic Julia code following best practices.
+Always use the latest Julia syntax and standard library functions.
+
+KEY FOCUS AREAS:
+1. Performance optimization with type stability
+2. Memory efficiency and proper allocation patterns
+3. Multiple dispatch and generic programming
+4. Testing and documentation standards
+5. Package development best practices
+
+CODING GUIDELINES:
+- Use descriptive variable names following Julia conventions
+- Include proper docstrings with examples using triple quotes
+- Consider edge cases and error handling
+- Prefer standard library functions over custom implementations
+- Follow the official Julia Style Guide
+- Use multiple dispatch effectively
+- Ensure type stability for performance
+
+EXPLANATION STANDARDS:
+- Be precise and technical
+- Include relevant, runnable examples
+- Reference official Julia documentation when appropriate
+- Explain performance characteristics and tradeoffs
+- Highlight potential pitfalls and best practices
+"
+  "Default system prompt context for Julia code generation."
+  :type 'string
+  :group 'brust-ollama-buddy-julia)
+
+;;; Ollama Buddy Julia configuration
+(use-package! ollama-buddy
+  :bind
+  ("C-c o" . ollama-buddy-menu)
+  ("C-c O" . ollama-buddy-transient-menu-wrapper)
+  :config
+  ;; Optional: Set default model for all buffers
+  (setq ollama-buddy-default-model "deepseek-coder:1.3b"
+        ;; Optional: Set path to Ollama (if not default)
+        ;; ollama-buddy-ollama-host "http://localhost:11434"
+        ;; ollama-buddy-host "localhost"
+        ;; Optional: Enable context tracking
+        ollama-buddy-show-context-percentage t
+        ;; Optional: Enable debug mode if needed
+        ollama-buddy-debug-mode nil
+        ollama-buddy-supported-file-types
+        (append ollama-buddy-supported-file-types
+                '("\\.jl$" "\\.c$"))
+        ;; ollama-buddy-directory "~/.config/doom/local/lisp/ollama-boddy"
+        ;; ;; ollama-buddy-base-directory user-emacs-directory
+        ;; ollama-buddy-user-prompts-directory
+        ;; (expand-file-name "ollama-buddy-system-prompts" ollama-buddy-directory)
+        ;; ollama-buddy-sessions-directory
+        ;; (expand-file-name "ollama-buddy-sessions" ollama-buddy-directory)
+        ;; ollama-buddy-roles-directory
+        ;; (expand-file-name "ollama-buddy-presets" ollama-buddy-directory)
+        ;; ollama-buddy-modelfile-directory
+        ;; (expand-file-name "ollama-buddy-modelfiles" ollama-buddy-directory)
+        ;; ollama-buddy-awesome-local-dir
+        ;; (expand-file-name "awesome-chatgpt-prompts" ollama-buddy-directory)))
+        ))
+
+;; Julia mode specific configuration
+;; (after! julia-mode
+;;   ;; Ensure ollama-buddy is available in Julia buffers
+;;   (add-hook 'julia-mode-hook #'ollama-buddy-julia-setup))
+
+;; Use the enhanced system prompt setting function
+(defun brust-julia-ai-setup nil
+  (ollama-buddy--set-system-prompt-with-metadata julia-ai-system-prompt "Julia (main) System" "programmer")
+  )
 
 ;; (add-load-path! "~/src/maplev-master/lisp")
 (autoload 'maplev-mode "maplev" "Maple editing mode" 'interactive)
@@ -1930,22 +1857,22 @@ List if julia functions names to define wrap for.")
   (brust-singular-finish-line-interaction-mode))
 
 (map! (:map c++-mode-map
-       "C-<return>" #'newline
-       "<return>" #'brust-singular-finish-line-singular-edit-mode
-       (:localleader
-        "<tab>" #'brust-singular-dynamic-complete
-        "a"   #'singular-beginning-of-line
-        "p"   #'brust-singular-add-print
-        "s"   #'brust-singular-add-std
-        "SPC" #'brust-singular-eval-region-or-line
-        ";" #'comment-region
-        "b" #'brust-singular-eval-buffer
-        "s" #'brust-singular-fixed-region-set-region
-        "f" #'brust-singular-fixed-region-eval
-        "e" #'brust-singular-eval-proc))
+            "C-<return>" #'newline
+            "<return>" #'brust-singular-finish-line-singular-edit-mode
+            (:localleader
+             "<tab>" #'brust-singular-dynamic-complete
+             "a"   #'singular-beginning-of-line
+             "p"   #'brust-singular-add-print
+             "s"   #'brust-singular-add-std
+             "SPC" #'brust-singular-eval-region-or-line
+             ";" #'comment-region
+             "b" #'brust-singular-eval-buffer
+             "s" #'brust-singular-fixed-region-set-region
+             "f" #'brust-singular-fixed-region-eval
+             "e" #'brust-singular-eval-proc))
       (:map singular-interactive-mode-map
-       "C-p" #'brust-singular-add-print
-       "C-s" #'brust-singular-add-std))
+            "C-p" #'brust-singular-add-print
+            "C-s" #'brust-singular-add-std))
 
 (defvar brust-singular-fixed-region-poss nil "Cons of positions delimiting the fixed region")
 
@@ -2218,6 +2145,39 @@ List if julia functions names to define wrap for.")
       (call-interactively 'M2-send-to-program)
     (call-interactively 'M2)))
 
+(use-package! sage-shell-mode
+  :defer t
+  :custom ((sage-shell:use-simple-prompt t)
+           (sage-shell:use-prompt-toolkit nil)
+           (sage-shell:set-ipython-version-on-startup nil)
+           (sage-shell:check-ipython-version-on-startup nil)
+           (sage-shell:sage-root nil)
+           (sage-shell:sage-executable "/home/laury/miniforge3/envs/sage/bin/sage"))
+  :hook (;;(sage-shell-mode . malb/sage-shell-company-completion)
+         ;; Turn on eldoc-mode in Sage terminal and in Sage source files
+         (sage-shell:sage-mode-hook . eldoc-mode)
+         (sage-shell-mode-hook . eldoc-mode)
+         (sage-shell-after-prompt . sage-shell-view-mode))
+  :bind (:map sage-shell-mode-map
+              ("C-<up>" . comint-previous-matching-input-from-input)
+              ("C-<down>" . comint-next-matching-input-from-input)
+              ("M-p" . comint-previous-matching-input-from-input)
+              ("M-n" . comint-next-matching-input-from-input))
+  :config
+  ;; Run SageMath by M-x run-sage instead of M-x sage-shell:run-sage
+  (sage-shell:define-alias)
+  (setq sage-shell-view-default-commands 'plots
+        sage-shell-view-scale 1.5
+        sage-shell-view-default-resolution 180
+        sage-shell:input-history-cache-file (concat user-emacs-directory "sage_shell_input_history")
+        ;; sage-shell:sage-executable malb/sage-executable
+        ;; ac-sage-show-quick-help t
+        ))
+
+(after! android-mode
+  (setq android-mode-sdk-dir "~/Android/Sdk")
+  (add-hook 'kotlin-mode-hook #'lsp!))
+
 (setq pre-abbrev-expand-hook (quote (ignore))
       save-abbrevs 'silently)
 (when (file-exists-p "~/Dropbox/config/abbrev-def.el")
@@ -2259,16 +2219,10 @@ List if julia functions names to define wrap for.")
 
 (add-hook! 'emacs-lisp-mode-hook (modify-syntax-entry ?- "w"))
 
-(setq hl-todo-highlight-punctuation ":")
-
-;; (setq ispell-highlight-face 'flyspell-incorrect)
-
-;; See https://github.com/doomemacs/doomemacs/issues/4239
-;; Useful for spell-fu
-;; Notice the lack of "--run-together"
-(setq ispell-extra-args '("--sug-mode=ultra"))
-
 (add-hook! 'emacs-startup-hook (recentf-mode 1))
+
+(after! projectile (setq projectile-project-root-files-bottom-up (remove ".git"
+          projectile-project-root-files-bottom-up)))
 
 (after! org
   ;; Doom disables =show-paren-mode= because:
@@ -2315,34 +2269,34 @@ Add this function to `org-mode-hook'."
   (advice-add
    #'show-paren-function
    :after
-    (defun show-paren--off-screen+ (&rest args)
-      "Display matching line for off-screen paren."
-      ;; (apply orig-fun args)
-      (when (overlayp ov)
-        (delete-overlay ov))
-      ;; check if it's appropriate to show match info,
-      ;; see `blink-paren-post-self-insert-function'
-      (when (and (overlay-buffer show-paren--overlay)
-                 (not (or cursor-in-echo-area
-                          executing-kbd-macro
-                          noninteractive
-                          (minibufferp)
-                          this-command))
-                 (and (not (bobp))
-                      (memq (char-syntax (char-before)) '(?\) ?\$)))
-                 (= 1 (logand 1 (- (point)
-                                   (save-excursion
-                                     (forward-char -1)
-                                     (skip-syntax-backward "/\\")
-                                     (point))))))
-        ;; rebind `minibuffer-message' called by
-        ;; `blink-matching-open' to handle the overlay display
-        (cl-letf (((symbol-function #'minibuffer-message)
-                   (lambda (msg &rest args)
-                     (let ((msg (apply #'format-message msg args)))
-                       (setq ov (display-line-overlay+
-                                 (window-start) msg ))))))
-          (blink-matching-open))))))
+   (defun show-paren--off-screen+ (&rest args)
+     "Display matching line for off-screen paren."
+     ;; (apply orig-fun args)
+     (when (overlayp ov)
+       (delete-overlay ov))
+     ;; check if it's appropriate to show match info,
+     ;; see `blink-paren-post-self-insert-function'
+     (when (and (overlay-buffer show-paren--overlay)
+                (not (or cursor-in-echo-area
+                         executing-kbd-macro
+                         noninteractive
+                         (minibufferp)
+                         this-command))
+                (and (not (bobp))
+                     (memq (char-syntax (char-before)) '(?\) ?\$)))
+                (= 1 (logand 1 (- (point)
+                                  (save-excursion
+                                    (forward-char -1)
+                                    (skip-syntax-backward "/\\")
+                                    (point))))))
+       ;; rebind `minibuffer-message' called by
+       ;; `blink-matching-open' to handle the overlay display
+       (cl-letf (((symbol-function #'minibuffer-message)
+                  (lambda (msg &rest args)
+                    (let ((msg (apply #'format-message msg args)))
+                      (setq ov (display-line-overlay+
+                                (window-start) msg ))))))
+         (blink-matching-open))))))
 
 (defadvice show-paren--off-screen+ (around evil activate)
   "Match parentheses in Normal state."
@@ -2440,37 +2394,36 @@ FACE defaults to inheriting from default and highlight."
   (setq ibuffer-formats ;; Modify Ibuffer columns (toggle with `)
         (append ibuffer-formats
                 '((mark vc-status-mini " "
-                        (icon 2 2 :left :elide)
-                        (size 5 -1 :right)
-                        " "
-                        (name 40 40 :left :elide)
-                        ;; " "
-                        ;; (mode 16 16 :left :elide)
-                        ;; " "
-                        ;; (vc-status 16 16 :left)
-                        " "
-                        filename-and-process))))
+                   (icon 2 2 :left :elide)
+                   (size 5 -1 :right)
+                   " "
+                   (name 40 40 :left :elide)
+                   ;; " "
+                   ;; (mode 16 16 :left :elide)
+                   ;; " "
+                   ;; (vc-status 16 16 :left)
+                   " "
+                   filename-and-process))))
 
   (setq ibuffer-saved-filter-groups
         (list (cons "home"
                     `((,(concat
-                         (all-the-icons-icon-for-mode 'org-mode :v-adjust -0.05)
+                         (nerd-icons-icon-for-mode 'org-mode :v-adjust -0.05)
                          " Org")
                        (or (mode . org-mode)
                            (name . "Org")
                            (filename . "Org")))
                       (,(concat
-                         (all-the-icons-octicon
-                          "file-directory"
-                          :face ibuffer-filter-group-name-face
-                          :v-adjust -0.05)
+                         (nerd-icons-octicon "nf-oct-file_directory"
+                                             :face ibuffer-filter-group-name-face
+                                             :v-adjust -0.05)
                          " Files") (filename . ".*"))
                       (,(concat
-                         (all-the-icons-icon-for-mode 'dired-mode :v-adjust -0.05)
+                         (nerd-icons-icon-for-mode 'dired-mode :v-adjust -0.05)
                          " Dired")
                        (mode . dired-mode))
                       (,(concat
-                         (all-the-icons-icon-for-mode 'vterm-mode :v-adjust -0.05)
+                         (nerd-icons-icon-for-mode 'vterm-mode :v-adjust -0.05)
                          " Vterm")
                        (mode . vterm-mode))
                       ("Magit" (name . "\*magit"))
@@ -2499,49 +2452,34 @@ FACE defaults to inheriting from default and highlight."
     (ibuffer-update nil t))
   )
 
-(map! :after company
-      :map company-active-map
-      "TAB"    #'company-abort
-      "<tab>"  #'company-abort
-      ;; "M-o"    #'counsel-company
-      "<left>" #'company-complete-common
-      "<right>" #'brust-company-insert-selection
-      "C-j"    #'company-next-page
-      "C-k"    #'company-previous-page
-      "C-l"    #'company-show-location
-      )
-
-;; (defun brust-company--cdlatex-or-yas-on-abort (result)
-;;   (when result
-;;     (cond ((fboundp 'cdlatex-tab) (cdlatex-tab))
-;;           ((fboundp 'yas-expand) (yas-expand)))))
-
-;; (defun brust-company--cdlatex-or-yas-on-abort (result))
-;; (add-hook 'company-completion-cancelled-hook #'brust-company--cdlatex-or-yas-on-abort)
-
-(defun brust-company-insert-selection nil
-  "Insert the selected candidate and continue company."
-  (interactive)
-  (when (and (company-manual-begin) company-selection)
-    (let ((result (nth company-selection company-candidates)))
-      (company--insert-candidate result))))
-
-(after! company
-  (setq +lsp-company-backends '(company-tabnine :separate company-capf company-yasnippet))
-  (setq company-show-numbers t)
-  (setq company-idle-delay 0)
-)
+(use-package! eat
+  :config
+  ;; Your configuration here
+  )
 
 (setq evil-cross-lines t
       ;; Use both =jk= and =kj= to esc insert mode
       ;; (equivalent to key-chords jk kj) Press them as single key!
+      evil-escape-key-sequence "jf" ;; Default "fd"
       evil-escape-unordered-key-sequence t
-      evil-split-window-below t
+      ;; evil-split-window-below t
       ;; pasting in visual state NOT adds the replaced text to the kill ring
       evil-kill-on-visual-paste nil
       ;; cursor is allowed to move one character past the end of the line
       evil-move-beyond-eol t
       evil-vsplit-window-right t)
+
+;; Swap evil surround default space insertion.
+;; (after! evil-surround
+;;   (evil--add-to-alist
+;;    'evil-surround-pairs-alist
+;;    ?\( '("(" . ")")
+;;    ?\[ '("[" . "]")
+;;    ?\{ '("{" . "}")
+;;    ?\) '("( " . " )")
+;;    ?\] '("[ " . " ]")
+;;    ?\} '("{ " . " }")))
+
 (global-evil-visualstar-mode +1)
 
 (defun bb/evil-delete--black-hole-register (orig-fn beg end &optional type _ &rest args)
@@ -2549,6 +2487,16 @@ FACE defaults to inheriting from default and highlight."
 
 (advice-add 'evil-delete-char :around 'bb/evil-delete--black-hole-register)
 (advice-add 'evil-delete-backward-char :around 'bb/evil-delete--black-hole-register)
+
+(after! jinx
+  (setq ;; jinx-languages "pt_BR en_US"
+   jinx-delay 1.0))
+
+(after! vertico-multiform ;; if using vertico
+  (add-to-list 'vertico-multiform-categories
+               '(jinx (vertico-grid-annotate . 25)))
+
+  (vertico-multiform-mode 1))
 
 (use-package! keyfreq
   :init
@@ -2560,6 +2508,22 @@ FACE defaults to inheriting from default and highlight."
           backward-char
           previous-line
           next-line)))
+
+(defun import-revolut ()
+  "Process and import Revolut CSV"
+  (interactive)
+  (let* ((csv-file (read-file-name "Select Revolut CSV: " "~/Downloads/"))
+         (ledger-file "~/finance/main.ledger"))
+    (shell-command (format "julia ~/finance/scripts/process_revolut.jl '%s'" csv-file))
+    (with-current-buffer (find-file ledger-file)
+      (goto-char (point-max))
+      (insert-file-contents "~/finance/data/processed.ledger")
+      (ledger-mode-clean-buffer)
+      (save-buffer)
+      (message "Imported %d transactions" (count-lines (point-min) (point-max))))))
+(map! :leader
+      :prefix "f"
+      "i" #'import-revolut)
 
 (use-package! lsp-ui
   :after lsp
@@ -2574,23 +2538,28 @@ FACE defaults to inheriting from default and highlight."
   :after lsp
   :commands lsp-treemacs-errors-list)
 
+(add-hook! flycheck-mode #'brust-flycheck-no-underline-info-warns)
+(defun brust-flycheck-no-underline-info-warns nil
+  (set-face-attribute 'flycheck-info nil :underline nil)
+  (set-face-attribute 'flycheck-warning nil :underline nil))
+
 (after! magit
-  (setq magit-turn-on-auto-revert-mode nil
-        magit-diff-hide-trailing-cr-characters t
-        magit-set-upstream-on-push 'dontask
-        magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1
-        magit-save-repository-buffers 'dontask
-        magit-diff-paint-whitespace t
-        ;; magit-diff-refine-ignore-whitespace nil
-        magit-diff-refine-hunk t)
+  (setq ;; magit-turn-on-auto-revert-mode nil
+   magit-diff-hide-trailing-cr-characters t
+   ;; magit-set-upstream-on-push 'dontask
+   ;; magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1
+   magit-save-repository-buffers 'dontask
+   magit-diff-paint-whitespace t
+   ;; magit-diff-refine-ignore-whitespace nil
+   magit-diff-refine-hunk t)
 
   ;; (add-hook 'magit-log-edit-mode-hook #'turn-on-flyspell)
-  ;; (add-hook 'git-commit-mode-hook #'turn-on-flyspell)
+  (add-hook 'git-commit-mode-hook #'turn-on-flyspell)
 
   (add-hook! 'magit-mode-hook
-            (map! :map magit-mode-map
-                  :n "n" #'magit-section-forward-sibling
-                  :n "p" #'magit-section-backward-sibling)))
+    (map! :map magit-mode-map
+          :n "n" #'magit-section-forward-sibling
+          :n "p" #'magit-section-backward-sibling)))
 
 (use-package! nyan-mode
   :defer t
@@ -2599,7 +2568,7 @@ FACE defaults to inheriting from default and highlight."
   :config
   (setq nyan-minimum-window-width 90
         ;;nyan-cat-face-number 3
-        +nyan-outerspace-image+ "~/.doom.d/local/outerspace.xpm"
+        +nyan-outerspace-image+ "~/.config/doom/local/outerspace.xpm"
         nyan-wavy-trail nil
         nyan-animate-nyancat nil
         ;; nyan-animation-frame-interval 0.2
@@ -2620,19 +2589,19 @@ FACE defaults to inheriting from default and highlight."
 
 (after! pdf-tools
   ;; open pdfs scaled to fit page
-  ;; (setq-default pdf-view-display-size 'fit-page)
+  (setq-default pdf-view-display-size 'fit-page)
   ;; automatically annotate highlights
   (setq pdf-annot-activate-created-annotations t
         pdf-view-resize-factor 1.1)
+  (add-hook! 'pdf-view-mode-hook
+             (brust-line-number-mode -1)
+             (pdf-isearch-batch-mode +1))
   ;; faster motion
   (map!
    :map pdf-view-mode-map
-   :n "<"            #'pdf-view-first-page
-   :n ">"            #'pdf-view-last-page
+   :n "g g"            #'pdf-view-first-page
+   :n "G"            #'pdf-view-last-page
    :n "q"            #'kill-current-buffer
-   ;; "C-k"          #'pdf-view-next-page-command
-   ;; "C-i"          #'pdf-view-previous-page-command
-   ;; "s-SPC"        #'pdf-view-scroll-down-or-previous-page
    :n "s-j"          #'pdf-view-next-line-or-next-page
    :n "s-k"          #'pdf-view-previous-line-or-previous-page
    :n "s-h"          #'image-backward-hscroll
@@ -2650,23 +2619,32 @@ FACE defaults to inheriting from default and highlight."
    :n "s-<mouse-5>"  #'pdf-view-next-line-or-next-page
    :n "s-<mouse-4>"  #'pdf-view-previous-line-or-previous-page
    ;; :n "."            #'hydra-pdftools/body
-   ))
+   :localleader
+   ";" #'pdf-outline ;; Same binding as .tex toc
+   "w" #'pdf-view-fit-width-to-window
+   "o" #'pdf-occur
+   (:prefix
+    ("a" . "Annotate") ;; Copy of 'pdf-annot-minor-mode-map
+    "D" #'pdf-annot-delete
+    "l" #'pdf-annot-list-annotations
+    "t" #'pdf-annot-add-text-annotation
+    )))
 
-;; (eval-after-load 'interleave
-;; (add-hook 'pdf-view-mode-hook #'brust-pdf-tools-hook t))
+  ;; (eval-after-load 'interleave
+  ;; (add-hook 'pdf-view-mode-hook #'brust-pdf-tools-hook t))
 
-(defun brust-image-backward-hsroll-5 (args)
-  (interactive "p")
-  (brust-by-five #'image-backward-hscroll args))
-(defun brust-image-forward-hsroll-5 (args)
-  (interactive "p")
-  (brust-by-five #'image-forward-hscroll args))
-(defun brust-pdf-view-next-line-or-next-page-5 (args)
-  (interactive "p")
-  (brust-by-five #'pdf-view-next-line-or-next-page args))
-(defun brust-pdf-view-previous-line-or-previous-page-5 (args)
-  (interactive "p")
-  (brust-by-five #'pdf-view-previous-line-or-previous-page args))
+  (defun brust-image-backward-hsroll-5 (args)
+    (interactive "p")
+    (brust-by-five #'image-backward-hscroll args))
+  (defun brust-image-forward-hsroll-5 (args)
+    (interactive "p")
+    (brust-by-five #'image-forward-hscroll args))
+  (defun brust-pdf-view-next-line-or-next-page-5 (args)
+    (interactive "p")
+    (brust-by-five #'pdf-view-next-line-or-next-page args))
+  (defun brust-pdf-view-previous-line-or-previous-page-5 (args)
+    (interactive "p")
+    (brust-by-five #'pdf-view-previous-line-or-previous-page args))
 
 (use-package! screenshot
   :commands screenshot
@@ -2685,6 +2663,11 @@ FACE defaults to inheriting from default and highlight."
 
 (use-package! visual-regexp
   :commands (vr/replace vr/query-replace))
+
+(defun visual-regular-expresion-rx nil
+  "You are looking for `vr/replace' or `vr/query-replace', you are welcome!"
+  (interactive)
+  (message "You are actually looking for function `vr/replace' or `vr/query-replace', you are welcome!"))
 
 (use-package! zoom
   :defer t

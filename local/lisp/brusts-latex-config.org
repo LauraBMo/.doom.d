@@ -3,36 +3,35 @@
 
 #+TITLE=Specific LaTeX configures
 
-* TODO init
-** TODO Add hooks
-#+BEGIN_SRC elisp
-  (defun brust-LaTeX-mode-hook nil
-    (yas-minor-mode -1)
-    ;; (add-to-list 'company-backends #'company-tabnine)
-    ;; mic-parent futures
-    ;; (paren-toggle-matching-paired-delimiter 1)
-    ;; (paren-toggle-matching-quoted-paren 1)
-    ;; (electric-pair-local-mode 1)
-    ;; (bratex-config)
-    ;; (add-hook 'TeX-update-style-hook ;; ;; #'rainbow-delimiters-mode-enable)
-    ;; (LaTeX-mode-hook-company-setup)
-    ;; (my-LaTeX-mode-chords)
-    ;; (brust-embrace-LaTeX-mode-hook)
-    ;; (brust-wc-save-words)
-    (setq LaTeX-clean-intermediate-suffixes ;; here the variable will be load and modified for sure
-          (append LaTeX-clean-intermediate-suffixes
-                  (list
-                   "-blx"
-                   "\\.fdb_latexmk"
-                   "\\.run\\.xml"
-                   "\\.aux.bak"
-                   "\\.fls"
-                   "\\.toc"))))
+* Config
+** Hook for LaTeX mode
+#+begin_src elisp
+(defun brust-LaTeX--hook nil
+  (yas-minor-mode -1)
+  ;; (add-to-list 'company-backends #'company-tabnine)
+  ;; mic-parent futures
+  ;; (paren-toggle-matching-paired-delimiter 1)
+  ;; (paren-toggle-matching-quoted-paren 1)
+  ;; (electric-pair-local-mode 1)
+  ;; (bratex-config)
+  ;; (add-hook 'TeX-update-style-hook ;; ;; #'rainbow-delimiters-mode-enable)
+  ;; (LaTeX-mode-hook-company-setup)
+  ;; (my-LaTeX-mode-chords)
+  ;; (brust-embrace-LaTeX-mode-hook)
+  ;; (brust-wc-save-words)
+  (setq LaTeX-clean-intermediate-suffixes ;; here the variable will be load and modified for sure
+        (append LaTeX-clean-intermediate-suffixes
+                (list
+                 "-blx"
+                 "\\.fdb_latexmk"
+                 "\\.run\\.xml"
+                 "\\.aux.bak"
+                 "\\.fls"
+                 "\\.toc"))))
 
-  (add-hook 'LaTeX-mode-hook #'brust-LaTeX-mode-hook t)
-
-  ;; ::TODO Mirà que conecta el customize-map-.... de outline.
-#+END_SRC
+;; Add hooks and some basic variables declations
+(add-hook 'LaTeX-mode-hook #'brust-LaTeX--hook t)
+#+end_src
 
 ** My list of prefixes for sections
 
@@ -43,54 +42,53 @@
        - cdlatex [[*Snippets =TAB=][Snippets =TAB=]] (all sections)
 
 #+BEGIN_SRC elisp
-  ;; Headers
-  (defvar brust-LaTeX-headers 
-    '(("part"          . "part")
-      ("chapter"       . "chap")
-      ("section"       . "sec")
-      ("paragraph"     . "prgf")
-      ("subsection"    . "ssec")
-      ("subsubsection" . "sssec"))
-    "Variable with cons of (header . prefix) for labeling")
+;; Headers
+(defvar brust-LaTeX-headers
+  '(("part"          . "part")
+    ("chapter"       . "chap")
+    ("section"       . "sec")
+    ("paragraph"     . "prg")
+    ("subsection"    . "ssec")
+    ("subsubsection" . "sssec"))
+  "Variable with cons of (header . prefix) for labeling")
 
-  ;; Environments
-  (defvar brust-LaTeX-environments
-    '(("theorem"     . "thr")
-      ("definition"  . "def")
-      ("remark"      . "rmk")
-      ("proposition" . "prop")
-      ("lemma"       . "lem")
-      ("notation"    . "not")
-      ("corollary"   . "coro")
-      ("example"     . "exmp")
-      ("situation"   . "sit")
-      ;; ("diagram"     . "dia") 
-      ;; For numbered diagrams, use equation environment with \label[diagram]{dia:..}.
-      ;; To insert such an environment use cdlatex snipped 'dia'
-      ;; To refer to a diagram use 'reftex-reference', which will detect it as equation environment 'e' key.
-      ;; For Cleverref, use \crefname{diagram}{Diagram}{Diagrams} join with \label[diagram]{...}
-      ("equation"    . "eq"))
-    "Variable with cons of (environment . prefix) for labeling")
+;; Environments
+(defvar brust-LaTeX-environments
+  '(("theorem"     . "thr")
+    ("definition"  . "def")
+    ("remark"      . "rmk")
+    ("proposition" . "prop")
+    ("lemma"       . "lem")
+    ("notation"    . "not")
+    ("corollary"   . "coro")
+    ("example"     . "exmp")
+    ("situation"   . "sit")
+    ;; ("diagram"     . "dia")
+    ;; For numbered diagrams, use equation environment with \label[diagram]{dia:..}.
+    ;; To insert such an environment use cdlatex snipped 'dia'
+    ;; To refer to a diagram use 'reftex-reference', which will detect it as equation environment 'e' key.
+    ;; For Cleverref, use \crefname{diagram}{Diagram}{Diagrams} join with \label[diagram]{...}
+    ("equation"    . "eq"))
+  "Variable with cons of (environment . prefix) for labeling")
 
-  (defun brust-list-with-colon (list)
-    (cl-loop for xx in list collect `(,(car xx) . ,(concat (cdr xx) ":"))))
+(defun brust-list--add-colon (element)
+  (cons (car element) (concat (cdr element) ":")))
+(defun brust-list--add-colons (list)
+  (mapcar #'brust-list--add-colon list))
 
-  ;; (brust-list-with-colon brust-LaTeX-environments)
+;; (brust-list--add-colons brust-LaTeX-environments)
 #+END_SRC
 
-#+RESULTS:
-: brust-list-with-colon
 ** Snipped cdlatex Headers
 #+begin_src elisp
   (defun brust-LaTeX-set-header (-header)
     (interactive
-     (list (ivy-read "Header: "
-                     (cl-loop for xx in brust-LaTeX-headers collect
-                              (car xx)))))
+     (list (ivy-read "Header: " (mapcar #'car brust-LaTeX-headers))))
     (let ((title (read-string (format "%s's title: " (capitalize -header)))))
       (if (string= title "")
           (message "No title, no %s" (capitalize -header))
-        (let ((label (read-string (format "%s's label: " -header) (replace-regexp-in-string "[ ]" "-" (downcase title)))))
+        (let ((label (read-string (format "%s's label: " -header)
+                                  (replace-regexp-in-string "[ ]" "-" (downcase title)))))
           (insert (format "\\%s{%s}" -header title)
                   (if (string= label "") "\n"
                     (format "\n\\label{%s:%s}\n"
@@ -98,10 +96,6 @@
                             label)))))))
 #+end_src
 
-#+RESULTS:
-: brust-LaTeX-set-header
-
-* config
 ** Save options
 #+BEGIN_SRC elisp
   (setq TeX-save-query    nil ;; Don't query on TeX-save-document
@@ -114,7 +108,7 @@
   (setq-default ;; TeX-command-default "LaTeX"      ;; LaTeX the default command
                 ;; TeX-fold-auto t                  ;; To use with TeX-mode-fold
                 ;; TeX-master 'dwin                 ;; AUCTeX will try to avoid querying
-                TeX-default-mode 'LaTeX-mode     ;; always use LaTeX-mode 
+                ;; TeX-default-mode 'LaTeX-mode     ;; always use LaTeX-mode
                 TeX-auto-local "~/.doom.d/local/.auctex-auto") ;; to not see the ./auto directory
 #+END_SRC
 
@@ -168,7 +162,7 @@ So, I do not know how important the list =LaTeX-section-label is=, the really im
 
   ;; List of prefixes identifing each header.
   (setq LaTeX-section-label
-        `,(brust-list-with-colon brust-LaTeX-headers))
+        `,(brust-list--add-colons brust-LaTeX-headers))
 #+END_SRC
 
 #+RESULTS:
@@ -280,9 +274,8 @@ See http://endlessparentheses.com/improving-latex-equations-with-font-lock.html
 #+end_src
 
 ** Compilation
-*** Latexmk
+*** More Commands
 #+BEGIN_SRC elisp
-
   (add-to-list 'TeX-command-list
                '("LaTeX-mk" "latexmk -pdf -pvc -pdflatex=\"pdflatex --shell-escape -interaction=nonstopmode -file-line-error --synctex=1\"  %s"
                  TeX-run-TeX nil t
@@ -290,29 +283,27 @@ See http://endlessparentheses.com/improving-latex-equations-with-font-lock.html
                t)
 
   (add-to-list 'TeX-command-list '("Make" "make" TeX-run-compile nil t))
+
+  (add-to-list 'TeX-command-list
+               '("LuaLaTeX-mk" "latexmk -pdf -pvc -pdflatex=\"lualatex --shell-escape -interaction=nonstopmode -file-line-error --synctex=1\"  %s"
+                 TeX-run-TeX nil t
+                 :help "Run Latexmk (with LuaLaTeX) on file to build everything.")
+               t)
 #+END_SRC
 *** Not show compiling buffer
 #+BEGIN_SRC elisp
   (setq TeX-show-compilation nil)
 #+END_SRC
 
-#+RESULTS:
-
 *** Format errors be file-linenum-errors
 #+BEGIN_SRC elisp
   (setq TeX-file-line-error t)
 #+END_SRC
 
-#+RESULTS:
-: t
-
 *** Show LaTeX help
 #+BEGIN_SRC elisp
   (setq TeX-display-help t)
 #+END_SRC
-
-#+RESULTS:
-: t
 
 *** Debug
 #+BEGIN_SRC elisp
@@ -404,9 +395,6 @@ See http://endlessparentheses.com/improving-latex-equations-with-font-lock.html
     (brust-LaTeX-env (not args)))
 #+END_SRC
 
-#+RESULTS:
-: brust-LaTeX-env-change
-
 *** Query replace only in math formulas
     From https://stackoverflow.com/questions/19845598/emacs-regex-replacing-a-string-inside-a-latex-equation 
 #+BEGIN_SRC elisp
@@ -418,17 +406,9 @@ See http://endlessparentheses.com/improving-latex-equations-with-font-lock.html
            (lambda (BEG END)
              (save-excursion (save-match-data (goto-char BEG) (texmathp)))))
           (case-fold-search nil))
-      (call-interactively 'query-replace)))
-
-  (defun latex-replace-regexp-in-math (args)
-    "Call `query-replace' (or `query-replace-regexp' when called with argument) with `isearch-filter-predicate' set to filter out matches outside LaTeX math environments.
-  Searching candidates to replace is case sensitive."
-    (interactive "p")
-    (let ((isearch-filter-predicate
-           (lambda (BEG END)
-             (save-excursion (save-match-data (goto-char BEG) (texmathp)))))
-          (case-fold-search nil))
-      (call-interactively 'query-replace-regexp)))
+      (if (args)
+          (call-interactively 'query-replace-regexp)
+        (call-interactively 'query-replace))))
 #+END_SRC
 
 *** Next error or create list of errors
@@ -646,34 +626,30 @@ See Org-ref in init.el :)
 
 ** Environment definitons
 #+BEGIN_SRC elisp
+(defun brust-cdlatex-new-environment (env)
+  (concat "\\begin{" (car env) "}\\label{" (cdr env) ":?}\n\n\\end{" (car env) "}"))
 
-  (defun brust-cdlatex-new-environment (env)
-    (concat "\\begin{" (car env) "}\\label{" (cdr env) ":?}\n\n\\end{" (car env) "}"))
-
-  (setq cdlatex-env-alist
-        (append (cl-loop for xx in brust-LaTeX-environments collect
-                         `(,(car xx)
-                           ,(brust-cdlatex-new-environment xx)
-                           nil))
-                '(("diagram" "\\begin{equation}\\label[diagram]{dia:?}\n\\begin{tikzcd}\n ? \\\\\n  \\\\\n\\end{tikzcd}\n\\end{equation}" "&")
-                  ("diagram*" "\\[\n\\begin{tikzcd}\n ? \\\\\n  \\\\\n\\end{tikzcd}\n\\]" "&")
-                  ("proof"   "\\begin{proof}\n?\n\\end{proof}"                           nil)
-                  ("frame"   "\\begin{frame}\n\\frametitle{?}\n\n\\end{frame}"           nil)
-                  ("block"   "\\begin{block}{?}\n\n\\end{block}"                         nil)
-                  ("array"   "\\begin{array}{?}\n  \\\\\n\\end{array}"                   "&")
-                  ("tikz"    "\\[\n\\begin{tikzcd}\n ? \\\\\n  \\\\\n\\end{tikzcd}\n\\]" "&")
-                  ("tikzbeamer" "\\begin{flushleft}\\begin{tikzcd}[ampersand replacement=\\&]\n ? \\\\\n  \\\\\n\\end{tikzcd}\\end{flushleft}\n\\]" "&")
-                  ("tikzextended"
-                   "\\[\n\\begin{tikzcd}[column sep=2em, row sep=.01ex]\%(Defaults)\n ? \\\\\n  \\\\\n\\end{tikzcd}\n\\]" "&"))
-                cdlatex-env-alist)) ;;
-  ;; cdlatex-environment uses 'assoc' which
-  ;; "Return non-nil if KEY is equal to the car of an element of LIST.
-  ;; The value is actually the first element of LIST whose car equals KEY."
-  ;; Add cdlatex-env-alist at the end: so I have acces to their environments, but for duplicates mines are used.
+(setq cdlatex-env-alist
+      (append (cl-loop for xx in brust-LaTeX-environments collect
+                       `(,(car xx)
+                         ,(brust-cdlatex-new-environment xx)
+                         nil))
+              '(("diagram" "\\begin{equation}\\label[diagram]{dia:?}\n\\begin{tikzcd}\n ? \\\\\n  \\\\\n\\end{tikzcd}\n\\end{equation}" "&")
+                ("diagram*" "\\[\n\\begin{tikzcd}\n ? \\\\\n  \\\\\n\\end{tikzcd}\n\\]" "&")
+                ("proof"   "\\begin{proof}\n?\n\\end{proof}"                           nil)
+                ("frame"   "\\begin{frame}\n\\frametitle{?}\n\n\\end{frame}"           nil)
+                ("block"   "\\begin{block}{?}\n\n\\end{block}"                         nil)
+                ("array"   "\\begin{array}{?}\n  \\\\\n\\end{array}"                   "&")
+                ("tikz"    "\\[\n\\begin{tikzcd}\n ? \\\\\n  \\\\\n\\end{tikzcd}\n\\]" "&")
+                ("tikzbeamer" "\\begin{flushleft}\\begin{tikzcd}[ampersand replacement=\\&]\n ? \\\\\n  \\\\\n\\end{tikzcd}\\end{flushleft}\n\\]" "&")
+                ("tikzextended"
+                 "\\[\n\\begin{tikzcd}[column sep=2em, row sep=.01ex]\%(Defaults)\n ? \\\\\n  \\\\\n\\end{tikzcd}\n\\]" "&"))
+              cdlatex-env-alist)) ;;
+;; cdlatex-environment uses 'assoc' which
+;; "Return non-nil if KEY is equal to the car of an element of LIST.
+;; The value is actually the first element of LIST whose car equals KEY."
+;; Add cdlatex-env-alist at the end: so I have acces to their environments, but for duplicates mines are used.
 #+END_SRC
-
-#+RESULTS:
-| array | \begin{array}{?} |
 
 ** Delete defaults
 There are many defaults that I do not use, this is to clean a bit.
@@ -880,6 +856,7 @@ There are many defaults that I do not use, this is to clean a bit.
        ("lbl"   "Insert  label" "" reftex-label         nil    t  t)
        ;; ("it"    "New item in current environment"          "" cdlatex-item         nil    t  t)
        ("fn"         "Make a footnote"                "\\footnote{?}"         cdlatex-position-cursor nil t   nil)
+       ;; ("pg"         "Make a paragraph"                "\\footnote{?}"         cdlatex-position-cursor nil t   nil)
        ("cl"         "Insert \\centerline"            "\\centerline{?}"       cdlatex-position-cursor nil t   nil)
        ;; ("nonum"      "Insert \\nonumber\\\\"          "\\nonumber\\\\\n"      nil nil nil t)
        ;; ("qq"         "Insert \\quad"                  "\\quad"                nil nil t t)

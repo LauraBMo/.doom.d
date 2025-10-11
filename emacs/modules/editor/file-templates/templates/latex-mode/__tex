@@ -37,11 +37,11 @@ citecolor = Firebrick3, % OliveDrab4 Cites red!40!gray
 \usepackage{%
   amssymb, % Extra symbols
   amsmath, % Basic math
-  amsfonts,
-  %amstext,
-  %amscd, % commutative diagrams (We use tikcd)
+  amsfonts, % Extra fonts
+  % amstext, % Defines a \text macro, which makes it easy to incorporate fragments of text inside a displayed equation or a sub or superscript. The font used is the “surrounding text font” and sizes are automatically scaled in sub/superscripts.
+  % amscd, % commutative diagrams (We use tikcd)
   amsthm, % Theorem... environment
-  %amsgen,
+  % amsgen, % Internal package for storing common functions that are shared by more than one package in the AMS-LATEX distribution.
 }
 
 \usepackage{mathtools}
