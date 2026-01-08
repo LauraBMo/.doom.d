@@ -48,7 +48,7 @@ good ten seconds to do by hand.
   - [[#completion-environment][Completion environment]]
   - [[#file-templates][File templates]]
   - [[#high-light-todos][High light TODOS]]
-  - [[#rotate-text][Rotate text]]
+  - [[#todo-rotate-text][:TODO: Rotate text]]
   - [[#visual-fill-mode][Visual fill mode]]
 - [[#bindings][Bindings]]
 - [[#my-functions][My functions]]
@@ -82,19 +82,18 @@ good ten seconds to do by hand.
   - [[#ediff][Ediff]]
   - [[#eldoc][Eldoc]]
   - [[#elisp][Elisp]]
-  - [[#ispell][Ispell]]
   - [[#recentf][Recentf]]
   - [[#projectile][Projectile]]
   - [[#show-parentheses][Show parentheses]]
   - [[#tramp][Tramp]]
 - [[#external-modes][External modes]]
+  - [[#ace-window][Ace-window]]
   - [[#avy][Avy]]
   - [[#ibuffer][Ibuffer]]
   - [[#eat][EAT]]
   - [[#evil-mode][Evil mode]]
   - [[#jinx-spelling][Jinx (Spelling)]]
   - [[#key-frequency][Key-frequency]]
-  - [[#ledger][Ledger]]
   - [[#lsp-mode][LSP mode]]
   - [[#magit][Magit]]
   - [[#org-pandoc-import][Org pandoc import]]
@@ -291,9 +290,8 @@ good ten seconds to do by hand.
         ;;  :action doom/quickload-session)
         ("Open private configuration"
          :icon (nerd-icons-octicon "nf-oct-tools" :face 'doom-dashboard-menu-title)
-         ;; :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
          :when (file-directory-p doom-private-dir)
-         :action doom/open-private-config)
+         :action brust-open-my-doom-config)
         ;; ("Notes"
         ;;  :icon (all-the-icons-octicon "light-bulb" :face 'font-lock-keyword-face)
         ;;  :action ragone-deft-or-close)
@@ -344,13 +342,12 @@ good ten seconds to do by hand.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  ;; '(highlight ((t (:background "#454545" :foreground "black" :weight bold))))
- '(org-block-begin-line ((t (:underline "#5d595f" :foreground "#aeaab2")))
+ '(org-block-begin-line ((t (:underline "#5d595f" :foreground "#aeaab2" :height 0.8)))
    "Face used for the line delimiting the begin of source blocks.")
- '(org-block-end-line ((t (:overline "#5d595f" :foreground "#aeaab2")))
-   "Face used for the line delimiting the end of source blocks."))
+ '(org-block-end-line ((t (:overline "#5d595f" :foreground "#aeaab2" :height 0.8)))
+   "Face used for the line delimiting the end of source blocks.")
+ '(shadow ((t (:foreground "gray65")))))
 #+end_src
-
-#+RESULTS:
 
 ** Enabling
 
@@ -492,15 +489,18 @@ Editing =.bib= files.
         ;; Change fields and format
         bibtex-user-optional-fields '(("keywords" "Keywords to describe the entry" "")
                                       ("file" "Link to document file." ":"))
-        bibtex-align-at-equal-sign t
-        ;; How to format entries
-        bibtex-entry-format
+        bibtex-align-at-equal-sign t)
+        
+  ;; How to format entries
+  ;; No required fields
+  (setf (alist-get 'required-fields bibtex-entry-format nil 'remove) nil)
+  (setq bibtex-entry-format
         (append '(whitespace
                   realign
                   unify-case
                   last-comma
                   sort-fields)
-                (delq! 'required-fields bibtex-entry-format))))
+                bibtex-entry-format)))
 #+end_src
 
 #+begin_src elisp
@@ -733,6 +733,7 @@ Maintaining notes.org
 ** Completion environment
 [[file:~/.emacs.d/modules/completion/vertico/README.org::*Table of Contents][Vertico module's README]]
 *** Bindings
+
 #+begin_src elisp
 ;; https://githubmemory.com/repo/minad/vertico/issues/156
 ;; (defun my/vertico-insert-or-exit ()
@@ -745,21 +746,27 @@ Maintaining notes.org
 
 (map!
  "C-:" #'embark-act
- (:map vertico-map ;; Its parent is minibuffer-mode-map
-       ;; But it defines: "TAB" #'vertico-insert
-       ;; So, we need force rebind it back.
-       "TAB" #'vertico-next)
- :map minibuffer-mode-map
+ ;; (:map vertico-map ;; Its parent is minibuffer-mode-map
+ ;;       ;; But it defines: "TAB" #'vertico-insert
+ ;;       ;; So, we need force rebind it back.
+ ;;       "TAB" #'vertico-next)
+ ;; :map minibuffer-mode-map
+ :map vertico-map
  ;; Motion: LOWER from keyboard
- "s-j" #'vertico-next
  ;; "TAB" #'vertico-next
- "s-k" #'vertico-previous
- "s-l" #'vertico-insert
- "s-SPC" #'vertico-insert
  "s-h" #'vertico-first
+ "s-j" #'vertico-next
+ "s-k" #'vertico-previous
+ "s-l" #'vertico-exit-input
+ ;; "s-l" #'vertico-insert
+ "s-SPC" #'vertico-insert
+ "s-M-j" #'vertico-next-group
+ "s-M-k" #'vertico-previous-group
+ "M-n" #'vertico-next-group
+ "M-p" #'vertico-previous-group
  ;; "M-j" #'ivy-next-line
  ;; "M-k" #'ivy-previous-line
- ;;
+ ;; ho
  ;; Finish
  ;; "<right>"  #'ivy-alt-done
  ;; "<right>"  #'my/vertico-insert-or-exit
@@ -853,7 +860,95 @@ With prefix argument all files (hidden, .gitignoreds, ....) are shown as candida
 #+begin_src elisp
 (setq +corfu-want-tab-prefer-expand-snippets t
       +corfu-want-tab-prefer-navigating-snippets t)
+(map! :map corfu-map
+      "s-j" #'corfu-next
+      "s-k" #'corfu-previous
+      "s-l" #'corfu-expand
+      "<right>" #'corfu-expand
+      "M-j" #'corfu-scroll-down
+      "M-k" #'corfu-scroll-up
+      :i "TAB" #'corfu-insert-separator
+      )
 #+end_src
+
+**** TODO Add dictionaries for autocompletion
+***** COMMENT Use ispell dicts with =ispell-completion-at-point=.
+#+begin_src elisp :tangle no
+(setq ispell-dictionary "ca")
+#+end_src
+***** COMMENT Use files listing words (ordered by frequency use):
+#+begin_src elisp :tangle no
+;; ┌─────────────────────────────────────────────┐
+;; │        Corfu + Cape + Jinx Integration      │
+;; └─────────────────────────────────────────────┘
+
+;; Use Peter Norvig's 300,000 most used English words as the word list
+
+;; Integrate with Cape
+(after! cape
+  (let ((wordlist (expand-file-name
+                   "wordlist.txt" user-emacs-directory)))
+    (setq cape-dict-file
+          (cond
+           ((or (file-readable-p wordlist)
+                (and (url-copy-file "https://norvig.com/ngrams/count_1w.txt"
+                                    wordlist)
+                     (shell-command
+                      (concat "sed -re 's_[ \t0-9]*__g' -e '/^.{1,4}$/d' -i "
+                              wordlist))))
+            (message "Downloaded wordlist")
+            wordlist)
+           ((getenv "WORDLIST"))
+           (t "/usr/share/dict/words"))))
+  (unless (memq 'cape-dict cape-completion-backends)
+    (push 'cape-dict cape-completion-backends)))
+#+end_src
+*** Vertico multiform (minibuffer views per command and category)
+
+#+begin_src elisp
+;; Categories: apply to all commands of a type
+(setq vertico-multiform-categories
+  `((file
+     (vertico-sort-function . vertico-sort-directories-first)
+     (+vertico-transform-functions . +vertico-highlight-directory)
+     (:keymap . vertico-directory-map))
+    (buffer flat (vertico-cycle . t))
+    (jinx buffer ,(lambda (_) (text-scale-set -1))
+     (vertico-buffer-display-action . (display-buffer-in-direction))
+     (direction . right)
+     (window-width . 0.35))
+    (symbol (vertico-sort-function . vertico-sort-alpha))
+    (recentf reverse (vertico-count . 20))
+    )) ; Fallback for everything else
+
+;; Commands: override categories for specific functions
+(setq vertico-multiform-commands
+  '(("flyspell-correct-*" grid reverse)
+    ("consult-org-*" buffer indexed)
+    ("+*grep" buffer
+     (vertico-buffer-display-action . (display-buffer-reuse-window)))
+    ;; (consult-grep buffer
+    ;;  (vertico-buffer-display-action . (display-buffer-reuse-window)))
+    ;; (consult-git-grep buffer
+    ;;  (vertico-buffer-display-action . (display-buffer-reuse-window)))
+    ;; (consult-ripgrep buffer
+    ;;  (vertico-buffer-display-action . (display-buffer-reuse-window)))
+    (org-refile grid reverse indexed)
+    (consult-imenu buffer indexed)
+    (execute-extended-command unobtrusive
+     (:keymap "X" execute-extended-command-for-buffer))
+    (describe-symbol
+     (vertico-sort-function . vertico-sort-alpha))))
+#+end_src
+
+#+RESULTS:
+| flyspell-correct-*       | grid                                         | reverse                                                     |         |
+| consult-org-*            | buffer                                       | indexed                                                     |         |
+| +*grep                   | buffer                                       | (vertico-buffer-display-action display-buffer-reuse-window) |         |
+| org-refile               | grid                                         | reverse                                                     | indexed |
+| consult-imenu            | buffer                                       | indexed                                                     |         |
+| execute-extended-command | unobtrusive                                  | (:keymap X execute-extended-command-for-buffer)             |         |
+| describe-symbol          | (vertico-sort-function . vertico-sort-alpha) |                                                             |         |
 
 ** File templates
 
@@ -912,6 +1007,8 @@ You can make a TODO item by simply writing
 #+begin_src elisp
 (after! hl-todo
   (setq hl-todo-highlight-punctuation ":"
+        hl-todo-wrap-movement t
+        hl-todo-color-background nil
         hl-todo-keyword-faces
         `(
           ("TODO"     . '(warning bold))
@@ -920,10 +1017,10 @@ You can make a TODO item by simply writing
           ("CANCELED" . "#708090")
           ))
   )
-;; TODO DONE DOING CANCELED
+;; TODO::: ::DONE:: ::DOING:: ::CANCELED::
 #+end_src
 
-** TODO Rotate text
+** :TODO: Rotate text
 Rotate text under cursor under pre-establish patterns
 For example, var1, var2, ... varN
 See [[https://github.com/debug-ito/rotate-text.el/blob/master/rotate-text.el][Rotate Text]]
@@ -1901,7 +1998,10 @@ of the narrow-or-widen so I don't have to keep remembering which is which.
 #+begin_src elisp
 (defun brust-open-my-org nil
   (interactive)
-  (find-file (expand-file-name (concat org-directory  "/my.org"))))
+  (find-file (expand-file-name "my.org" org-directory)))
+(defun brust-open-my-doom-config nil
+  (interactive)
+  (find-file (expand-file-name "config.org" doom-user-dir)))
 #+end_src
 
 ** Prompt in Singular... Non-editable
@@ -2538,70 +2638,6 @@ Org links for pdfs
   :config ;;(setq org-pdftools-root-dir "~/Dropbox/bibliography/pdf")
   )
 #+end_src
-
-** COMMENT Ledgers
-Mainly from [[https://www.reddit.com/r/emacs/comments/8x4xtt/tip_how_i_use_ledger_to_track_my_money/][Reddit discution]]
-*** Config
-#+BEGIN_SRC elisp :tangle no
-(use-package! ledger-mode
-  :mode ("\\.dat\\'"
-         "\\.ledger\\'")
-  :custom
-  (ledger-clear-whole-transactions t)
-  (add-hook 'ledger-mode-hook #'ledger-flymake-enable)
-  (add-hook 'ledger-mode-hook #'company-mode)
-  (ledger-post-auto-adjust-amounts t)
-  :bind
-  (:map ledger-mode-map
-        ("C-c C-a" . brust-ledger-add-transaction)))
-
-(with-eval-after-load 'ledger-mode
-  (define-key ledger-mode-map [remap save-buffer] #'std::ledger::save))
-#+END_SRC
-
-*** Functions
-#+BEGIN_SRC elisp :tangle no
-(defun brust-ledger-add-transaction (&optional -date)
-  "Add new transaction using `org-read-date'"
-  (interactive)
-  (ledger-add-transaction
-   (or -date (org-read-date))
-   nil)
-  (insert "?\n    Assets:DebitCard")
-  (cdlatex-position-cursor))
-
-(defun std::ledger::save nil
-  "First `ledger-mode-clean-buffer', then `save-buffer'."
-  (interactive)
-  (save-excursion
-    (when (buffer-modified-p)
-      (with-demoted-errors (ledger-mode-clean-buffer))
-      (save-buffer))))
-
-(defun brust-ledger-copy-transaction-from-extract nil
-  "`-string' is a line of my bank extract in cvs format"
-  (interactive)
-  (let ((-entry
-         (split-string
-          (buffer-substring-no-properties (point-at-bol) (point-at-eol))
-          "\,")))
-    (switch-to-buffer "ledger-2021.dat")
-    (brust-ledger-add-transaction
-     (brust-from-eur-ame-date (nth 0 -entry)))
-    (insert (capitalize (nth 1 -entry))
-            "\n    ?  €"
-            (nth 3 -entry))
-    (cdlatex-position-cursor)))
-
-
-(defun brust-from-eur-ame-date (-date)
-  (let ((-new-date (split-string -date "/")))
-    (concat (nth 2 -new-date)
-            "-"
-            (nth 1 -new-date)
-            "-"
-            (nth 0 -new-date))))
-#+END_SRC
 
 ** Eval src code blocks in vterm
 Link the current buffer to a vterm process,
@@ -3253,42 +3289,42 @@ Meanwhile, contex will be the selected text.
            ;; "^\\(function\\|macro\\)\\s-+\\([^[:space:](]+\\)"
            nil t)
       (let ((start (point)))
-      (if (re-search-forward
-           jul
-           ;; "^\\(function\\|macro\\)\\s-+\\([^[:space:](]+\\)"
-           nil t)
+        (if (re-search-forward
+             jul
+             ;; "^\\(function\\|macro\\)\\s-+\\([^[:space:](]+\\)"
+             nil t)
 
-        (julia-end-of-block)
-        (buffer-substring start (point))))))
+            (julia-end-of-block)
+          (buffer-substring start (point))))))
 
-(defun ollama-buddy-julia--get-region-or-line ()
-  "Get selected region or current line."
-  (cond
-   ((use-region-p)
-    (buffer-substring (region-beginning) (region-end)))
-   (t
-    (thing-at-point 'line t))))
+  (defun ollama-buddy-julia--get-region-or-line ()
+    "Get selected region or current line."
+    (cond
+     ((use-region-p)
+      (buffer-substring (region-beginning) (region-end)))
+     (t
+      (thing-at-point 'line t))))
 
-    (if (derived-mode-p 'julia-mode)
+  (if (derived-mode-p 'julia-mode)
 
-(defun ollama-buddy-julia--get-context ()
-  "Get Julia function context at point or active region.
+      (defun ollama-buddy-julia--get-context ()
+        "Get Julia function context at point or active region.
 Uses `julia-mode' navigation when available, falls back to region."
-  (if (use-region-p)
-      (buffer-substring-no-properties (region-beginning) (region-end))
-    (if (derived-mode-p 'julia-mode)
-        (save-excursion
-          (save-restriction
-            (widen)
-            (condition-case nil
-                (progn
-                  (julia-beginning-of-defun)
-                  (let ((start (point)))
-                    (julia-end-of-defun)
-                    (buffer-substring-no-properties start (point))))
-              (error
-               (user-error "No Julia function found at point")))))
-      (user-error "Not in Julia mode and no active region"))))
+        (if (use-region-p)
+            (buffer-substring-no-properties (region-beginning) (region-end))
+          (if (derived-mode-p 'julia-mode)
+              (save-excursion
+                (save-restriction
+                  (widen)
+                  (condition-case nil
+                      (progn
+                        (julia-beginning-of-defun)
+                        (let ((start (point)))
+                          (julia-end-of-defun)
+                          (buffer-substring-no-properties start (point))))
+                    (error
+                     (user-error "No Julia function found at point")))))
+            (user-error "Not in Julia mode and no active region"))))
 #+end_src
 ****** Prompts strings
 #+begin_src elisp
@@ -3881,8 +3917,8 @@ No need since loading python with +conda in init.el.
 
 ;; # https://codeberg.org/rwv/android-mode/pulls
 (package! android-mode :recipe
- (:host codeberg
-  :repo "rwv/android-mode"))
+  (:host codeberg
+   :repo "rwv/android-mode"))
 #+end_src
 
 #+begin_src elisp
@@ -4019,7 +4055,7 @@ Make it compatible with =org-mode=
 (add-hook! 'emacs-lisp-mode-hook (modify-syntax-entry ?- "w"))
 #+end_src
 
-** Ispell
+** COMMENT Ispell
 
 #+begin_src elisp :tangle no
 ;; (setq ispell-highlight-face 'flyspell-incorrect)
@@ -4037,7 +4073,7 @@ Make it compatible with =org-mode=
 
 #+begin_src elisp
 (after! projectile (setq projectile-project-root-files-bottom-up (remove ".git"
-          projectile-project-root-files-bottom-up)))
+                                                                         projectile-project-root-files-bottom-up)))
 
 #+end_src
 ** Show parentheses
@@ -4193,6 +4229,11 @@ FACE defaults to inheriting from default and highlight."
 #+end_src
 
 * External modes
+** Ace-window
+#+begin_src elisp
+(setq aw-keys '(?a ?s ?d ?f ?g ?h))
+#+end_src
+
 ** Avy
 #+begin_src elisp :tangle no
 (setq avy-flyspell-correct-function #'+spell/correct)
@@ -4298,6 +4339,9 @@ FACE defaults to inheriting from default and highlight."
   (setq company-selection-wrap-around t)
   )
 #+end_src
+
+#+RESULTS:
+
 *** COMMENT Bindings
 #+BEGIN_SRC elisp :tangle no
 (map! :after company
@@ -4467,7 +4511,8 @@ Do not add single deleted chars to =kill-ring=
 (advice-add 'evil-delete-backward-char :around 'bb/evil-delete--black-hole-register)
 #+end_src
 
-** COMMENT Formater
+** COMMENT Formatter
+
 I just want auto format in a few modes.
 #+begin_src elisp :tangle no
 (add-hook 'julia-mode-hook #'format-all-mode)
@@ -4482,21 +4527,48 @@ I just want auto format in a few modes.
 #+end_src
 
 ** Jinx (Spelling)
+*** Package
+
 #+begin_src elisp :tangle packages.el
 (package! jinx)
 #+end_src
 
+*** Configure
+
 #+begin_src elisp
-(after! jinx
-  (setq ;; jinx-languages "pt_BR en_US"
-   jinx-delay 1.0))
+(use-package! jinx
+  :hook (emacs-startup . global-jinx-mode)
+  :init
+  ;; Set your preferred languages (order matters: first = primary)
+  (setq jinx-languages "en ca es"
+        jinx-delay 1.0)
 
-(after! vertico-multiform ;; if using vertico
-  (add-to-list 'vertico-multiform-categories
-               '(jinx (vertico-grid-annotate . 25)))
+  ;; Exclude code-like faces; include comments/strings
+  ;; If using Tree-sitter 
+  ;; (setq jinx-include-faces
+  ;;       (append jinx-include-faces
+  ;; '(tree-sitter-hl-face:comment tree-sitter-hl-face:string tree-sitter-hl-face:doc))))
 
-  (vertico-multiform-mode 1))
+  :config
+  ;; Fancy buffer view for jinx spelling corrections
+  (after! vertico-multiform
+    (add-to-list 'vertico-multiform-categories
+                 `(jinx buffer ,(lambda (_) (text-scale-set -1)))))
+
+  ;; ┌───────────────────────────────────────┐
+  ;; │        Doom-style Keybindings         │
+  ;; └───────────────────────────────────────┘
+  (global-set-key [remap ispell-word] #'jinx-correct)
+
+  (map! :n "] s" #'jinx-next
+        :n "[ s" #'jinx-previous
+        "C-M-$" #'jinx-languages
+        (:map jinx-mode-map
+              "M-n" #'jinx-next
+              "M-p" #'jinx-previous))
+  )
 #+end_src
+
 ** Key-frequency
 
 #+begin_src elisp :tangle packages.el
@@ -4515,24 +4587,79 @@ I just want auto format in a few modes.
           previous-line
           next-line)))
 #+END_SRC
-** Ledger
-#+begin_src elisp
-(defun import-revolut ()
-  "Process and import Revolut CSV"
+** COMMENT Ledger
+Mainly from [[https://www.reddit.com/r/emacs/comments/8x4xtt/tip_how_i_use_ledger_to_track_my_money/][Reddit discution]]
+*** Config
+#+BEGIN_SRC elisp
+(use-package! ledger-mode
+  :config
+  (ledger-post-auto-adjust-amounts t)
+  :bind (:map ledger-mode-map
+              ("C-c C-a" . brust-ledger-add-transaction))
+
+  (with-eval-after-load 'ledger-mode
+    (define-key ledger-mode-map [remap save-buffer] #'std::ledger::save))
+  )
+#+END_SRC
+
+#+BEGIN_SRC elisp :tangle no
+(use-package! ledger-mode
+  :mode ("\\.dat\\'"
+         "\\.ledger\\'")
+  :custom
+  ;; (add-hook 'ledger-mode-hook #'ledger-flymake-enable)
+  ;; (add-hook 'ledger-mode-hook #'company-mode)
+  (ledger-post-auto-adjust-amounts t)
+  :bind (:map ledger-mode-map
+        ("C-c C-a" . brust-ledger-add-transaction))
+
+(with-eval-after-load 'ledger-mode
+  (define-key ledger-mode-map [remap save-buffer] #'std::ledger::save))
+#+END_SRC
+
+*** Functions
+#+BEGIN_SRC elisp
+(defun brust-ledger-add-transaction (&optional -date)
+  "Add new transaction using `org-read-date'"
   (interactive)
-  (let* ((csv-file (read-file-name "Select Revolut CSV: " "~/Downloads/"))
-         (ledger-file "~/finance/main.ledger"))
-    (shell-command (format "julia ~/finance/scripts/process_revolut.jl '%s'" csv-file))
-    (with-current-buffer (find-file ledger-file)
-      (goto-char (point-max))
-      (insert-file-contents "~/finance/data/processed.ledger")
-      (ledger-mode-clean-buffer)
-      (save-buffer)
-      (message "Imported %d transactions" (count-lines (point-min) (point-max))))))
-(map! :leader
-      :prefix "f"
-      "i" #'import-revolut)
-#+end_src
+  (ledger-add-transaction
+   (or -date (org-read-date))
+   nil)
+  (insert "?\n    Assets:DebitCard")
+  (cdlatex-position-cursor))
+
+(defun std::ledger::save nil
+  "First `ledger-mode-clean-buffer', then `save-buffer'."
+  (interactive)
+  (save-excursion
+    (when (buffer-modified-p)
+      (with-demoted-errors (ledger-mode-clean-buffer))
+      (save-buffer))))
+
+(defun brust-ledger-copy-transaction-from-extract nil
+  "`-string' is a line of my bank extract in cvs format"
+  (interactive)
+  (let ((-entry
+         (split-string
+          (buffer-substring-no-properties (point-at-bol) (point-at-eol))
+          "\,")))
+    (switch-to-buffer "ledger-2021.dat")
+    (brust-ledger-add-transaction
+     (brust-from-eur-ame-date (nth 0 -entry)))
+    (insert (capitalize (nth 1 -entry))
+            "\n    ?  €"
+            (nth 3 -entry))
+    (cdlatex-position-cursor)))
+
+
+(defun brust-from-eur-ame-date (-date)
+  (let ((-new-date (split-string -date "/")))
+    (concat (nth 2 -new-date)
+            "-"
+            (nth 1 -new-date)
+            "-"
+            (nth 0 -new-date))))
+#+END_SRC
 
 ** LSP mode
 [[https://github.com/emacs-lsp/lsp-mode/blob/2d41848dde2fdcb1a85546302c4b842a12a68ef9/docs/tutorials/how-to-turn-off.md][How to turn off futures]]
@@ -4643,8 +4770,8 @@ Show the rainbow progres line.
   (setq pdf-annot-activate-created-annotations t
         pdf-view-resize-factor 1.1)
   (add-hook! 'pdf-view-mode-hook
-             (brust-line-number-mode -1)
-             (pdf-isearch-batch-mode +1))
+    (brust-line-number-mode -1)
+    (pdf-isearch-batch-mode +1))
   ;; faster motion
   (map!
    :map pdf-view-mode-map
@@ -4679,21 +4806,21 @@ Show the rainbow progres line.
     "t" #'pdf-annot-add-text-annotation
     )))
 
-  ;; (eval-after-load 'interleave
-  ;; (add-hook 'pdf-view-mode-hook #'brust-pdf-tools-hook t))
+;; (eval-after-load 'interleave
+;; (add-hook 'pdf-view-mode-hook #'brust-pdf-tools-hook t))
 
-  (defun brust-image-backward-hsroll-5 (args)
-    (interactive "p")
-    (brust-by-five #'image-backward-hscroll args))
-  (defun brust-image-forward-hsroll-5 (args)
-    (interactive "p")
-    (brust-by-five #'image-forward-hscroll args))
-  (defun brust-pdf-view-next-line-or-next-page-5 (args)
-    (interactive "p")
-    (brust-by-five #'pdf-view-next-line-or-next-page args))
-  (defun brust-pdf-view-previous-line-or-previous-page-5 (args)
-    (interactive "p")
-    (brust-by-five #'pdf-view-previous-line-or-previous-page args))
+(defun brust-image-backward-hsroll-5 (args)
+  (interactive "p")
+  (brust-by-five #'image-backward-hscroll args))
+(defun brust-image-forward-hsroll-5 (args)
+  (interactive "p")
+  (brust-by-five #'image-forward-hscroll args))
+(defun brust-pdf-view-next-line-or-next-page-5 (args)
+  (interactive "p")
+  (brust-by-five #'pdf-view-next-line-or-next-page args))
+(defun brust-pdf-view-previous-line-or-previous-page-5 (args)
+  (interactive "p")
+  (brust-by-five #'pdf-view-previous-line-or-previous-page args))
 #+END_SRC
 
 ** TODO Screenshot
@@ -5288,3 +5415,8 @@ And copy the following subtree =C-c C-x M-w= under the table and eval the code.
 
 #+RESULTS:
 : brust-call-niu-insert-mark
+
+
+
+
+

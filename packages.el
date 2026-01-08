@@ -84,8 +84,8 @@
 
 ;; # https://codeberg.org/rwv/android-mode/pulls
 (package! android-mode :recipe
- (:host codeberg
-  :repo "rwv/android-mode"))
+  (:host codeberg
+   :repo "rwv/android-mode"))
 
 (package! eat :recipe
   (:host codeberg

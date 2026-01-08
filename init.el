@@ -88,6 +88,7 @@
        ;; (spell +everywhere +aspell) ; tasing you for misspelling mispelling
        ;; Problems with org-mode files: constantly analyzing list of not found words...
        ;; (spell +flyspell +everywhere +aspell) ; tasing you for misspelling mispelling
+       ;; languagetools + [[doom-package:writegood-mode]] (literate writing)
        ;; grammar           ; tasing grammar mistake every you make
 
        :tools
@@ -153,7 +154,7 @@
        ;; (julia +lsp +tree-sitter) ; a better, faster MATLAB
        (julia +lsp) ; a better, faster MATLAB
        ;; julia             ; a better, faster MATLAB ; not +lsp flag in order to use eglot
-       (kotlin +lsp)            ; a better, slicker Java(Script)
+       ;; (kotlin +lsp)            ; a better, slicker Java(Script)
        ;; (latex +cdlatex +lsp)  ; writing papers in Emacs has never been so fun
        (latex +cdlatex)  ; writing papers in Emacs has never been so fun
        ;;lean

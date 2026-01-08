@@ -4,8 +4,8 @@
 ;;
 ;; Author: Laura Brustenga i Moncusí <laurea987@gmail.com>
 ;; Maintainer: Laura Brustenga i Moncusí <laurea987@gmail.com>
-;; Created: julio 23, 2024
-;; Modified: julio 23, 2024
+;; Created: july 23, 2024
+;; Modified: july 23, 2024
 ;; Version: 0.0.1
 ;; Keywords: abbrev bib c calendar comm convenience data docs emulations extensions faces files frames games hardware help hypermedia i18n internal languages lisp local maint mail matching mouse multimedia news outlines processes terminals tex tools unix vc wp
 ;; Homepage: https://github.com/LauraBMo/brust-line-number
@@ -30,18 +30,23 @@
   :group 'brust-line-number
   :type 'bool)
 
+(defcustom brust-line-number-total-face-height 0.7
+  "Height for buffer's total number of lines."
+  :group 'brust-line-number
+  :type 'number)
+
+;; TODO:
 (defface brust-line-number-total-face
-  '((t
-     :inherit 'mode-line
-     :foreground "gray60"
-     :height 0.7))
+  `((t
+     :inherit 'shadow
+     :height ,brust-line-number-total-face-height))
   "Font face to show the total number of lines in buffer."
   :group 'brust-line-number)
 
 (defface brust-line-number-total-face-highlight
-  '((t
+  `((t
      :inherit 'mode-line-highlight
-     :height 0.7))
+     :height ,brust-line-number-total-face-height))
   "Font face to show the total number of lines in buffer when mouse is on it."
   :group 'brust-line-number)
 
