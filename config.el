@@ -107,9 +107,8 @@
         ;;  :action doom/quickload-session)
         ("Open private configuration"
          :icon (nerd-icons-octicon "nf-oct-tools" :face 'doom-dashboard-menu-title)
-         ;; :icon (all-the-icons-octicon "tools" :face 'doom-dashboard-menu-title)
          :when (file-directory-p doom-private-dir)
-         :action doom/open-private-config)
+         :action brust-open-my-doom-config)
         ;; ("Notes"
         ;;  :icon (all-the-icons-octicon "light-bulb" :face 'font-lock-keyword-face)
         ;;  :action ragone-deft-or-close)
@@ -153,10 +152,11 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  ;; '(highlight ((t (:background "#454545" :foreground "black" :weight bold))))
- '(org-block-begin-line ((t (:underline "#5d595f" :foreground "#aeaab2")))
+ '(org-block-begin-line ((t (:underline "#5d595f" :foreground "#aeaab2" :height 0.8)))
    "Face used for the line delimiting the begin of source blocks.")
- '(org-block-end-line ((t (:overline "#5d595f" :foreground "#aeaab2")))
-   "Face used for the line delimiting the end of source blocks."))
+ '(org-block-end-line ((t (:overline "#5d595f" :foreground "#aeaab2" :height 0.8)))
+   "Face used for the line delimiting the end of source blocks.")
+ '(shadow ((t (:foreground "gray65")))))
 
 (put 'erase-buffer 'disabled nil)
 
@@ -250,15 +250,18 @@ Keymap to show or kill current date.")
         ;; Change fields and format
         bibtex-user-optional-fields '(("keywords" "Keywords to describe the entry" "")
                                       ("file" "Link to document file." ":"))
-        bibtex-align-at-equal-sign t
-        ;; How to format entries
-        bibtex-entry-format
+        bibtex-align-at-equal-sign t)
+        
+  ;; How to format entries
+  ;; No required fields
+  (setf (alist-get 'required-fields bibtex-entry-format nil 'remove) nil)
+  (setq bibtex-entry-format
         (append '(whitespace
                   realign
                   unify-case
                   last-comma
                   sort-fields)
-                (delq! 'required-fields bibtex-entry-format))))
+                bibtex-entry-format)))
 
 (defun brust-bibtex-link-pdf (&optional title doi)
   "Link pdf to a bib entrie. Download from Sci-Hub if pdf not found."
@@ -387,21 +390,27 @@ With prefix, rebuild the cache before offering candidates."
 
 (map!
  "C-:" #'embark-act
- (:map vertico-map ;; Its parent is minibuffer-mode-map
-       ;; But it defines: "TAB" #'vertico-insert
-       ;; So, we need force rebind it back.
-       "TAB" #'vertico-next)
- :map minibuffer-mode-map
+ ;; (:map vertico-map ;; Its parent is minibuffer-mode-map
+ ;;       ;; But it defines: "TAB" #'vertico-insert
+ ;;       ;; So, we need force rebind it back.
+ ;;       "TAB" #'vertico-next)
+ ;; :map minibuffer-mode-map
+ :map vertico-map
  ;; Motion: LOWER from keyboard
- "s-j" #'vertico-next
  ;; "TAB" #'vertico-next
- "s-k" #'vertico-previous
- "s-l" #'vertico-insert
- "s-SPC" #'vertico-insert
  "s-h" #'vertico-first
+ "s-j" #'vertico-next
+ "s-k" #'vertico-previous
+ "s-l" #'vertico-exit-input
+ ;; "s-l" #'vertico-insert
+ "s-SPC" #'vertico-insert
+ "s-M-j" #'vertico-next-group
+ "s-M-k" #'vertico-previous-group
+ "M-n" #'vertico-next-group
+ "M-p" #'vertico-previous-group
  ;; "M-j" #'ivy-next-line
  ;; "M-k" #'ivy-previous-line
- ;;
+ ;; ho
  ;; Finish
  ;; "<right>"  #'ivy-alt-done
  ;; "<right>"  #'my/vertico-insert-or-exit
@@ -455,6 +464,49 @@ With prefix, rebuild the cache before offering candidates."
 
 (setq +corfu-want-tab-prefer-expand-snippets t
       +corfu-want-tab-prefer-navigating-snippets t)
+(map! :map corfu-map
+      "s-j" #'corfu-next
+      "s-k" #'corfu-previous
+      "s-l" #'corfu-expand
+      "<right>" #'corfu-quit
+      "M-j" #'corfu-scroll-down
+      "M-k" #'corfu-scroll-up
+      :i "TAB" #'corfu-insert-separator
+      )
+
+;; Categories: apply to all commands of a type
+(setq vertico-multiform-categories
+  `((file
+     (vertico-sort-function . vertico-sort-directories-first)
+     (+vertico-transform-functions . +vertico-highlight-directory)
+     (:keymap . vertico-directory-map))
+    (buffer flat (vertico-cycle . t))
+    (jinx buffer ,(lambda (_) (text-scale-set -1))
+     (vertico-buffer-display-action . (display-buffer-in-direction))
+     (direction . right)
+     (window-width . 0.35))
+    (symbol (vertico-sort-function . vertico-sort-alpha))
+    (recentf reverse (vertico-count . 20))
+    )) ; Fallback for everything else
+
+;; Commands: override categories for specific functions
+(setq vertico-multiform-commands
+  '(("flyspell-correct-*" grid reverse)
+    ("consult-org-*" buffer indexed)
+    ("+*grep" buffer
+     (vertico-buffer-display-action . (display-buffer-reuse-window)))
+    ;; (consult-grep buffer
+    ;;  (vertico-buffer-display-action . (display-buffer-reuse-window)))
+    ;; (consult-git-grep buffer
+    ;;  (vertico-buffer-display-action . (display-buffer-reuse-window)))
+    ;; (consult-ripgrep buffer
+    ;;  (vertico-buffer-display-action . (display-buffer-reuse-window)))
+    (org-refile grid reverse indexed)
+    (consult-imenu buffer indexed)
+    (execute-extended-command unobtrusive
+     (:keymap "X" execute-extended-command-for-buffer))
+    (describe-symbol
+     (vertico-sort-function . vertico-sort-alpha))))
 
 ;; +file-templates-dir
 
@@ -471,6 +523,8 @@ With prefix, rebuild the cache before offering candidates."
 
 (after! hl-todo
   (setq hl-todo-highlight-punctuation ":"
+        hl-todo-wrap-movement t
+        hl-todo-color-background nil
         hl-todo-keyword-faces
         `(
           ("TODO"     . '(warning bold))
@@ -479,7 +533,7 @@ With prefix, rebuild the cache before offering candidates."
           ("CANCELED" . "#708090")
           ))
   )
-;; TODO DONE DOING CANCELED
+;; TODO::: ::DONE:: ::DOING:: ::CANCELED::
 
 (add-hook! 'emacs-startup-hook
   (+global-word-wrap-mode +1)
@@ -537,7 +591,7 @@ With prefix, rebuild the cache before offering candidates."
  ;; Personal extensions
  ;; "<f2>"  #'brust-correct-prev-spelling
  "<f5>"  #'consult-kmacro
- "<f9>"  #'mu4e
+ ;; "<f9>"  #'mu4e
  "<f10>" #'magit-status
  :n "g SPC" #'brust-cycle-whitespace ;; It was unbind
  (:prefix "z"
@@ -1014,7 +1068,10 @@ Subtrees under a COMMENTed header are not evaluated."
 
 (defun brust-open-my-org nil
   (interactive)
-  (find-file (expand-file-name (concat org-directory  "/my.org"))))
+  (find-file (expand-file-name "my.org" org-directory)))
+(defun brust-open-my-doom-config nil
+  (interactive)
+  (find-file (expand-file-name "config.org" doom-user-dir)))
 
 (defvar brust-math-software-buffers-prompts
   '(("*julia*"    . "^julia>")
@@ -2222,7 +2279,7 @@ EXPLANATION STANDARDS:
 (add-hook! 'emacs-startup-hook (recentf-mode 1))
 
 (after! projectile (setq projectile-project-root-files-bottom-up (remove ".git"
-          projectile-project-root-files-bottom-up)))
+                                                                         projectile-project-root-files-bottom-up)))
 
 (after! org
   ;; Doom disables =show-paren-mode= because:
@@ -2365,6 +2422,8 @@ FACE defaults to inheriting from default and highlight."
 
 ;; (add-hook! 'emacs-startup-hook (brust-decrypt "~/.authinfo.gpg"))
 
+(setq aw-keys '(?a ?s ?d ?f ?g ?h))
+
 (after! ibuffer
   ;; Redefine size Ibuffer's column to display the total number of lines,
   ;; a humanly understandable measure of size.
@@ -2488,15 +2547,37 @@ FACE defaults to inheriting from default and highlight."
 (advice-add 'evil-delete-char :around 'bb/evil-delete--black-hole-register)
 (advice-add 'evil-delete-backward-char :around 'bb/evil-delete--black-hole-register)
 
-(after! jinx
-  (setq ;; jinx-languages "pt_BR en_US"
-   jinx-delay 1.0))
+(use-package! jinx
+  :hook (emacs-startup . global-jinx-mode)
+  :init
+  ;; Set your preferred languages (order matters: first = primary)
+  (setq jinx-languages "en ca es"
+        jinx-delay 1.0)
 
-(after! vertico-multiform ;; if using vertico
-  (add-to-list 'vertico-multiform-categories
-               '(jinx (vertico-grid-annotate . 25)))
+  ;; Exclude code-like faces; include comments/strings
+  ;; If using Tree-sitter 
+  ;; (setq jinx-include-faces
+  ;;       (append jinx-include-faces
+  ;; '(tree-sitter-hl-face:comment tree-sitter-hl-face:string tree-sitter-hl-face:doc))))
 
-  (vertico-multiform-mode 1))
+  :config
+  ;; Fancy buffer view for jinx spelling corrections
+  (after! vertico-multiform
+    (add-to-list 'vertico-multiform-categories
+                 `(jinx buffer ,(lambda (_) (text-scale-set -1)))))
+
+  ;; ┌───────────────────────────────────────┐
+  ;; │        Doom-style Keybindings         │
+  ;; └───────────────────────────────────────┘
+  (global-set-key [remap ispell-word] #'jinx-correct)
+
+  (map! :n "] s" #'jinx-next
+        :n "[ s" #'jinx-previous
+        "C-M-$" #'jinx-languages
+        (:map jinx-mode-map
+              "M-n" #'jinx-next
+              "M-p" #'jinx-previous))
+  )
 
 (use-package! keyfreq
   :init
@@ -2508,22 +2589,6 @@ FACE defaults to inheriting from default and highlight."
           backward-char
           previous-line
           next-line)))
-
-(defun import-revolut ()
-  "Process and import Revolut CSV"
-  (interactive)
-  (let* ((csv-file (read-file-name "Select Revolut CSV: " "~/Downloads/"))
-         (ledger-file "~/finance/main.ledger"))
-    (shell-command (format "julia ~/finance/scripts/process_revolut.jl '%s'" csv-file))
-    (with-current-buffer (find-file ledger-file)
-      (goto-char (point-max))
-      (insert-file-contents "~/finance/data/processed.ledger")
-      (ledger-mode-clean-buffer)
-      (save-buffer)
-      (message "Imported %d transactions" (count-lines (point-min) (point-max))))))
-(map! :leader
-      :prefix "f"
-      "i" #'import-revolut)
 
 (use-package! lsp-ui
   :after lsp
@@ -2594,8 +2659,8 @@ FACE defaults to inheriting from default and highlight."
   (setq pdf-annot-activate-created-annotations t
         pdf-view-resize-factor 1.1)
   (add-hook! 'pdf-view-mode-hook
-             (brust-line-number-mode -1)
-             (pdf-isearch-batch-mode +1))
+    (brust-line-number-mode -1)
+    (pdf-isearch-batch-mode +1))
   ;; faster motion
   (map!
    :map pdf-view-mode-map
@@ -2630,21 +2695,21 @@ FACE defaults to inheriting from default and highlight."
     "t" #'pdf-annot-add-text-annotation
     )))
 
-  ;; (eval-after-load 'interleave
-  ;; (add-hook 'pdf-view-mode-hook #'brust-pdf-tools-hook t))
+;; (eval-after-load 'interleave
+;; (add-hook 'pdf-view-mode-hook #'brust-pdf-tools-hook t))
 
-  (defun brust-image-backward-hsroll-5 (args)
-    (interactive "p")
-    (brust-by-five #'image-backward-hscroll args))
-  (defun brust-image-forward-hsroll-5 (args)
-    (interactive "p")
-    (brust-by-five #'image-forward-hscroll args))
-  (defun brust-pdf-view-next-line-or-next-page-5 (args)
-    (interactive "p")
-    (brust-by-five #'pdf-view-next-line-or-next-page args))
-  (defun brust-pdf-view-previous-line-or-previous-page-5 (args)
-    (interactive "p")
-    (brust-by-five #'pdf-view-previous-line-or-previous-page args))
+(defun brust-image-backward-hsroll-5 (args)
+  (interactive "p")
+  (brust-by-five #'image-backward-hscroll args))
+(defun brust-image-forward-hsroll-5 (args)
+  (interactive "p")
+  (brust-by-five #'image-forward-hscroll args))
+(defun brust-pdf-view-next-line-or-next-page-5 (args)
+  (interactive "p")
+  (brust-by-five #'pdf-view-next-line-or-next-page args))
+(defun brust-pdf-view-previous-line-or-previous-page-5 (args)
+  (interactive "p")
+  (brust-by-five #'pdf-view-previous-line-or-previous-page args))
 
 (use-package! screenshot
   :commands screenshot

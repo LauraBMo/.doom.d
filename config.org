@@ -864,7 +864,7 @@ With prefix argument all files (hidden, .gitignoreds, ....) are shown as candida
       "s-j" #'corfu-next
       "s-k" #'corfu-previous
       "s-l" #'corfu-expand
-      "<right>" #'corfu-expand
+      "<right>" #'corfu-quit
       "M-j" #'corfu-scroll-down
       "M-k" #'corfu-scroll-up
       :i "TAB" #'corfu-insert-separator
@@ -1362,7 +1362,7 @@ From the PDF specification 1.7:
  ;; Personal extensions
  ;; "<f2>"  #'brust-correct-prev-spelling
  "<f5>"  #'consult-kmacro
- "<f9>"  #'mu4e
+ ;; "<f9>"  #'mu4e
  "<f10>" #'magit-status
  :n "g SPC" #'brust-cycle-whitespace ;; It was unbind
  (:prefix "z"
