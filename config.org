@@ -3447,6 +3447,46 @@ See file [[file:local/lisp/ollama-boddy/ollama-buddy-presets/ollama-buddy--prese
 ;;  (region must be active). System prompt, parameters are set to :system and so
 ;;  (or to current ones when not defined).
 #+end_src
+** Claude Code
+Bridges the Claude Code CLI into Emacs via [[https://github.com/manzaltu/claude-code-ide.el][claude-code-ide.el]]
+(MCP-based). Claude can read the active buffer, the region, project info,
+LSP diagnostics, =xref=, =imenu=, and =treesit= when available. Diffs land
+in =ediff=.
+
+Prerequisite: the Claude Code CLI is installed (=npm i -g
+@anthropic-ai/claude-code=) and authenticated (=claude= in a terminal, log
+in once).
+
+*** Package
+#+begin_src elisp :tangle packages.el
+(package! claude-code-ide
+  :recipe (:host github :repo "manzaltu/claude-code-ide.el"))
+#+end_src
+
+*** Config
+Bound under =SPC a c= so it doesn't collide with =C-c o=/=C-c O=
+(ollama-buddy). The transient menu (=SPC a c c=) exposes everything else;
+the extra bindings are conveniences. Uses =eat= (already in =packages.el=)
+as the terminal backend.
+
+#+begin_src elisp
+(use-package! claude-code-ide
+  :defer t
+  :init
+  (map! :leader
+        (:prefix ("a" . "ai")
+         (:prefix ("c" . "claude")
+          :desc "Claude menu"          "c" #'claude-code-ide-menu
+          :desc "Toggle Claude window" "t" #'claude-code-ide-toggle
+          :desc "Send prompt"          "p" #'claude-code-ide-send-prompt
+          :desc "Send region/buffer"   "s" #'claude-code-ide-send-region
+          :desc "Resume session"       "r" #'claude-code-ide-resume
+          :desc "Stop session"         "q" #'claude-code-ide-stop
+          :desc "List sessions"        "l" #'claude-code-ide-list-sessions)))
+  :config
+  (claude-code-ide-emacs-tools-setup)
+  (setq claude-code-ide-terminal-backend 'eat))
+#+end_src
 ** Maple
 
 #+begin_src elisp :tangle packages.el
