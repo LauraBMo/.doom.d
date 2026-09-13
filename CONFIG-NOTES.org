@@ -1,0 +1,250 @@
+#+TITLE: Config notes — fixes, decisions, tricks
+#+STARTUP: overview
+
+Running log for this Doom Emacs config: errors fixed, package decisions, and
+reusable maintenance tricks. Newest entries at the top of each section. Both the
+user and future Claude chats read this file (referenced from =CLAUDE.md=), so keep
+entries concrete: what happened, why, and how to repeat the fix.
+
+* Errors fixed
+
+** 2026-09-13 — latex-mcp: fails to connect with "No module named 'mcp.server.fastmcp'"
+=claude mcp add --scope user latex -- uvx latex-mcp= registers fine, but =claude mcp list= then
+reports =latex: ... ✘ Failed to connect — -32000: MCP error -32000: Connection closed=. Running
+=uvx latex-mcp= by hand shows the real error:
+
+#+begin_src sh
+ModuleNotFoundError: No module named 'mcp.server.fastmcp'. This is mcp 2.x, where
+FastMCP was renamed to MCPServer ... or pin 'mcp<2' to keep running v1 code.
+#+end_src
+
+- *Root cause:* latex-mcp 0.2.0 declares =mcp[cli]>=1.26.0= with *no upper bound*, so =uvx=
+  resolves the latest =mcp= (2.x), where =mcp.server.fastmcp.FastMCP= was renamed to
+  =mcp.server.mcpserver.MCPServer=. Upstream packaging bug, not a fault in this config — and
+  *nothing to do with Docker*, which is where the original diagnosis was pointed.
+- *Fix:* pin the dependency in the registration itself:
+  =claude mcp add --scope user latex -- uvx --with 'mcp<2' latex-mcp=
+  Stored in =~/.claude.json= as ="args": ["--with", "mcp<2", "latex-mcp"]=. The pin is required
+  until upstream bounds the version; re-check when latex-mcp releases next.
+- *Also note:* =uvx latex-mcp= needs *no container at all*. The package's own code resolves
+  compilers with =shutil.which= (=latex_mcp/core/command.py=). Docker appears only in the
+  README's *alternative* config, which containerises the whole server
+  (=docker run -i --rm --mount type=bind,src=${PWD},dst=${PWD} -w ${PWD} ghcr.io/sepinetam/latex-mcp:latest=).
+  The two routes are different commands — don't conflate them.
+- *Gotcha:* the =latex_compile= tool defaults =working_dir= to =/workspace= — a leftover from the
+  container route. =/workspace= does not exist on this host, so callers must pass an explicit
+  =working_dir= or the call fails.
+- *Verified:* raw JSON-RPC probe (=initialize= + =tools/list=) returns 3 tools —
+  =latex_compile=, =latex_list_compilers=, =latex_clean=. =latex_compile= on a real =main.tex=
+  returned =success: true= and wrote a 38 KB PDF; =latex_list_compilers= reports the host TeX Live
+  (=pdflatex=, =xelatex=, =lualatex=, plus =bibtex=, =biber=, =makeindex=, =latexmk=,
+  =latexmk_available: true=).
+- *Lesson:* =claude mcp list= showing "✔ Connected" is only a handshake. A server that dies at
+  import reads as a connect error there — probe =tools/list= to confirm it actually serves tools.
+
+** 2026-08-17 — pdf-tools: =j=/=k= scroll snaps back to top of page every few presses
+In =pdf-view-mode= with =pdf-view-roll-minor-mode= on, holding =j= (or =k=) scrolled
+fine for ~4–5 presses, then jumped back to the beginning of the current scroll.
+=s-j= / =s-k= (single-line scroll) always worked.
+
+- *Root cause:* =j=/=k= were bound to =brust-pdf-view-next-line-or-next-page-5=, which
+  did =(brust-by-five #'pdf-view-next-line-or-next-page args)= — a =funcall-interactively=.
+  The =funcall= bypasses roll-mode's keymap remap (=pdf-roll.el:353=,
+  =[remap pdf-view-next-line-or-next-page] -> pdf-roll-scroll-forward=), so it ran the
+  real command body, which under roll mode is =(dotimes (_ arg) (pdf-roll-scroll-forward))=
+  — i.e. it called the roll scroller *5 times in a tight loop with no redisplay between
+  calls*. =pdf-roll-scroll-forward= reads the *live* =window-start= / =window-vscroll=
+  (=pdf-roll.el:278,292=), which only refresh on redisplay. Within one page the stale
+  reads harmlessly accumulate; crossing a *page boundary* leaves =pdf-view-current-page=
+  and vscroll inconsistent, and the next redisplay's =pdf-roll-pre-redisplay=
+  (=pdf-roll.el:224=) snaps =window-start= back to =(pdf-roll-page-to-pos page)= — the top
+  of the page. =s-j= worked because the remap makes one keypress = one scroller call.
+- *Fix:* call =pdf-roll-scroll-forward= / =pdf-roll-scroll-backward= directly with a count
+  of 5 (a single correct multi-line pass — the library already takes an =n= arg,
+  =pdf-roll.el:275=) instead of looping the high-level command. In =config.org=, the two
+  =brust-pdf-view-*-line-or-*-page-5= functions now branch on
+  =(bound-and-true-p pdf-view-roll-minor-mode)=: under roll mode
+  =(brust-by-five #'pdf-roll-scroll-forward args)=, else the old
+  =(brust-by-five #'pdf-view-next-line-or-next-page args)= (fine for non-roll: single call).
+  Routing through =brust-by-five= keeps its =(if (numberp args) (* 5 args) 5)= nil-guard.
+- *Lesson:* =pdf-roll-scroll-forward= is not safe to call repeatedly within one command;
+  pass it a count and let it do one pass per redisplay. Verified working by the user after
+  =doom sync= + reload.
+
+** 2026-08-17 — jinx: "Symbol's function definition is void: jinx--table-with-metadata"
+Error when using the jinx speller (triggered by =jinx-languages= /
+=jinx--read-languages=).
+
+- *Root cause:* the pinned jinx checkout (v2.7, commit =ee590b2=) caught upstream
+  mid-rename. jinx.el called an undefined private helper =jinx--table-with-metadata=
+  where it should have called =completion-table-with-metadata= (backported by the
+  =compat= library). An upstream bug, not a fault in this config.
+- *Fix:* updated jinx to =23f6d02= ("Fix typo", the upstream fix) via =doom sync -u=,
+  which rebuilt the =.elc=. After a =doom sync=, restart Emacs or =M-x doom/reload=
+  so the running session drops the stale code.
+- *Aside:* the =doom sync -u= that fixed it first had to get past several unrelated
+  package-repo problems — see [[*Tricks / maintenance recipes]].
+
+* Package decisions
+
+- *cdlatex-tab advice: deliberately parked, block removed* (2026-09-13). Until today
+  =local/lisp/brusts-latex-config.org= carried a =** COMMENT Adaptation to my style= block
+  holding two advices on cdlatex: =cdlatex-tab= (an =:around= that trims a trailing =_^= before
+  the closing brace, and after *leaving* a =\(…\)= math environment closes the parens that were
+  opened inside it) and =cdlatex-environment= (an =:after= that re-indents the line once the
+  environment is inserted). It was disabled *on purpose* in commit =8f7a595= (2022-02-23,
+  "try not using my advice for cdlatex's tab magic") — that message is the whole record, and
+  *the outcome was never written down*. The 2026-09-13 LaTeX audit deleted the block; this
+  entry is what replaces it.
+  - *To revive:* =git show 8f7a595^:local/lisp/brusts-latex-config.org= (line 1230) has the
+    live, un-commented version; =8f7a595= itself has the disabled copy.
+  - *Nothing would fail on a missing function.* =sp-backward-sexp= comes from *smartparens*
+    (=init.el= =:config (default +bindings +snippets +evil-commands +smartparens)=),
+    =LaTeX-indent-line= from AUCTeX, and =close-quoted-open-paren-right= is *this config's own*
+    function (=config.org= =** Close<->open parents=, tangled to =config.el:678=, also bound
+    directly to =s-,=). The advice reaches it through =ignore-errors=, so if it ever went
+    missing the paren-closing half would silently no-op rather than error — worth remembering
+    when reading a bare =(unless -closed-p (goto-char -pt))=.
+  - *Caveat:* written with the obsolete =defadvice=/=ad-do-it=; port to =advice-add= (=:around= /
+    =:after=) if reviving. It changes TAB *inside math*, so test in a =\(…\)= with a
+    deliberately unbalanced parenthesis. Why it was parked is not in git.
+
+- *LaTeX LSP: texlab via lsp-mode, not eglot* (2026-09-13). Enabled =(latex +cdlatex +lsp)= in
+  =init.el= (was =(latex +cdlatex)=). Doom's =+lsp= only adds =lsp!= to the latex local-vars hooks
+  (=modules/lang/latex/config.el:117=); the texlab client itself ships with lsp-mode
+  (=clients/lsp-tex.el=, =:major-modes '(plain-tex-mode latex-mode LaTeX-mode)=, with
+  =lsp-tex-server= and =lsp-clients-texlab-executable= both defaulting to =texlab=).
+  - *Why not eglot:* this config's LSP client is *lsp-mode* — =init.el= has =;; (lsp +eglot)=
+    commented out. An =eglot-server-programs= entry for =latex-mode= would therefore be *inert*,
+    and making it live means enabling =(lsp +eglot)=, which reroutes *Julia* too. There is in fact
+    no eglot registration for Julia anywhere in this config: the =*** COMMENT eglot-jl= block in
+    =config.org= is =:tangle no= (dead), and Julia's real LSP is =(julia +lsp)= +
+    =use-package! lsp-julia= (=config.el=). So "mirror the Julia eglot entry" has no referent.
+  - *Install — texlab is not in the Fedora repos:* =dnf info texlab= → "No matching packages to
+    list" on Fedora 44 (=fedora= + =updates=), and =cargo=/=rustc= are not installed, so neither
+    =dnf= nor =cargo install texlab= was available. Used the upstream prebuilt release binary:
+    #+begin_src sh
+    curl -sSL -o texlab.tar.gz \
+      https://github.com/latex-lsp/texlab/releases/download/v5.26.0/texlab-x86_64-linux.tar.gz
+    tar xzf texlab.tar.gz && install -m 755 texlab ~/.local/bin/texlab
+    #+end_src
+    =~/.local/bin= is already on PATH. Check the current version and asset name on the GitHub
+    releases page before reusing that line. Verified =texlab 5.26.0=; host glibc is 2.43, so the
+    prebuilt binary runs fine (no =podman-docker= or container needed for the Emacs side).
+
+- *Claude Code terminal backend: ghostel, not eat* (2026-08-17). Switched
+  =claude-code-ide-terminal-backend= from =eat= to =ghostel= (=dakra/ghostel=) — the
+  backend claude-code-ide now officially recommends (that one-time "try ghostel" echo
+  message). Renders Claude's TUI with the fewest artifacts and keeps the transcript as
+  real, searchable buffer text.
+  - *Install:* Doom ships NO ghostel module (nor eat — both are hand-declared
+    =package!=; =:term= only has eshell/shell/term/vterm). ghostel is a native module,
+    but the *prebuilt binary auto-downloads on first use* — no Zig/toolchain needed.
+    Declared in =config.org= beside the claude-code-ide package. Needs Emacs with
+    module support (we have it).
+  - *Searchable transcript needs Claude Code's inline renderer:* set =tui= to =default=
+    (=/tui default= in-session, or ="tui": "default"= in =~/.claude/settings.json=).
+    Fullscreen/alt-screen rendering keeps only the visible screen in the buffer; inline
+    keeps the whole conversation as text so =C-s=/=C-r= isearch works. This is a Claude
+    Code setting, not a ghostel one.
+  - *ESC → Claude:* bind =<escape>= (evil insert state) in =ghostel-mode-map= to
+    =(ghostel-send-key "escape")= — the direct analog of the old eat =my/eat-send-escape=.
+    Deliberately *not* using =evil-ghostel= / =claude-code-ide-ghostel-evil-escape= (a
+    per-buffer toggle/mode machine — overcomplicated for "just send ESC"). Evil normal
+    state comes from the existing =fj=/=jf= evil-escape chord, so ESC stays dedicated to
+    Claude.
+  - *eat kept, not deleted:* the =** EAT= section stays in =config.org= but both blocks
+    are =:tangle no= (disabled / not exported). Flip to =:tangle packages.el=/=config.el=
+    + =doom sync= to restore. ("remove eat" here meant "stop exporting it", not "erase".)
+- *jinx* (=package! jinx=, no =:pin=): left unpinned so =doom sync -u= tracks upstream.
+  The surgical alternative when only jinx needs fixing is
+  =(package! jinx :pin "<commit>")= + plain =doom sync=, which avoids updating every
+  other package.
+- *claude-code-ide* (=manzaltu/claude-code-ide.el=): Claude Code IDE bridge. Its
+  window/terminal settings live in =config.org= under =** Claude Code=. Do NOT keep
+  notes or config copies inside the package's straight repo — straight can wipe it.
+
+* Tricks / maintenance recipes
+
+** 2026-08-17 — Benign "-32601 Method not found" from claude-code-ide's MCP server
+On starting a Claude session you may see, once or twice:
+=error in process filter: ... peculiar error: -32601, "Method not found"=.
+*Not a real failure — don't chase it.* claude-code-ide's Emacs MCP server
+(=claude-code-ide-mcp-http-server=) implements only =initialize=, =tools/list=, and
+=tools/call=; the Claude Code CLI probes optional MCP methods it doesn't have
+(=notifications/initialized=, =logging/setLevel= — the server even advertises a
+=logging= capability it never implements), and each probe returns -32601. Independent
+of the terminal backend (identical under eat/vterm/ghostel). Everything functional (the
+Emacs tools exposed to Claude) works regardless.
+
+** 2026-08-17 — Force new buffers to split side-by-side (new buffer on the right)
+Goal: work with two windows, current buffer on the LEFT, the new one (terminal,
+Claude Code, julia-repl, PDF...) on the RIGHT. Buffers were instead opening stacked
+(top/bottom), or in the same window.
+
+- *Why it happened:* Emacs =split-window-sensibly= tries a side-by-side split first,
+  but only if the window is at least =split-width-threshold= columns wide (default
+  *160* — wider than most frames), so it fell back to a stacked top/bottom split.
+  This is a plain-Emacs =display-buffer= behaviour, and it applies here because Doom's
+  =:ui popup= module is *disabled* (see =init.el=) — with popup on, that module would
+  intercept these buffers instead and this recipe would not apply.
+- *Global fix* (in =config.org=, just after the Evil split settings):
+  #+begin_src elisp
+  (setq split-width-threshold 80    ; allow side-by-side when window ≥ ~80 cols
+        split-height-threshold nil) ; never auto-split top/bottom — force side-by-side
+  #+end_src
+  New buffer lands on the right (=split-window-right= semantics), current stays left.
+  Bump =80= up if you want each half wider before Emacs is willing to split. On a frame
+  too narrow to split, Emacs reuses an existing window instead of forcing a thin split.
+  Verified: julia-repl, Claude Code, and LaTeX =C-c C-v= (PDF) all split right.
+- *Note:* =split-height-threshold nil= means Emacs will never *auto*-create a stacked
+  split anymore; manual evil splits are unaffected (=evil-vsplit-window-right t=).
+
+*** If some mode STILL splits stacked (or opens in the same window)
+A few commands bypass =split-window-sensibly= — they hard-code =switch-to-buffer=
+(same window) or pin their own direction. The global thresholds can't reach those.
+Fix that one mode with a targeted =display-buffer-alist= rule (=display-buffer-in-direction=
+forces the side regardless of thresholds). Match on major mode or on a buffer-name regexp:
+#+begin_src elisp
+(add-to-list 'display-buffer-alist
+             '((derived-mode . some-offending-mode)   ; or e.g. "\\*Some Buffer\\*"
+               (display-buffer-reuse-window display-buffer-in-direction)
+               (direction . right)
+               (window-width . 0.5)))
+#+end_src
+Find the mode with =C-h m= in the misbehaving buffer, or the exact buffer name with
+=C-x C-b=. (We had this ready for LaTeX's PDF viewer but the global fix already covered it.)
+
+** Unblocking =doom sync -u= when it aborts on a package repo
+=doom sync -u= runs in batch mode. If any straight repo under
+=~/.config/emacs/.local/straight/repos/= is dirty, straight tries to prompt
+interactively, gets EOF, and the whole sync aborts with:
+=doom-package-error ... (end-of-file "Error reading from stdin")=. It only clears
+one repo per run, so it can take a few rounds.
+
+Scan all repos for dirty state before re-running:
+#+begin_src sh
+cd ~/.config/emacs/.local/straight/repos
+for d in */; do d=${d%/}; [ -d "$d/.git" ] || continue; \
+  s=$(git -C "$d" status --porcelain); \
+  [ -n "$s" ] && { echo "### $d"; echo "$s"; }; done
+#+end_src
+
+Then, per kind of dirt:
+- *Stray/untracked files that aren't part of the package:* check contents, then
+  remove. (Seen: a stray =config.org= that was just a stale copy of the live one,
+  plus a =myconfig.org= whose notes were already in =config.org=.)
+- *Dirty (nested) git submodules* (e.g. tidal's =tidal-link/link= →
+  =modules/asio-standalone=): reset recursively —
+  =git -C <submodule-path> submodule update --init --recursive --force=.
+- *Upstream =master= → =main= rename* (=fatal: couldn't find remote ref
+  refs/heads/master=): simplest fix is to *delete the whole repo folder* and let
+  =doom sync= re-clone it fresh on the current default branch:
+  =rm -rf ~/.config/emacs/.local/straight/repos/<pkg>=. (Worked cleanly for
+  =package-lint=.)
+
+** After any =doom sync=
+It prints "Restart Emacs for changes to take effect". A running Emacs keeps the old
+code until you restart or run =M-x doom/reload=. Verify a fix against the rebuilt
+=.elc= under =build-30.2/= (or the current Emacs version's build dir), not just the
+repo source.

@@ -83,7 +83,7 @@
 #+begin_src elisp
   (defun brust-LaTeX-set-header (-header)
     (interactive
-     (list (ivy-read "Header: " (mapcar #'car brust-LaTeX-headers))))
+     (list (completing-read "Header: " (mapcar #'car brust-LaTeX-headers))))
     (let ((title (read-string (format "%s's title: " (capitalize -header)))))
       (if (string= title "")
           (message "No title, no %s" (capitalize -header))
@@ -360,14 +360,14 @@ See http://endlessparentheses.com/improving-latex-equations-with-font-lock.html
      ))
 #+END_SRC
 
-*** COMMENT Enviroment
+*** Enviroment
 #+BEGIN_SRC elisp
   (defun brust-LaTeX-env (&optional args)
-    "Execute LaTex-environment or with argument:
+    "Insert a new environment, or with a prefix change the current one.
 
-  1. Change the environment with LaTeX-environment
-  2. Change the label tag (e.g. lem -> prop) (if there is one)"
-    (interactive "p")
+With a prefix, also rename the environment's label tag (e.g. lem -> prop)
+when the environment carries one."
+    (interactive "P")
     (let ((pnt (point)))
       (save-window-excursion
         (if (not args) (LaTeX-environment nil)
@@ -406,7 +406,7 @@ See http://endlessparentheses.com/improving-latex-equations-with-font-lock.html
            (lambda (BEG END)
              (save-excursion (save-match-data (goto-char BEG) (texmathp)))))
           (case-fold-search nil))
-      (if (args)
+      (if args
           (call-interactively 'query-replace-regexp)
         (call-interactively 'query-replace))))
 #+END_SRC
@@ -1111,61 +1111,6 @@ There are many defaults that I do not use, this is to clean a bit.
           ( ?`  (""                 ))
           ( ?'  ("\\prime"          ))))
 #+END_SRC
-
-** COMMENT Adaptation to my style
-
-#+BEGIN_SRC elisp
-;; (defadvice cdlatex-sub-superscript (around not-add-dollar activate)
-;;   (if (texmathp) ad-do-it
-;;     (insert (event-basic-type last-command-event))))
-
-;;  (defadvice cdlatex-math-symbol (around out-math activate)
-;;    (if (texmathp) ad-do-it
-;;      ad-do-it
-;;      (save-excursion
-;;        (search-backward "$")
-;;        (replace-match "\\(" nil t))
-;;      (save-excursion (close-quoted-open-paren 1 0))))
-
-(defadvice cdlatex-tab (around use-LaTeX-math activate)
-  "To stop before '\)' in LaTeX envirnment and close opened parents (but just before leaving the math-environment)"
-  (LaTeX-indent-line)
-  (let ((math-p1 (texmathp))
-        (-my-texmathp-why texmathp-why)
-        (math-p2 (save-excursion (forward-char 2) (texmathp))))
-    (when (and math-p1 (looking-at "}"))
-      (let ((-pt (point)) -str-s-trim)
-        (forward-char 1)
-        (sp-backward-sexp)
-        (forward-char -1)
-        (if (not (looking-at "[_^]")) (goto-char -pt)
-          (forward-char 2)
-          (setq -str-s-trim (s-trim (buffer-substring-no-properties (point) -pt)))
-          (delete-region (point) -pt)
-          (insert -str-s-trim))))
-    ad-do-it
-    (when (string= "\\(" (car -my-texmathp-why))
-      (when (and math-p1 math-p2 (not (texmathp)))
-        (backward-char 2))
-      (when (and math-p1 (not (texmathp)))
-        (let ((-pt (point)) -closed-p)
-          (narrow-to-region (+ (cdr -my-texmathp-why)
-                               (length (car -my-texmathp-why)))
-                            (- (point)
-                               (length (car -my-texmathp-why))))
-          (end-of-buffer)
-          (setq -closed-p (ignore-errors (close-quoted-open-paren-right nil)))
-          (widen)
-          (unless -closed-p (goto-char -pt)))))))
-
-  (defadvice cdlatex-environment (after add-auto-indentation activate)
-    (LaTeX-indent-line))
-#+END_SRC
-
-#+RESULTS:
-: cdlatex-environment
-
-
 
 * COMMENT LaTeX-extra
 ** Introductoin
