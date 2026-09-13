@@ -109,7 +109,7 @@
                 ;; TeX-fold-auto t                  ;; To use with TeX-mode-fold
                 ;; TeX-master 'dwin                 ;; AUCTeX will try to avoid querying
                 ;; TeX-default-mode 'LaTeX-mode     ;; always use LaTeX-mode
-                TeX-auto-local "~/.doom.d/local/.auctex-auto") ;; to not see the ./auto directory
+                TeX-auto-local "~/.cache/auctex-auto") ;; to not see the ./auto directory
 #+END_SRC
 
 ** Clean LaTeX intermediate files
@@ -167,23 +167,6 @@ So, I do not know how important the list =LaTeX-section-label is=, the really im
 
 #+RESULTS:
 : ((part . (brust-add-colon brust-LaTeX-part-prefix)) (chapter . chp:) (section . sec:) (subsection . ssec:) (subsubsection . sssec:))
-
-** Ispell TeX skip regexp list
-#+BEGIN_SRC elisp
-  (setq ispell-tex-skip-alists 
-        (list 
-         (append  
-          (car ispell-tex-skip-alists) ;tell ispell to ignore content of this:
-          '(("\\\\citep?"            ispell-tex-arg-end)
-            ("\\\\nocite"            ispell-tex-arg-end)
-            ("\\\\includegraphics"   ispell-tex-arg-end)
-            ("\\\\bibliography"      ispell-tex-arg-end)
-            ("[^\\]\\$" . "[^\\]\\$") ;; For math envirments ¿¿??
-            ("\\\\[a-zA-Z]?ref"      ispell-tex-arg-end)
-            ("\\\\author"            ispell-tex-arg-end)
-            ("\\\\label"             ispell-tex-arg-end)))
-         (cadr ispell-tex-skip-alists)))
-#+END_SRC
 
 ** TeX-outline environment
 *** Section list
@@ -459,8 +442,7 @@ when the environment carries one."
         ;; reftex-cite-prompt-optional-args nil
         ;; reftex-cite-cleanup-optional-args t
         reftex-guess-label-type nil
-        reftex-ref-style-default-list (quote ("Cleveref"))
-        reftex-refstyle "\\cref" ;; binding the command for references. No styles and other shits. Much faster executatoin.
+        reftex-ref-style-default-list (quote ("Cleveref" "AMSmath" "Default" "Hyperref")) ;; macros reftex-reference offers
         ;; Problem with diagrams: make an environment form then, so cleveref will produce right names :)
 
         ;; So that RefTeX also recognizes \addbibresource. Note that you
@@ -492,9 +474,15 @@ when the environment carries one."
               char (substring -string (1- n) n)))
       char))
 
+  ;; The template below says \ref on purpose. `reftex-format-special'
+  ;; (reftex-ref.el:841) swaps the macro in it for whichever one the
+  ;; `reftex-reference' prompt selects — but a plain \ref choice is deliberately
+  ;; excluded from that formatter (reftex-ref.el:506), so from a \cref template
+  ;; choosing \ref would silently emit \cref. A \ref template formats correctly
+  ;; for every style.
   (setq reftex-label-alist
         (cl-loop for xx in brust-LaTeX-environments collect
-                 `(,(car xx) ,(string-to-char (brust-LaTeX-environment-avoid-s (car xx))) ,(concat (cdr xx) ":") "~\\cref{%s}" t nil 3)))
+                 `(,(car xx) ,(string-to-char (brust-LaTeX-environment-avoid-s (car xx))) ,(concat (cdr xx) ":") "~\\ref{%s}" t nil 3)))
 
   (setq reftex-section-levels ;; levels used in reftex toc and for promoting and demoting (not used for cdlatex to insert new headers). 
         '(("part" . 0)

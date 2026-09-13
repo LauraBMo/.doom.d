@@ -87,6 +87,62 @@ Error when using the jinx speller (triggered by =jinx-languages= /
 
 * Package decisions
 
+- *LaTeX macro arguments are skipped by a jinx predicate, not by a face* (2026-09-13). jinx
+  is the speller here (=global-jinx-mode=; =ispell-word= is remapped to =jinx-correct=), so
+  the =ispell-tex-skip-alists= block in =local/lisp/brusts-latex-config.org= did nothing at
+  all — nothing reads that variable under jinx — and it was deleted. Its intent (don't
+  spell-check the contents of =\cite=, =\label=, =\ref=, =\includegraphics=, =\author=…)
+  now lives in =config.org= under =** Jinx (Spelling)=, as =brust-jinx--latex-key-arg-p=
+  registered on =jinx--predicates=.
+  - *Why not =jinx-exclude-faces=* (the one-line alternative): measured in a =LaTeX-mode=
+    buffer, the arguments of =\cite=, =\label=, =\ref=, =\eqref=, =\bibliography= and
+    =\input= all carry =font-lock-constant-face= — *and so does =\footnote= prose*, which
+    should be checked. Meanwhile =\label[diagram]{..}= and =\includegraphics{..}= are not
+    fontified at all, so no face can reach them. Excluding by macro name is both precise and
+    complete; excluding by face would have been neither.
+  - *Gotcha that cost real time:* =backward-up-list= leaves point *just before* the opening
+    brace, not after it — so the regexp that recognises the macro must not require a literal
+    ={= at the end. It ends in =[ \t]*= instead. With a ={= required, the predicate matched
+    nothing and silently excluded nothing.
+  - *Verified* by spelling a fixture twice with =jinx--check-region= — once with the
+    predicate removed from the list, once with it — the same path the real flow uses: 11
+    key/filename false positives gone, while =Footnote=/, =caption=/, =section= prose and two
+    planted typos stayed flagged.
+  - *Fragility to keep in mind:* =jinx--predicates= is a private defvar. Register from
+    jinx's own =:config= — an earlier =add-to-list= would create the variable first and
+    jinx's =defvar= would then decline to install its defaults, quietly disabling jinx's own
+    predicates.
+
+- *LaTeX settings from the 2026-09-13 audit, and one reftex correction*:
+  - =TeX-auto-local= pointed at =~/.doom.d/local/.auctex-auto=, which does not exist — the
+    pre-Doom path. (The orphaned 2023 files in =~/.config/doom/local/.auctex-auto= are dead
+    weight; AUCTeX no longer reads them either, and =/local/.auctex-auto= in =.gitignore= is
+    now vestigial.) Now =~/.cache/auctex-auto=: auto/style files are regenerable cache, not
+    config. The original intent — keep =./auto= out of project trees — is unchanged.
+  - =reftex-refstyle "\\cref"= deleted — but *not* because it was inert, which was this
+    audit's wrong call. It is a real RefTeX variable (=defvar= at =reftex-ref.el:405=), read
+    at =reftex-ref.el:426=: a non-nil value skips *both* the macro prompt and the style
+    lookup, hard-wiring the macro — so the original comment ("No styles and other shits. Much
+    faster executatoin.") was accurate, and the deletion is what re-enabled the prompt.
+    - *Why it looked inert:* the check was =zgrep -rn … 2>/dev/null=, and this =zgrep= does
+      not support =-r=. It wrote "= -r: option not supported=" to the stderr that was
+      silenced, so a tool error read as "no matches". See [[*Tricks / maintenance recipes]].
+    - *Augmented, on request:* =reftex-ref-style-default-list= now lists =("Cleveref"
+      "AMSmath" "Default" "Hyperref")=, so the prompt offers 11 macros — =\cref= =\Cref=
+      =\cpageref= =\Cpageref= =\eqref= =\ref= =\Ref= =\footref= =\pageref= =\autoref=
+      =\autopageref=. =reftex-ref-style-list= (=reftex.el:485=) resolves the active set and
+      falls back to that variable; there is *no* =\usepackage{}= auto-detection, so the
+      variable is the knob. The docstruct copies it *once per document* (=reftex.el:309=), so
+      an already-scanned buffer needs a rescan or restart before the new styles show up.
+    - *And the label template changed* from ="~\\cref{%s}"= to ="~\\ref{%s}"= in
+      =reftex-label-alist=: =reftex-format-special= swaps the template's macro for the chosen
+      one, but plain =\ref= is deliberately excluded from that formatter
+      (=reftex-ref.el:506=), so from a =\cref= template a =\ref= choice would silently emit
+      =\cref=. The form carries a comment saying so.
+  - =+latex-bibtex-file= deleted: nothing in =~/.config/emacs/= reads it, so it never pointed
+    anything anywhere. =citar-bibliography= is the live declaration of the same path.
+    =+latex-viewers=, on the same =setq=, *is* a real Doom variable and was kept.
+
 - *cdlatex-tab advice: deliberately parked, block removed* (2026-09-13). Until today
   =local/lisp/brusts-latex-config.org= carried a =** COMMENT Adaptation to my style= block
   holding two advices on cdlatex: =cdlatex-tab= (an =:around= that trims a trailing =_^= before
@@ -165,6 +221,29 @@ Error when using the jinx speller (triggered by =jinx-languages= /
   notes or config copies inside the package's straight repo — straight can wipe it.
 
 * Tricks / maintenance recipes
+
+** 2026-09-13 — =zgrep -r= is unsupported here, and =2>/dev/null= turns that into a false "no matches"
+Checking whether a variable existed in the shipped Emacs sources, this printed nothing — which
+reads as "no such symbol":
+#+begin_src sh
+zgrep -rn "reftex-refstyle" /usr/share/emacs/30.2/lisp/textmodes/*.el.gz 2>/dev/null
+#+end_src
+It was not a negative result. The actual output went to the stderr that was silenced:
+#+begin_src sh
+/usr/bin/zgrep: -r: option not supported
+#+end_src
+Acting on that empty result, the audit deleted =reftex-refstyle= from the LaTeX config on the
+false premise that it was inert — it is a real variable (=defvar= at =reftex-ref.el:405=) whose
+deletion changed behaviour. See [[*Package decisions]].
+
+- *Right way:* drop =-r= and let the shell glob — =zgrep -n PATTERN /path/*.el.gz= — or, when
+  unsure, =zcat file.el.gz | grep -n PATTERN=. Both work on this host.
+- *Lesson:* never silence stderr on a search whose empty result you intend to treat as
+  evidence of absence. "No matches" and "the command failed" look identical from the stdout
+  side, and only one of them is evidence. Confirm a negative a second way before acting on it.
+- *Same shape, caught in time:* =close-quoted-open-paren-right= was first mis-attributed to
+  smartparens; it is this config's own function (=config.org=, =** Close<->open parents=). A
+  grep for the *definition* answered it; a grep for the symbol name alone did not.
 
 ** 2026-08-17 — Benign "-32601 Method not found" from claude-code-ide's MCP server
 On starting a Claude session you may see, once or twice:
