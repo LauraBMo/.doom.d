@@ -145,7 +145,7 @@
        ;;gdscript          ; the language you waited for
        ;;(go +lsp)         ; the hipster dialect
        ;;(graphql +lsp)    ; Give queries a REST
-       ;;(haskell +lsp)    ; a language that's lazier than I am
+       (haskell +lsp)    ; a language that's lazier than I am
        ;;hy                ; readability of scheme w/ speed of python
        ;;idris             ; a language you can depend on
        ;;json              ; At least it ain't XML
@@ -155,8 +155,8 @@
        (julia +lsp) ; a better, faster MATLAB
        ;; julia             ; a better, faster MATLAB ; not +lsp flag in order to use eglot
        ;; (kotlin +lsp)            ; a better, slicker Java(Script)
-       ;; (latex +cdlatex +lsp)  ; writing papers in Emacs has never been so fun
-       (latex +cdlatex)  ; writing papers in Emacs has never been so fun
+       (latex +cdlatex +lsp)  ; writing papers in Emacs has never been so fun ; texlab, via lsp-mode
+       ;; (latex +cdlatex)  ; writing papers in Emacs has never been so fun ; no LSP
        ;;lean
        ledger            ; an accounting system in Emacs
        ;;lua               ; one-based indices? one-based indices

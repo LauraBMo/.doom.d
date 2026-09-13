@@ -193,6 +193,7 @@ Keymap to show or kill current date.")
 (defun brust-mode-line-set-number-modes nil
   (load-file
    (expand-file-name "~/.config/doom/local/lisp/brust-line-number.el"))
+  (doom-modeline +1)  
   (brust-line-number-mode +1)
   ;; doom-modeline-buffer-encoding nil
   (line-number-mode -1)
@@ -491,7 +492,7 @@ With prefix, rebuild the cache before offering candidates."
 
 ;; Commands: override categories for specific functions
 (setq vertico-multiform-commands
-  '(("flyspell-correct-*" grid reverse)
+  '(;; ("flyspell-correct-*" grid reverse)
     ("consult-org-*" buffer indexed)
     ("+*grep" buffer
      (vertico-buffer-display-action . (display-buffer-reuse-window)))
@@ -561,7 +562,8 @@ With prefix, rebuild the cache before offering candidates."
  ;; Now I use evil-escape (equivalent to key-chords jk kj) Press them as a single key!
 
  ;; Insert mode
- :i "C-,"   #'+spell/correct
+ ;; :i "C-,"   #'+spell/correct
+ :i "C-,"   #'jinx-correct
  ;; Normal mode workarounds (keep it to minimum)
  ;; :n "u"     #'emacs-undo ;; now undo works fine
  :nim "C-e" #'doom/forward-to-last-non-comment-or-eol
@@ -595,8 +597,9 @@ With prefix, rebuild the cache before offering candidates."
  "<f10>" #'magit-status
  :n "g SPC" #'brust-cycle-whitespace ;; It was unbind
  (:prefix "z"
-  :n "j" #'brust-correct-prev-spelling
-  :n "k" #'brust-correct-prev-spelling)
+  ;; :n "j" #'brust-correct-prev-spelling
+  :n "j" #'jinx-correct-word
+  :n "k" #'jinx-correct-nearest)
  ;; Binding for buffers
  (:map doom-leader-buffer-map
   ;; :desc "Ibuffer"     :n "i" #'+ibuffer/open-for-current-workspace
@@ -1096,12 +1099,6 @@ Subtrees under a COMMENTed header are not evaluated."
   (cursor-intangible-mode 1)
   (add-hook 'after-change-functions #'brust-math-software-intangify-cursor-on-prompt nil t))
 
-(defun brust-correct-prev-spelling nil
-  (interactive)
-  (save-excursion
-    (+spell/previous-error)
-    (+spell/correct)))
-
 (defun brust-title-to-fname (title)
   (with-temp-buffer
     (insert (downcase title))
@@ -1295,17 +1292,26 @@ Then, in `origin-buffer' we can use such a process to execute code in terminal v
          :desc "Babel" "B" org-babel-map
          )))
 
-(after! org
-  (setq org-agenda-files (quote ("~/Dropbox/Org/" "~/Dropbox/bibliography/notes.org"))
-        org-agenda-todo-list-sublevels nil
-        org-deadline-warning-days 3
-        org-agenda-skip-scheduled-if-done 1
-        org-agenda-skip-deadline-if-done 1
-        org-agenda-skip-deadline-if-done 1
-        org-agenda-custom-commands
-        '(("h" "My agenda view"
-           ((agenda "")
-            (todo))))))
+(setq org-agenda-files (quote ("~/Dropbox/Org/" "~/Dropbox/bibliography/notes.org"))
+      org-agenda-todo-list-sublevels nil
+      org-deadline-warning-days 3
+      org-agenda-skip-scheduled-if-done 1
+      org-agenda-skip-deadline-if-done 1
+      org-agenda-skip-deadline-if-done 1
+      )
+(after! org-agenda
+  (add-to-list 'org-agenda-custom-commands
+               '("c" "Career transition"
+                 ((agenda "")
+                  (alltodo ""))
+                 ((org-agenda-files
+                   '("~/src/TwoTracksPlan/career-transition/track-1-pharmacometrics/"
+                     "~/src/TwoTracksPlan/career-transition/shared/")))))
+  (add-to-list 'org-agenda-custom-commands
+               '(("h" "My agenda view"
+                  ((agenda "")
+                   (todo)))))
+  )
 
 (after! org
   (setq org-latex-listings 'minted
@@ -1570,8 +1576,7 @@ If INTERACTIVE is nil the function acts like a Capf."
         (pop kill-ring))))
 
 ;; + variables has to be declared before loading module
-(setq +latex-bibtex-file "~/Dropbox/bibliography/my.bib"
-      +latex-viewers '(pdf-tools))
+(setq +latex-viewers '(pdf-tools))
 
 ;; File types
 (add-to-list 'auto-mode-alist '("\\.sty\\'"  . LaTeX-mode))
@@ -1657,6 +1662,137 @@ If INTERACTIVE is nil the function acts like a Capf."
       :i "TAB" #'cdlatex-tab
       :localleader
       "e" #'cdlatex-environment)
+
+(after! latex
+  (require 'hydra)     ;; `defhydra' below
+  (require 'hideshow)  ;; `lsp-enable-folding' feeds texlab's ranges to hideshow,
+                       ;; which was never loaded, so folding did nothing
+
+  ;; --- helpers for the commands lsp-mode cannot render ----------------------
+
+  (defun brust-latex-lsp--doc-id ()
+    "A TextDocumentIdentifier for the current buffer."
+    (vector (list :uri (lsp--path-to-uri buffer-file-name))))
+
+  (defun brust-latex-lsp--position ()
+    "The cursor as an LSP Position (both fields are 0-based)."
+    (list :line (1- (line-number-at-pos))
+          :character (1- (current-column))))
+
+  (defun brust-latex-lsp-clean-auxiliary ()
+    "texlab.cleanAuxiliary: `latexmk -c' in the project's aux directory."
+    (interactive)
+    (lsp-send-execute-command "texlab.cleanAuxiliary" (brust-latex-lsp--doc-id))
+    (message "texlab: auxiliary files cleaned"))
+
+  (defun brust-latex-lsp-clean-artifacts ()
+    "texlab.cleanArtifacts: `latexmk -C'. This deletes the PDF too, so it asks."
+    (interactive)
+    (when (y-or-n-p "texlab: delete build artifacts INCLUDING the PDF? ")
+      (lsp-send-execute-command "texlab.cleanArtifacts" (brust-latex-lsp--doc-id))
+      (message "texlab: artifacts cleaned")))
+
+  (defun brust-latex-lsp-change-environment ()
+    "texlab.changeEnvironment: rename the \\begin/\\end pair at point.
+texlab computes the edit and asks the client to apply it, so all this has to
+supply is the new name and the position."
+    (interactive)
+    (let ((new (read-string "New environment name: ")))
+      (if (string-empty-p new)
+          (message "texlab: no name given, nothing changed")
+        (lsp-send-execute-command
+         "texlab.changeEnvironment"
+         (vector (list :textDocument (list :uri (lsp--path-to-uri buffer-file-name))
+                       :position (brust-latex-lsp--position)
+                       :newName new))))))
+
+  (defun brust-latex-lsp-find-environments ()
+    "texlab.findEnvironments: jump to an enclosing environment.
+texlab returns the list and leaves the picker to the client. Innermost first."
+    (interactive)
+    (let ((envs (lsp-send-execute-command
+                 "texlab.findEnvironments"
+                 (vector (list :textDocument (list :uri (lsp--path-to-uri buffer-file-name))
+                               :position (brust-latex-lsp--position))))))
+      (if (null envs)
+          (message "texlab: no enclosing environment at point")
+        (let* ((alist (mapcar (lambda (e)
+                                (cons (plist-get (plist-get e :name) :text) e))
+                              (reverse envs)))
+               (range (plist-get (cdr (assoc (completing-read "Go to environment: " alist nil t)
+                                             alist))
+                                 :fullRange))
+               (start (plist-get range :start)))
+          (goto-char (point-min))
+          (forward-line (plist-get start :line))
+          (forward-char (plist-get start :character))))))
+
+  (defun brust-latex-lsp-dependency-graph ()
+    "texlab.showDependencyGraph: render the project graph with Graphviz.
+texlab returns raw DOT text and leaves rendering to the client, so pipe it
+through `dot' and open the SVG."
+    (interactive)
+    (let* ((dot (lsp-send-execute-command "texlab.showDependencyGraph"))
+           (exe (or (executable-find "dot")
+                    (user-error "Graphviz `dot' is not on `exec-path'")))
+           (svg (make-temp-file "brust-texlab-graph" nil ".svg")))
+      (with-temp-buffer
+        (insert dot)
+        (unless (zerop (call-process-region (point-min) (point-max) exe nil nil nil
+                                            "-Tsvg" "-o" svg))
+          (user-error "Graphviz failed to render the dependency graph")))
+      (find-file svg)))
+
+  ;; --- the menu ------------------------------------------------------------
+  ;; No keys for texlab's build/forward-search: unusable through lsp-mode.
+  ;; No key for cancelBuild either: there is nothing that can start a build.
+  (defhydra brust-latex-lsp (:color blue :hint nil)
+    "
+texlab / LSP   --   prune freely
+
+Nav       d def   D declaration   i impl   t type   r refs   b back   s symbols
+Edit      R rename   f format buffer   F format region   a code action
+          h highlight symbol   e change environment   E find environments
+texlab    k clean auxiliary   K clean artifacts (deletes the PDF)   g dep graph
+Diag      l list errors   n next error   p previous error   x consult diagnostics
+Fold      z toggle   Z hide all   A show all
+Display   I inlay hints   T semantic tokens   u lsp-ui doc
+Session   w describe   W restart   Q disconnect
+          q quit
+"
+    ("d" lsp-find-definition "definition")
+    ("D" lsp-find-declaration "declaration")
+    ("i" lsp-find-implementation "implementation")
+    ("t" lsp-find-type-definition "type definition")
+    ("r" lsp-find-references "references")
+    ("b" xref-go-back "back")
+    ("s" consult-lsp-symbols "workspace symbols")
+    ("R" lsp-rename "rename symbol")
+    ("f" lsp-format-buffer "format buffer")
+    ("F" lsp-format-region "format region")
+    ("a" lsp-execute-code-action "code action")
+    ("h" lsp-document-highlight "highlight symbol")
+    ("e" brust-latex-lsp-change-environment "change environment")
+    ("E" brust-latex-lsp-find-environments "find environments")
+    ("k" brust-latex-lsp-clean-auxiliary "clean auxiliary")
+    ("K" brust-latex-lsp-clean-artifacts "clean artifacts")
+    ("g" brust-latex-lsp-dependency-graph "dependency graph")
+    ("l" flycheck-list-errors "list errors")
+    ("n" flycheck-next-error "next error")
+    ("p" flycheck-previous-error "previous error")
+    ("x" consult-lsp-diagnostics "consult diagnostics")
+    ("z" hs-toggle-hiding "toggle fold")
+    ("Z" hs-hide-all "hide all")
+    ("A" hs-show-all "show all")
+    ("I" lsp-inlay-hints-mode "inlay hints")
+    ("T" lsp-semantic-tokens-mode "semantic tokens")
+    ("u" lsp-ui-doc-glance "lsp-ui doc")
+    ("w" lsp-describe-session "describe session")
+    ("W" lsp-workspace-restart "restart workspace")
+    ("Q" lsp-disconnect "disconnect")
+    ("q" nil "quit"))
+
+  (map! :map LaTeX-mode-map :localleader "l" #'brust-latex-lsp/body))
 
 ;; (setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
 
@@ -1852,6 +1988,52 @@ EXPLANATION STANDARDS:
 (defun brust-julia-ai-setup nil
   (ollama-buddy--set-system-prompt-with-metadata julia-ai-system-prompt "Julia (main) System" "programmer")
   )
+
+(use-package! claude-code-ide
+  :defer t
+  :init
+  (map! :leader
+        (:prefix ("d" . "Claude")
+         ;; (:prefix ("c" . "claude")
+         :desc "Claude menu"          "m" #'claude-code-ide-menu
+         :desc "List sessions"        "l" #'claude-code-ide-list-sessions
+         :desc "New session"          "n" #'claude-code-ide
+         :desc "Resume session"       "r" #'claude-code-ide-resume
+         :desc "Continue session"     "c" #'claude-code-ide-continue
+         :desc "Stop session"         "q" #'claude-code-ide-stop
+         :desc "Send prompt"          "p" #'claude-code-ide-send-prompt
+         :desc "Send region/buffer"   "s" #'claude-code-ide-send-region
+         :desc "Toggle Claude window" "t" #'claude-code-ide-toggle
+         ))
+  :config
+  (claude-code-ide-emacs-tools-setup)
+  ;; Keep the window a fixed, generous size and avoid resizing it
+  ;; while Claude is running.
+  ;; (setq claude-code-ide-window-side 'right)
+  ;; (setq claude-code-ide-window-width 100)   ; used when side is left/right
+  ;; (setq claude-code-ide-window-height 20)   ; used when side is top/bottom
+
+  ;; Do not keep it in a dedicated side window (default t).
+  (setq claude-code-ide-use-side-window nil
+        ;; Select the window automatically when it opens.
+        claude-code-ide-focus-on-open t
+        ;; Terminal backend: ghostel (recommended) renders Claude's TUI with the
+        ;; fewest artifacts and keeps the transcript as searchable buffer text.
+        ;; Pair with Claude Code's inline renderer (=/tui default=) for isearch.
+        ;; vterm is the live fallback; eat kept in config but not exported.
+        claude-code-ide-terminal-backend 'ghostel
+        ;; claude-code-ide-terminal-backend 'vterm
+        )
+  )
+
+(use-package! evil-ghostel
+  :after (ghostel evil)
+  :hook (ghostel-mode . evil-ghostel-mode)
+  :init
+  ;; Send insert-state ESC to the terminal (Claude's interrupt); reach evil
+  ;; normal state with the fj/jf chord instead. Set before the mode turns on;
+  ;; a plain setq is preserved by the defcustom's default init.
+  (setq evil-ghostel-escape 'terminal))
 
 ;; (add-load-path! "~/src/maplev-master/lisp")
 (autoload 'maplev-mode "maplev" "Maple editing mode" 'interactive)
@@ -2231,10 +2413,6 @@ EXPLANATION STANDARDS:
         ;; ac-sage-show-quick-help t
         ))
 
-(after! android-mode
-  (setq android-mode-sdk-dir "~/Android/Sdk")
-  (add-hook 'kotlin-mode-hook #'lsp!))
-
 (setq pre-abbrev-expand-hook (quote (ignore))
       save-abbrevs 'silently)
 (when (file-exists-p "~/Dropbox/config/abbrev-def.el")
@@ -2424,6 +2602,8 @@ FACE defaults to inheriting from default and highlight."
 
 (setq aw-keys '(?a ?s ?d ?f ?g ?h))
 
+(setq avy-flyspell-correct-function #'jinx-correct)
+
 (after! ibuffer
   ;; Redefine size Ibuffer's column to display the total number of lines,
   ;; a humanly understandable measure of size.
@@ -2511,11 +2691,6 @@ FACE defaults to inheriting from default and highlight."
     (ibuffer-update nil t))
   )
 
-(use-package! eat
-  :config
-  ;; Your configuration here
-  )
-
 (setq evil-cross-lines t
       ;; Use both =jk= and =kj= to esc insert mode
       ;; (equivalent to key-chords jk kj) Press them as single key!
@@ -2527,6 +2702,18 @@ FACE defaults to inheriting from default and highlight."
       ;; cursor is allowed to move one character past the end of the line
       evil-move-beyond-eol t
       evil-vsplit-window-right t)
+
+;; Global window-placement policy for `display-buffer' (used by nearly every
+;; command that shows a buffer: Claude Code, julia-repl, compilation, help...).
+;; `split-window-sensibly' tries a side-by-side split first, but only if the
+;; window is at least `split-width-threshold' columns wide (default 160 — too
+;; wide for most frames, so it falls back to a stacked top/bottom split).
+;; Lowering the width threshold and disabling the height threshold forces
+;; side-by-side splits, with the new buffer landing on the RIGHT and the current
+;; buffer staying on the LEFT (`split-window-right' semantics). Bump 80 up if you
+;; want each half wider before Emacs is willing to split.
+(setq split-width-threshold 80
+      split-height-threshold nil)
 
 ;; Swap evil surround default space insertion.
 ;; (after! evil-surround
@@ -2566,6 +2753,48 @@ FACE defaults to inheriting from default and highlight."
     (add-to-list 'vertico-multiform-categories
                  `(jinx buffer ,(lambda (_) (text-scale-set -1)))))
 
+  ;; LaTeX: don't spell-check the keys and file names inside macro arguments.
+  ;; AUCTeX fontifies \cite/\label/\ref keys as `font-lock-constant-face', but
+  ;; that same face also carries \footnote prose, and the arguments of
+  ;; \includegraphics and \label[diagram]{..} are left unfontified — so
+  ;; excluding by face is neither precise nor complete. By macro name is both.
+  (defvar brust-jinx-latex-key-macros
+    '("cite" "citep" "citet" "citealp" "citeauthor" "citeyear" "nocite"
+      "autocite" "parencite" "textcite" "footcite" "smartcite" "blockcquote"
+      "label" "ref" "eqref" "pageref" "nameref" "vref" "autoref"
+      "cref" "Cref" "crefrange" "Crefrange"
+      "includegraphics" "input" "include" "includeonly"
+      "bibliography" "bibliographystyle" "addbibresource" "addglobalbib"
+      "author")
+    "Macros whose first argument never holds prose.
+
+Words inside one are not spell-checked. Only the first argument counts, so
+in \\blockcquote{key}{quote} the key is skipped and the quote is not.
+Extend this list freely.")
+
+  (defun brust-jinx--latex-key-arg-p (start)
+    "Non-nil if the word at START sits in a key-like macro argument.
+Predicate for `jinx--predicates'; see `brust-jinx-latex-key-macros'."
+    (when (derived-mode-p 'latex-mode 'tex-mode 'plain-tex-mode 'docTeX-mode)
+      (save-match-data
+        (save-excursion
+          (goto-char start)
+          ;; Step out of the innermost {...}, which leaves point *just before*
+          ;; its opening brace — hence the trailing [ \t]* rather than an
+          ;; explicit brace — with any [..] options sitting in between.
+          (when (ignore-errors (backward-up-list) t)
+            (and (looking-back "\\\\\\([[:alpha:]]+\\)\\(?:\\[[^]\n]*\\]\\)*[ \t]*"
+                               (line-beginning-position))
+                 (member (match-string-no-properties 1)
+                         brust-jinx-latex-key-macros)
+                 t))))))
+
+  ;; Registered here, not in the LaTeX config: `jinx--predicates' is a defvar
+  ;; holding jinx's own defaults, so an `add-to-list' that ran before jinx
+  ;; loaded would create the variable first, and jinx's defvar would then
+  ;; decline to install its defaults.
+  (add-to-list 'jinx--predicates #'brust-jinx--latex-key-arg-p)
+
   ;; ┌───────────────────────────────────────┐
   ;; │        Doom-style Keybindings         │
   ;; └───────────────────────────────────────┘
@@ -2590,13 +2819,17 @@ FACE defaults to inheriting from default and highlight."
           previous-line
           next-line)))
 
+;; Prevent lsp-mode from launching semgrep-ls (not needed for Julia dev)
+(add-to-list 'lsp-disabled-clients 'semgrep-ls)
+
 (use-package! lsp-ui
   :after lsp
   :hook (lsp-mode . lsp-ui-mode)
-  :config
+  :init
   (setq lsp-ui-sideline-enable t)
   (setq lsp-ui-sideline-show-hover nil)
   (setq lsp-ui-doc-position 'bottom)
+  :config
   (lsp-ui-doc-show))
 
 (use-package! lsp-treemacs
@@ -2619,7 +2852,9 @@ FACE defaults to inheriting from default and highlight."
    magit-diff-refine-hunk t)
 
   ;; (add-hook 'magit-log-edit-mode-hook #'turn-on-flyspell)
-  (add-hook 'git-commit-mode-hook #'turn-on-flyspell)
+  ;; (add-hook 'git-commit-mode-hook #'turn-on-flyspell)
+  (add-hook 'git-commit-mode-hook #'jinx-mode)
+  (add-hook 'magit-log-edit-mode-hook #'jinx-mode)
 
   (add-hook! 'magit-mode-hook
     (map! :map magit-mode-map
@@ -2660,23 +2895,29 @@ FACE defaults to inheriting from default and highlight."
         pdf-view-resize-factor 1.1)
   (add-hook! 'pdf-view-mode-hook
     (brust-line-number-mode -1)
-    (pdf-isearch-batch-mode +1))
-  ;; faster motion
+    (pdf-isearch-batch-mode +1)
+    (pdf-view-themed-minor-mode +1)
+    (pdf-view-roll-minor-mode +1))  ;; faster motion
   (map!
    :map pdf-view-mode-map
    :n "g g"            #'pdf-view-first-page
    :n "G"            #'pdf-view-last-page
    :n "q"            #'kill-current-buffer
-   :n "s-j"          #'pdf-view-next-line-or-next-page
-   :n "s-k"          #'pdf-view-previous-line-or-previous-page
-   :n "s-h"          #'image-backward-hscroll
-   :n "s-l"          #'image-forward-hscroll
+   ;; Vertical movement
    :n "j"            #'brust-pdf-view-next-line-or-next-page-5
    :n "k"            #'brust-pdf-view-previous-line-or-previous-page-5
+   :n "s-j"          #'pdf-view-next-line-or-next-page
+   :n "s-k"          #'pdf-view-previous-line-or-previous-page
+   ;; :n "<down>"       #'pdf-view-next-page-command
+   ;; :n "<up>"         #'pdf-view-previous-page-command
+   ;; Horizontal movement
    :n "h"            #'brust-image-backward-hsroll-5
    :n "l"            #'brust-image-forward-hsroll-5
+   :n "s-h"          #'image-backward-hscroll
+   :n "s-l"          #'image-forward-hscroll
    ;; "C-n"          #'brust-ace-window
    ;; "n"            #'brust-ace-window
+   ;; Mouse
    :n "<mouse-5>"    #'brust-pdf-view-next-line-or-next-page-5
    :n "<mouse-4>"    #'brust-pdf-view-previous-line-or-previous-page-5
    :n "C-<mouse-5>"  #'pdf-view-next-page-command
@@ -2687,7 +2928,12 @@ FACE defaults to inheriting from default and highlight."
    :localleader
    ";" #'pdf-outline ;; Same binding as .tex toc
    "w" #'pdf-view-fit-width-to-window
+   "h" #'pdf-view-fit-height-to-window
+   "g" #'revert-buffer
    "o" #'pdf-occur
+   "0" #'pdf-view-scale-reset
+   "m" #'pdf-view-position-to-register
+   "'" #'pdf-view-jump-to-register
    (:prefix
     ("a" . "Annotate") ;; Copy of 'pdf-annot-minor-mode-map
     "D" #'pdf-annot-delete
@@ -2706,10 +2952,14 @@ FACE defaults to inheriting from default and highlight."
   (brust-by-five #'image-forward-hscroll args))
 (defun brust-pdf-view-next-line-or-next-page-5 (args)
   (interactive "p")
-  (brust-by-five #'pdf-view-next-line-or-next-page args))
+  (if (bound-and-true-p pdf-view-roll-minor-mode)
+      (brust-by-five #'pdf-roll-scroll-forward args)
+    (brust-by-five #'pdf-view-next-line-or-next-page args)))
 (defun brust-pdf-view-previous-line-or-previous-page-5 (args)
   (interactive "p")
-  (brust-by-five #'pdf-view-previous-line-or-previous-page args))
+  (if (bound-and-true-p pdf-view-roll-minor-mode)
+      (brust-by-five #'pdf-roll-scroll-backward args)
+    (brust-by-five #'pdf-view-previous-line-or-previous-page args)))
 
 (use-package! screenshot
   :commands screenshot
@@ -2719,6 +2969,20 @@ FACE defaults to inheriting from default and highlight."
   (defun load-screenshot nil
     (load-file (locate-library "screenshot.el")))
   )
+
+;; # Just install Tidal globally (the warning is harmless for testing)
+;; cabal install --lib tidal --package-env .
+
+;; # Then use a simpler Emacs config
+(setq tidal-boot-script-path "~/src/tidal-music/BootTidal.hs")
+
+;; (use-package! tidal
+;;   :config
+;;   p
+;;   (setq tidal-interpreter "ghci")
+;;   (setq tidal-interpreter-arguments '())
+;;   (setq tidal-boot-script-path nil)  ; Use default
+;;   (setq tidal-brightness 'dark))
 
 (use-package! wgrep
   :defer t

@@ -65,37 +65,30 @@
 (package! ollama-buddy
   :recipe (:host github :repo "captainflasmr/ollama-buddy"))
 
+(package! claude-code-ide
+  :recipe (:host github :repo "manzaltu/claude-code-ide.el"))
+
+;; Terminal backend for claude-code-ide (the officially recommended one).
+;; Ghostel embeds Ghostty's VT engine as a native module; the prebuilt binary
+;; auto-downloads on first use (no Zig toolchain needed). :files mirrors the
+;; upstream MELPA recipe.
+(package! ghostel
+  :recipe (:host github :repo "dakra/ghostel"
+           :files (:defaults "etc" "src" "vendor"
+                   "build.zig" "build.zig.zon" "symbols.map")))
+;; Ghostel's evil integration, shipped in the same repo under
+;; extensions/evil-ghostel/. Installs the advice that stops evil-escape's
+;; speculative first key from leaking into the PTY (the "ff"/"jj" doubling) and
+;; adds terminal-aware evil motions/operators.
+(package! evil-ghostel
+  :recipe (:host github :repo "dakra/ghostel"
+           :files ("extensions/evil-ghostel/*.el")))
+
 (package! maplev :recipe (:host github :repo "JoeRiel/maplev"))
 
 (package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
 
 (package! sage-shell-mode)
-
-;; # (package! eat :recipe
-;; #   (:host codeberg
-;; #    :repo "akib/emacs-eat"
-;; #    :type git
-;; #    :files ("*.el" ("term" "term/*.el") "*.texi"
-;; #            (:exclude ".dir-locals.el" "*-tests.el"))))
-;; # Doom Emacs config (add to packages.el)
-;; (package! kotlin-mode :recipe
-;;  (:host github
-;;   :repo "Emacs-Kotlin-Mode-Maintainers/kotlin-mode"))
-
-;; # https://codeberg.org/rwv/android-mode/pulls
-(package! android-mode :recipe
-  (:host codeberg
-   :repo "rwv/android-mode"))
-
-(package! eat :recipe
-  (:host codeberg
-   :repo "akib/emacs-eat"
-   :type git
-   :files ("*.el" ("term" "term/*.el") "*.texi"
-           "*.ti" ("terminfo/e" "terminfo/e/*")
-           ("terminfo/65" "terminfo/65/*")
-           ("integration" "integration/*")
-           (:exclude ".dir-locals.el" "*-tests.el"))))
 
 (package! jinx)
 
@@ -110,6 +103,8 @@
 (package! zone-nyan)
 
 (package! screenshot :recipe (:host github :repo "tecosaur/screenshot"))
+
+(package! tidal)
 
 (package! transpose-frame)
 
