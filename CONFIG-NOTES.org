@@ -87,6 +87,19 @@ Error when using the jinx speller (triggered by =jinx-languages= /
 
 * Package decisions
 
+- *reftex's completion backends are wired to a completion engine that is off here* (2026-09-14).
+  Doom's =lang/latex= module runs
+  =(set-company-backend! 'reftex-mode 'company-reftex-labels 'company-reftex-citations)=
+  (=modules/lang/latex/config.el:299=), but company is disabled in this config — =init.el=
+  keeps it commented out and uses =(corfu +icons +orderless +dabbrev)= — so nothing consumes
+  those backends and the reftex selection buffer offers no completion.
+  - *Not fixed, deliberately.* A fix means a corfu-side entry: the two =company-reftex-*=
+    functions are ordinary completion-at-point functions, so =cape=-style wiring (or adding
+    them to =completion-at-point-functions= in =reftex-mode=) would do it. Worth doing only if
+    the missing completion is actually missed.
+  - *Do not read this as a config bug:* it is a Doom-module/engine mismatch, and the same shape
+    applies to any =set-company-backend!= in the tree.
+
 - *LaTeX macro arguments are skipped by a jinx predicate, not by a face* (2026-09-13). jinx
   is the speller here (=global-jinx-mode=; =ispell-word= is remapped to =jinx-correct=), so
   the =ispell-tex-skip-alists= block in =local/lisp/brusts-latex-config.org= did nothing at
@@ -221,6 +234,28 @@ Error when using the jinx speller (triggered by =jinx-languages= /
   notes or config copies inside the package's straight repo — straight can wipe it.
 
 * Tricks / maintenance recipes
+
+** 2026-09-14 — Editing a snippet list in =brusts-latex-config.org= needs a restart, not a re-eval
+The cdlatex snippet lists (=brust-cdlatex-math-mode-snippets=, =-text-mode-snippets=,
+=-enviroments-snippets=, =brust-LaTeX-from-text-to-math-snippets=) are declared with
+=defvar=, and *`defvar' never overrides an existing value*. Re-evaluating the section —
+even the right way, via =brust-endless/org-eval-eblocks= — re-runs the =defvar= and quietly
+keeps the *old* list, so an edit to a snippet appears to do nothing.
+
+- *To see an edit immediately without restarting*, clear the variable first:
+  #+begin_src elisp
+  (makunbound 'brust-cdlatex-math-mode-snippets)
+  (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "cdLaTeX" t)
+  (cdlatex-compute-tables)   ; rebuilds cdlatex-command-alist-comb
+  #+end_src
+  =cdlatex-compute-tables= is needed because the combined table is what cdlatex actually
+  looks things up in.
+- *Detecting the symptom:* after what looks like a successful re-eval, spell out a new snippet
+  key and nothing happens — or check the list directly,
+  =(length brust-cdlatex-math-mode-snippets)=. A restart has the same effect as the
+  =makunbound= above.
+- *Same shape anywhere else:* the pattern is "=defvar= in an eval'd .org block", so it applies
+  to =brust-LaTeX-headers=, =brust-LaTeX-environments= and the rest of that file's lists too.
 
 ** 2026-09-13 — =zgrep -r= is unsupported here, and =2>/dev/null= turns that into a false "no matches"
 Checking whether a variable existed in the shipped Emacs sources, this printed nothing — which

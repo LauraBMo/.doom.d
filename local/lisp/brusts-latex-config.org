@@ -8,6 +8,13 @@
 #+begin_src elisp
 (defun brust-LaTeX--hook nil
   (yas-minor-mode -1)
+  ;; PDF <-> source. Forward search is C-c C-v from here; in the PDF,
+  ;; double-click or C-click jumps back (pdf-sync-minor-mode, see config.org).
+  (TeX-source-correlate-mode 1)
+  ;; Safe for cdlatex: `outline-minor-mode' binds no key unless
+  ;; `outline-minor-mode-cycle' is set, and it is nil — TAB stays cdlatex-tab.
+  ;; Folding lives under C-c @ or in the SPC m ? menu.
+  (outline-minor-mode 1)
   ;; (add-to-list 'company-backends #'company-tabnine)
   ;; mic-parent futures
   ;; (paren-toggle-matching-paired-delimiter 1)
@@ -119,7 +126,6 @@
   ;; LaTeX-clean-intermediate-suffixes (delete "\\.synctex\\.gz"  LaTeX-clean-intermediate-suffixes)
 #+END_SRC
 
-#+RESULTS:
 ** Electric ^_
 #+begin_src elisp
 (setq TeX-electric-sub-and-superscript t)
@@ -165,9 +171,6 @@ So, I do not know how important the list =LaTeX-section-label is=, the really im
         `,(brust-list--add-colons brust-LaTeX-headers))
 #+END_SRC
 
-#+RESULTS:
-: ((part . (brust-add-colon brust-LaTeX-part-prefix)) (chapter . chp:) (section . sec:) (subsection . ssec:) (subsubsection . sssec:))
-
 ** TeX-outline environment
 *** Section list
 Defaults 
@@ -189,15 +192,6 @@ Defaults
           ("subsubsection" 5)
           ("subparagraph"  6)))
 #+END_SRC
-
-#+RESULTS:
-| part          | 0 |
-| chapter       | 1 |
-| section       | 2 |
-| subsection    | 3 |
-| paragraph     | 3 |
-| subsubsection | 4 |
-| subparagraph  | 6 |
 
 *** Outline extra
 #+BEGIN_SRC elisp
@@ -460,9 +454,6 @@ when the environment carries one."
         )
 #+END_SRC
 
-#+RESULTS:
-: \cref
-
 *** Label list 
     The numbers in both lists are *toc* levels, negative does not show the "section" number.
 #+BEGIN_SRC elisp
@@ -511,29 +502,25 @@ when the environment carries one."
   ;; ("addsec" . -2)))
 #+END_SRC
 
-#+RESULTS:
-: brust-LaTeX-environment-avoid-s
-
 *** Toc level funcions
 #+BEGIN_SRC elisp
-  (defun brust-reftex-toc-level-1 nil
-    (interactive)
-    (reftex-toc-max-level 1))
-  (defun brust-reftex-toc-level-2 nil
-    (interactive)
-    (reftex-toc-max-level 2))
-  (defun brust-reftex-toc-level-3 nil
-    (interactive)
-    (reftex-toc-max-level 3))
-  (defun brust-reftex-toc-level-4 nil
-    (interactive)
-    (reftex-toc-max-level 4))
-  (defun brust-reftex-toc-level-5 nil
-    (interactive)
-    (reftex-toc-max-level 5))
-  (defun brust-reftex-toc-level-6 nil
-    (interactive)
-    (reftex-toc-max-level 6))
+  (defun brust-reftex-toc-level (level)
+    "Set the *toc* depth to LEVEL (1-6)."
+    (interactive "p")
+    (reftex-toc-max-level level))
+
+  ;; The toc map's 1..6 keys keep their own names, each one line onto the
+  ;; function above. Plain `defun's with their own `interactive', not
+  ;; `apply-partially': that returns a closure carrying no interactive spec, so
+  ;; it is not a command and a key bound to it dies with `wrong-type-argument
+  ;; commandp'. A literal argument also sidesteps the dynamic-binding trap of
+  ;; closing over a loop variable in an eval'd block.
+  (defun brust-reftex-toc-level-1 () (interactive) (brust-reftex-toc-level 1))
+  (defun brust-reftex-toc-level-2 () (interactive) (brust-reftex-toc-level 2))
+  (defun brust-reftex-toc-level-3 () (interactive) (brust-reftex-toc-level 3))
+  (defun brust-reftex-toc-level-4 () (interactive) (brust-reftex-toc-level 4))
+  (defun brust-reftex-toc-level-5 () (interactive) (brust-reftex-toc-level 5))
+  (defun brust-reftex-toc-level-6 () (interactive) (brust-reftex-toc-level 6))
 
 (defun brust-reftex-toc-goto-line-and-kill nil
   (interactive)
@@ -601,9 +588,6 @@ See Org-ref in init.el :)
 
   ;; (helm-bibtex-helmify-action brust-bibtex-completion-insert-citation brust-helm-bibtex-insert-citation)
 #+END_SRC
-
-#+RESULTS:
-: brust-bibtex-completion-format-citation-cite
 
 * cdLaTeX
 ** Initial config
@@ -734,9 +718,6 @@ There are many defaults that I do not use, this is to clean a bit.
           "qqq"))
 #+END_SRC
 
-#+RESULTS:
-| pref | ct | cte | cite{ | equ | eqn | alit | alit* | xal | xal* | xxa | xxa* | mul | mul* | gat | gat* | fla | fla* | fg | sn | ss | sss | ssp | closed | caseeq | intl | suml | nonum | qq | qqq |
-
 ** Snippets =TAB=
    List of lists each with: (see cdlatex-command-alist)
    (key description text-to-insert function-called arguments txt-p math-p)
@@ -787,10 +768,10 @@ There are many defaults that I do not use, this is to clean a bit.
       ("urar" "Insert urar{}"        "\\urar{?}"       cdlatex-position-cursor nil nil t)
       ("dlar" "Insert dlar{}"        "\\dlar{?}"       cdlatex-position-cursor nil nil t)
       ("ular" "Insert ular{}"        "\\ular{?}"       cdlatex-position-cursor nil nil t)
-      ("drar" "Insert drar[swap]{}"  "\\drar[swap]{?}" cdlatex-position-cursor nil nil t)
-      ("urar" "Insert urar[swap]{}"  "\\urar[swap]{?}" cdlatex-position-cursor nil nil t)
-      ("dlar" "Insert dlar[swap]{}"  "\\dlar[swap]{?}" cdlatex-position-cursor nil nil t)
-      ("ular" "Insert ular[swap]{}"  "\\ular[swap]{?}" cdlatex-position-cursor nil nil t)
+      ("drars" "Insert drar[swap]{}"  "\\drar[swap]{?}" cdlatex-position-cursor nil nil t)
+      ("urars" "Insert urar[swap]{}"  "\\urar[swap]{?}" cdlatex-position-cursor nil nil t)
+      ("dlars" "Insert dlar[swap]{}"  "\\dlar[swap]{?}" cdlatex-position-cursor nil nil t)
+      ("ulars" "Insert ular[swap]{}"  "\\ular[swap]{?}" cdlatex-position-cursor nil nil t)
       ("darh" "Insert dar[hook]{} in tikz" "\\dar[hook]{?}"        cdlatex-position-cursor nil nil t)
       ("uarh"  "Insert uar[hook]{} in tikz" "\\uar[hook]{?}"        cdlatex-position-cursor nil nil t)
       ("rarh"  "Insert rar[hook]{} in tikz" "\\rar[hook]{?}"        cdlatex-position-cursor nil nil t)
@@ -803,10 +784,10 @@ There are many defaults that I do not use, this is to clean a bit.
       ("urarh" "Insert urar[hook]{}"        "\\urar[hook]{?}"       cdlatex-position-cursor nil nil t)
       ("dlarh" "Insert dlar[hook]{}"        "\\dlar[hook]{?}"       cdlatex-position-cursor nil nil t)
       ("ularh" "Insert ular[hook]{}"        "\\ular[hook]{?}"       cdlatex-position-cursor nil nil t)
-      ("drarh" "Insert drar[swap, hook]{}"  "\\drar[swap, hook]{?}" cdlatex-position-cursor nil nil t)
-      ("urarh" "Insert urar[swap, hook]{}"  "\\urar[swap, hook]{?}" cdlatex-position-cursor nil nil t)
-      ("dlarh" "Insert dlar[swap, hook]{}"  "\\dlar[swap, hook]{?}" cdlatex-position-cursor nil nil t)
-      ("ularh" "Insert ular[swap, hook]{}"  "\\ular[swap, hook]{?}" cdlatex-position-cursor nil nil t)
+      ("drarsh" "Insert drar[swap, hook]{}"  "\\drar[swap, hook]{?}" cdlatex-position-cursor nil nil t)
+      ("urarsh" "Insert urar[swap, hook]{}"  "\\urar[swap, hook]{?}" cdlatex-position-cursor nil nil t)
+      ("dlarsh" "Insert dlar[swap, hook]{}"  "\\dlar[swap, hook]{?}" cdlatex-position-cursor nil nil t)
+      ("ularsh" "Insert ular[swap, hook]{}"  "\\ular[swap, hook]{?}" cdlatex-position-cursor nil nil t)
       ("lr(" "Insert a \\left( \\right) pair"                "(" cdlatex-lr-pair  nil  nil  t)
       ("lr[" "Insert a \\left[ \\right] pair"                "[" cdlatex-lr-pair  nil  nil  t)
       ("lr{" "Insert a \\left{ \\right} pair"                "{" cdlatex-lr-pair  nil  nil  t)
@@ -823,9 +804,6 @@ There are many defaults that I do not use, this is to clean a bit.
       )
     "List of cdlatex snippets used in math mode")
 #+END_SRC
-
-#+RESULTS:
-: brust-cdlatex-math-mode-snippets
 
 *** Text mode
 #+BEGIN_SRC elisp
@@ -861,9 +839,6 @@ There are many defaults that I do not use, this is to clean a bit.
        ))
     "List of cdlatex snippets used in text mode")
 #+END_SRC
-
-#+RESULTS:
-: brust-cdlatex-text-mode-snippets
 
 *** Envirments
 #+BEGIN_SRC elisp
@@ -912,9 +887,6 @@ There are many defaults that I do not use, this is to clean a bit.
 
 #+END_SRC
 
-#+RESULTS:
-: brust-cdlatex-enviroments-snippets
-
 *** From text mode to math mode
 #+BEGIN_SRC elisp
   (defvar brust-LaTeX-from-text-to-math-snippets
@@ -925,9 +897,6 @@ There are many defaults that I do not use, this is to clean a bit.
     "List of cdlatex snippets initiating math-mode")
 #+END_SRC
 
-#+RESULTS:
-: brust-LaTeX-from-text-to-math-snippets
-    
 *** Set snippets alist
 #+BEGIN_SRC elisp
   (setq cdlatex-command-alist
@@ -993,8 +962,6 @@ There are many defaults that I do not use, this is to clean a bit.
         ( ?3    "\\scriptscriptstyle" nil        nil nil nil )))
 
 #+END_SRC
-
-#+RESULTS:
 
 ** Math symbol list =ñ=
 
@@ -1099,631 +1066,3 @@ There are many defaults that I do not use, this is to clean a bit.
           ( ?`  (""                 ))
           ( ?'  ("\\prime"          ))))
 #+END_SRC
-
-* COMMENT LaTeX-extra
-** Introductoin
-   "Defines extra commands and keys for LaTeX-mode.
- To activate just call
-     (add-hook 'LaTeX-mode-hook #'latex-extra-mode)
- The additions of this package fall into the following three
- categories:
- 1-Key Compilation
- =================
- Tired of hitting C-c C-c 4 times (latex, bibtex, latex, view) for
- the document to compile? This defines a much needed command that does
- *everything* at once, and even handles compilation errors!
-   C-c C-a `latex/compile-commands-until-done'
- Navigation
- ==========
- Five new keybindings are defined for navigating between
- sections/chapters. These are meant to be intuitive to people familiar
- with `org-mode'.
-   C-c C-n `latex/next-section'
-     Goes forward to the next section-like command in the buffer (\part,
-     \chapter, \(sub)section, or \(sub)paragraph, whichever comes first).
-   C-c C-u `latex/up-section'
-     Goes backward to the previous section-like command containing this
-     one. For instance, if you're inside a subsection it goes up to the
-     section that contains it.
-   C-c C-f `latex/next-section-same-level'
-     Like next-section, except it skips anything that's \"lower-level\" then
-     the current one. For instance, if you're inside a subsection it finds
-     the next subsection (or higher), skipping any subsubsections or
-     paragraphs.
-   C-M-f `latex/forward-environment'
-     Skip over the next environment, or exit the current one, whichever
-     comes first.
-   C-M-e `latex/end-of-environment'
-     Exit the current environment, and skip over some whitespace
-     afterwards. (Like `LaTeX-find-matching-end', but a little more useful.)
-   C-M-b `latex/backward-environment'
-   C-M-a `latex/beginning-of-environment'
-   C-c C-p `latex/previous-section'
-   C-c C-b `latex/previous-section-same-level'
-     Same as above, but go backward.
- Whitespace Handling
- ===================
- `latex-extra.el' improves `auto-fill-mode' so that it only applies to
- text, not equations. To use this improvement, just activate
- `auto-fill-mode' as usual.
- It also defines a new command:
-   C-c C-q `latex/clean-fill-indent-environment'
-     Completely cleans up the entire current environment. This involves:
-     1. Removing extraneous spaces and blank lines.
-     2. Filling text (and only text, not equations).
-     3. Indenting everything."
-** Packages
-#+BEGIN_SRC elisp
-
-(require 'tex)
-(require 'latex)
-(require 'tex-buf)
-(require 'texmathp)
-(require 'cl-lib)
-(require 'outline)
-;; (require 'preview)
-
-#+END_SRC
-
-** Auxiliar functions
-#+BEGIN_SRC elisp
-(defun latex//replace-regexp-everywhere (reg rep &optional start end)
-  "Version of `replace-regexp' usable in lisp code."
-  (goto-char (or start (point-min)))
-  (while (re-search-forward reg end t)
-    (replace-match rep nil nil)))
-
-
-(defun latex/beginning-of-line ()
-  "Do `LaTeX-back-to-indentation' or `beginning-of-line'."
-  (interactive)
-  (let ((o (point)))
-    (if visual-line-mode
-        (beginning-of-visual-line)
-      (beginning-of-line))
-    (let ((beg (point)))
-      (skip-chars-forward "[:blank:]")
-      (when (= (point) o)
-        (goto-char beg)))))
-
-
-(defun latex//bounds-of-current-thing ()
-  "Return (begin . end) of current section or environment.
-Move point to begin."
-  (interactive)
-  (let ((begin (save-excursion (and (ignore-errors (LaTeX-find-matching-begin)) (point))))
-        (header (save-excursion (ignore-errors (latex//impl-previous-section)))))
-    (if (or begin header)
-        (progn
-          (goto-char
-           (max (or begin (point-min))
-                (or header (point-min))))
-          (cons (point)
-                (if (looking-at-p (rx "\\begin" word-end))
-                    (save-excursion
-                      (latex/forward-environment 1)
-                      (skip-chars-backward "\n\r[:blank:]")
-                      (point))
-                  (save-excursion
-                    (let ((l (point)))
-                      (latex/next-section-same-level 1)
-                      (if (= l (point)) (point-max) l))))))
-      (cons (point-min) (point-max)))))
-
-
-
-#+END_SRC
-** Navigation
-*** Environment navigation
-
-#+BEGIN_SRC elisp
-(defun latex//found-undesired-string (dir)
-  "Decide whether the last search found the desired string."
-  (if (> dir 0)
-      (looking-back "begin" (point-min))
-    (looking-at "\\\\end")))
-
-(defun latex//forward-arguments ()
-  "Skip forward over the arguments."
-  (when (looking-at "\\[") (forward-sexp 1))
-  (when (looking-at "{") (forward-sexp 1)))
-
-(defun latex//maybe-push-mark (&optional do-push)
-  "push-mark, unless it is active."
-  (unless (region-active-p)
-    (when do-push (push-mark))))
-
-(defun latex/end-of-environment (&optional N do-push-mark)
-  "Move just past the end of the current latex environment.
-Leaves point outside the environment.
-Similar to `LaTeX-find-matching-end', but it accepts
-numeric (prefix) argument N and skips some whitespace after the
-closing \"\\end\".
-DO-PUSH-MARK defaults to t when interactive, but mark is only
-pushed if region isn't active."
-  (interactive "p\nd")
-  (latex//maybe-push-mark do-push-mark)
-  (let ((start (point))
-        (count (abs N))
-        (direction 1)
-        (movement-function 'LaTeX-find-matching-end))
-    (when (< N 0)
-      (setq direction -1)
-      (setq movement-function 'LaTeX-find-matching-begin))
-    (while (and (> count 0) (funcall movement-function))
-      (cl-decf count))
-    (when (> direction 0)
-      (latex//forward-arguments)
-      (skip-chars-forward "[:blank:]")
-      (when (looking-at "\n")
-        (forward-char 1)
-        (skip-chars-forward "[:blank:]")))
-    ;; Return t or nil
-    (cl-case count
-      (0 t)
-      (1 (message "Reached the end.") nil)
-      (t (if (> direction 0)
-             (error "Unclosed \\begin?")
-           (error "Unopened \\end?"))))))
-
-(defun latex/forward-environment (&optional N do-push-mark)
-  "Move to the \\end of the next \\begin, or to the \\end of the current environment (whichever comes first) N times.
-Never goes into deeper environments.
-DO-PUSH-MARK defaults to t when interactive, but mark is only
-pushed if region isn't active."
-  (interactive "p")
-  (latex//maybe-push-mark do-push-mark)
-  (let ((start (point))
-        (count (abs N))
-        (direction (if (< N 0) -1 1)))
-    (while (and (> count 0)
-                (re-search-forward "\\\\\\(begin\\|end\\)\\b"
-                                   nil t direction))
-      (cl-decf count)
-      (if (latex//found-undesired-string direction)
-          (unless (latex/end-of-environment direction)
-            (error "Unmatched \\begin?"))
-        (latex//forward-arguments)))))
-
-(defun latex/beginning-of-environment (&optional N do-push-mark)
-  "Move to the beginning of the current latex environment.
-Leaves point outside the environment.
-DO-PUSH-MARK defaults to t when interactive, but mark is only
-pushed if region isn't active."
-  (interactive "p\nd")
-  (latex/end-of-environment (- N) do-push-mark))
-
-(defun latex/backward-environment (&optional N do-push-mark)
-  "Move to the \\begin of the next \\end, or to the \\begin of the current environment (whichever comes first) N times.
-Never goes into deeper environments.
-DO-PUSH-MARK defaults to t when interactive, but mark is only
-pushed if region isn't active."
-  (interactive "p")
-  (latex/forward-environment (- N) do-push-mark))
-
-#+END_SRC
-
-
-*** Section navigation
-#+BEGIN_SRC elisp
-(defcustom latex/section-hierarchy
-  '("\\\\headerbox\\_>"
-    "\\\\subparagraph\\_>"
-    "\\\\paragraph\\_>"
-    "\\\\subsubsection\\_>"
-    "\\\\subsection\\_>"
-    "\\\\section\\_>"
-    "\\\\chapter\\_>"
-    "\\\\part\\_>"
-    ;; "\\\\maketitle\\_>"
-    "\\\\appendix\\_>\\|\\\\\\(begin\\|end\\){document}"
-    "\\\\documentclass\\_>"
-    )
-  "List of regexps which define what a section can be.
-Ordered from deepest to highest level."
-  :type '(repeat string)
-  :group 'latex-extra
-  :package-version '(latex-extra . "1.8"))
-
-(defun latex/next-section (n &optional do-push-mark)
-  "Move N (or 1) headers forward.
-Header stands for any string listed in `latex/section-hierarchy'.
-Negative N goes backward.
-DO-PUSH-MARK defaults to t when interactive, but mark is only
-pushed if region isn't active."
-  (interactive "p\nd")
-  (goto-char (latex//find-nth-section-with-predicate n (lambda (&rest _) t) do-push-mark)))
-
-(defun latex/previous-section (n &optional do-push-mark)
-  "Move N (or 1) headers backward.
-Header stands for any string listed in `latex/section-hierarchy'.
-DO-PUSH-MARK defaults to t when interactive, but mark is only
-pushed if region isn't active."
-  (interactive "p\nd")
-  (goto-char (line-beginning-position))
-  (when (latex//header-at-point)
-    (forward-char -1))
-  (latex/next-section (- (- n 1)) do-push-mark))
-
-(defun latex/up-section (n &optional do-push-mark)
-  "Move backward to the header that contains the current one.
-Header stands for any string listed in `latex/section-hierarchy'.
-With prefix argument N, goes that many headers up the hierarchy.
-Negative N goes forward, but still goes \"up\" the hierarchy.
-DO-PUSH-MARK defaults to t when interactive, but mark is only
-pushed if region isn't active."
-  (interactive "p\nd")
-  (goto-char (latex//find-nth-section-with-predicate (- n) 'latex/section< do-push-mark)))
-
-(defun latex/next-section-same-level (n &optional do-push-mark)
-  "Move N (or 1) headers forward.
-Header stands for any string listed in `latex/section-hierarchy'.
-Negative N goes backward.
-DO-PUSH-MARK defaults to t when interactive, but mark is only
-pushed if region isn't active.
-The default binding for this key (C-c C-f) overrides a binding in
-`LaTeX-mode-map' used for inserting fonts (which is moved to
-C-c f). See the variable `latex/override-font-map' for more
-information (and how to disable this)."
-  (interactive "p\nd")
-  (goto-char (latex//find-nth-section-with-predicate n 'latex/section<= do-push-mark)))
-
-(defun latex/previous-section-same-level (n &optional do-push-mark)
-  "Move N (or 1) headers backward.
-Header stands for any string listed in `latex/section-hierarchy'.
-DO-PUSH-MARK defaults to t when interactive, but mark is only
-pushed if region isn't active."
-  (interactive "p\nd")
-  (latex/next-section-same-level (- n) do-push-mark))
-
-(defun latex//impl-previous-section ()
-  "Find the previous header, avoiding dependencies and chaining.
-Used for implementation."
-  (let ((dest
-         (save-match-data
-           (save-excursion
-             (when (looking-at "\\\\") (forward-char 1))
-             (when (search-forward-regexp (latex/section-regexp) nil :noerror -1)
-               (match-beginning 0))))))
-    (if dest (goto-char dest) nil)))
-
-(defun latex//find-nth-section-with-predicate (n pred do-push-mark)
-  "Find Nth header satisfying predicate PRED, return the start of last match.
-If this function fails, it returns original point position (so
-you can just call it directly inside `goto-char').
-PRED is the symbol to a function taking two strings.
-Point will be moved up until the first header found. That is
-taken as the \"previous-header\". Then, the following steps will
-be repeated until PRED returns non-nil (abs N) times:
-1. Point will move to the next header (in the direction
-determined by the positivity of N.
-2. PRED will be used to compare each this header with
-\"previous-header\". It is run as:
-  (PRED PREVIOUS-HEADER CURRENT-HEADER)
-3. If PRED returned true, the current header is now taken as
-\"previous-header\", otherwise it is ignored."
-  (let* ((direction (if (> n 0) 1 -1))
-         (amount (* n direction))
-         (hap (latex//header-at-point))                       ;header at point
-         (is-on-header-p hap)
-         (result
-          (save-match-data
-            (save-excursion
-              (if (or is-on-header-p (latex//impl-previous-section))
-                  (progn
-                    (setq hap (latex//header-at-point))
-                    (when (looking-at "\\\\")
-                      (unless (or (eobp) (= amount 0))
-                        (forward-char 1)))
-                    (while (and (> amount 0)
-                                (search-forward-regexp
-                                 (latex/section-regexp)
-                                 nil :noerror direction))
-                      (save-match-data
-                        (when (eval (list pred hap (latex//header-at-point)))
-                          (setq hap (latex//header-at-point))
-                          (cl-decf amount))))
-                    (if (= amount 0)
-                        ;; Finished moving
-                        (match-beginning 0)
-                      ;; Didn't finish moving
-                      (if (= amount n)
-                          (message "No sections %s! (satisfying %S)"
-                                   (if (> direction 0) "below" "above") pred)
-                        (message "Reached the %s."
-                                 (if (> direction 0) "bottom" "top")))))
-                (if (< direction 0)
-                    (goto-char (point-min))
-                  (when (search-forward-regexp
-                         (latex/section-regexp) nil :noerror direction)
-                    (match-beginning 0))))))))
-    (if (null (number-or-marker-p result))
-        (point)
-      (latex//maybe-push-mark do-push-mark)
-      result)))
-
-(defun latex//header-at-point ()
-  "Return header under point or nil, as per `latex/section-hierarchy'."
-  (save-match-data
-    (save-excursion
-      (goto-char (line-beginning-position))
-      (when (looking-at (latex/section-regexp))
-        (match-string-no-properties 0)))))
-
-(defun latex/section<= (x y)
-  "Non-nil if Y comes after (or is equal to) X in `latex/section-hierarchy'."
-  (cl-member-if
-   (lambda (it) (string-match it y))
-   (cl-member-if (lambda (it) (string-match it x))
-                 latex/section-hierarchy)))
-
-(defun latex/section< (x y)
-  "Non-nil if Y comes after X in `latex/section-hierarchy'."
-  (cl-member-if
-   (lambda (it) (string-match it y))
-   (cdr-safe (cl-member-if (lambda (it) (string-match it x))
-                           latex/section-hierarchy))))
-
-(defun latex/section-regexp ()
-  "Return a regexp matching anything in `latex/section-hierarchy'."
-  (format "^\\(%s\\)" (mapconcat 'identity latex/section-hierarchy "\\|")))
-
-#+END_SRC
-
-** Autofilling
-#+BEGIN_SRC elisp
-(defun latex/auto-fill-function ()
-  "Perform auto-fill unless point is inside an unsuitable environment.
-This function checks whether point is currently inside one of the
-LaTeX environments listed in `latex/no-autofill-environments'. If
-so, it inhibits automatic filling of the current paragraph."
-  (when (latex/do-auto-fill-p)
-    (do-auto-fill)))
-
-(defcustom latex/should-auto-fill-$ t
-  "If non-nil, inline math ($x=1$) will get auto-filled like text."
-  :type 'boolean
-  :group 'latex-extra
-  :package-version '(latex-extra . "1.3.2"))
-
-(defun latex/dont-auto-fill-p ()
-  "Decide whether to auto-fill in current environment."
-  (not (latex/do-auto-fill-p)))
-
-(defcustom latex/no-fill-environments (list "tabular")
-  "List of environments inside which we don't fill paragraphs."
-  :type '(repeat string)
-  :group 'latex-extra
-  :package-version '(latex-extra . "1.3"))
-
-
-(defun latex/do-auto-fill-p ()
-  "Decide whether to auto-fill in current environment."
-  (and (if (texmathp)
-           (if (and (stringp (car-safe texmathp-why))
-                    (or (string= (car texmathp-why) "$")
-                        (string= (car texmathp-why) "\\(")))
-               latex/should-auto-fill-$
-             nil)
-         t)
-       (not (member (LaTeX-current-environment) latex/no-fill-environments))))
-
-;;;###autoload
-(defun latex/setup-auto-fill ()
-  "Set the function used to fill a paragraph to `latex/auto-fill-function'."
-  (interactive)
-  (setq auto-fill-function 'latex/auto-fill-function))
-
-#+END_SRC
-
-** Whitespace cleaning
-#+BEGIN_SRC elisp
-(defcustom latex/clean-up-whitespace t
-  "Type of whitespace to be erased by `latex/clean-fill-indent-environment'.
-Only excessive whitespace will be erased. That is, when there are
-two or more consecutive blank lines they are turned into one, and
-single blank lines are left untouched.
-This variable has 4 possible values:
-t:       Erases blank lines and spaces.
-'lines:  Erases blank lines only.
-'spaces: Erases spaces only.
-nil:     Doesn't erase any whitespace."
-  :type '(choice (const :tag "Erases blank lines and spaces." t)
-                 (const :tag "Erases blank lines only." lines)
-                 (const :tag "Erases spaces only." spaces)
-                 (const :tag "Doesn't erase any whitespace." nil))
-  :group 'latex-extra
-  :package-version '(latex-extra . "1.0"))
-
-(defcustom latex/cleanup-do-fill t
-  "If nil, `latex/clean-fill-indent-environment' won't perform text-filling."
-  :type 'boolean
-  :group 'latex-extra
-  :package-version '(latex-extra . "1.3"))
-
-(defun latex/clean-fill-indent-environment (&optional start end indent)
-  "Severely reorganise whitespace in current environment.
- (If you want the usual binding back for \"C-c C-q\", see `latex/override-fill-map')
-Performs the following actions (on current region, environment,
-or section):
- 1. Turn multiple new-lines and spaces into single new-lines and
-    spaces, according to `latex/clean-up-whitespace'.
- 2. Fill text, unless `latex/cleanup-do-fill' is nil.
- 3. Indent everything.
-It decides where to act in the following way:
- 1. If region is active, act on it.
- 2. If inside an environment (other than \"document\") act on it.
- 3. If inside a section (or chapter, subsection, etc) act on it.
- 4. If inside a document environment, act on it.
- 5. If neither of that happened, act on entire buffer."
-  (interactive)
-  (let (bounds)
-    (save-match-data
-      (save-excursion
-        (save-restriction
-               (setq bounds
-                        (cond
-                         ((and start end) (cons start end))
-                         ((use-region-p) (cons (region-beginning) (region-end)))
-                         (t (latex//bounds-of-current-thing))))
-          (setq indent (or indent (- (point) (line-beginning-position))))
-          (narrow-to-region (car bounds) (cdr bounds))
-          ;; Whitespace
-          (goto-char (point-min))
-          (when latex/clean-up-whitespace
-            (message "Cleaning up...")
-            (unless (eq latex/clean-up-whitespace 'lines)  (latex//replace-regexp-everywhere "  +$" ""))
-            (unless (eq latex/clean-up-whitespace 'lines)  (latex//replace-regexp-everywhere "  +\\([^% ]\\)" " \\1"))
-            (unless (eq latex/clean-up-whitespace 'spaces) (latex//replace-regexp-everywhere "\n\n\n+" "\n\n")))
-          ;; Autofill
-          (goto-char (point-min))
-          (when latex/cleanup-do-fill
-            (let* ((size (number-to-string (length (number-to-string (line-number-at-pos (point-max))))))
-                   (message-string (concat "Filling line %" size "s / %" size "s.")))
-              (goto-char (point-min))
-              (forward-line 1)
-              (while (not (eobp))
-                (if (latex/do-auto-fill-p)
-                    (progn (LaTeX-fill-paragraph)
-                           (forward-line 1))
-                  (if (and (stringp (car-safe texmathp-why))
-                           (string= (car texmathp-why) "\\["))
-                      (progn (search-forward "\\]")
-                             (forward-line 1))
-                    (latex/end-of-environment 1)))
-                (message message-string (line-number-at-pos (point)) (line-number-at-pos (point-max))))))
-          ;; Indentation
-          (message "Indenting...")
-          (goto-char (point-min))
-          (insert (make-string indent ?\ ))
-          (setq indent (point))
-          (forward-line 1)
-          (indent-region (point) (point-max))
-          (delete-region (point-min) indent)))))
-  (message "Done."))
-
-#+END_SRC
-
-** Compilation
-#+BEGIN_SRC elisp
-(defcustom latex/view-after-compile t
-  "Start view-command at end of `latex/compile-commands-until-done'?"
-  :type 'boolean
-  :group 'latex-extra)
-
-(defcustom latex/max-runs 10
-  "Max number of times `TeX-command-master' can run.
-If it goes beyond this, we decide something's wrong.
-Used by `latex/compile-commands-until-done'."
-  :type 'integer
-  :group 'latex-extra)
-
-(defcustom latex/view-skip-confirmation t
-  "If non-nil `latex/compile-commands-until-done' will NOT ask for confirmation on the \"VIEW\" command."
-  :type 'boolean
-  :group 'latex-extra
-  :package-version '(latex-extra . "1.0"))
-(defvar latex/count-same-command 0)
-
-(defcustom latex/next-error-skip-confirmation t
-  "If non-nil `latex/compile-commands-until-done' calls `TeX-next-error' without confirmation (if there is an error, of course)."
-  :type 'boolean
-  :group 'latex-extra
-  :package-version '(latex-extra . "1.0"))
-
-(defun latex/compile-commands-until-done (clean-first)
-  "Fully compile the current document, then view it.
-If there are errors, call `TeX-next-error' instead of viewing.
-With prefix argument CLEAN-FIRST, removes the output and
-auxiliary files before starting (by running (TeX-clean t)). This
-essentially runs the compilation on a clean slate.
-This command repeatedly runs `TeX-command-master' until: (1) we
-reach the VIEW command, (2) an error is found, or (3) the limit
-defined in `latex/max-runs' is reached (which indicates something
-is wrong).
-`latex/next-error-skip-confirmation' and
-`latex/view-skip-confirmation' can customize this command."
-  (interactive "P")
-  (when clean-first (TeX-clean t))
-  (message "Compilation started.")
-  (let* ((initial-buffer (buffer-name))
-         (TeX-process-asynchronous nil)
-         (master-file (TeX-master-file))
-         (next-command (TeX-command-default master-file))
-         (counter 0))
-    (while (and
-            (> counter -1)
-            (not (equal next-command TeX-command-Show)))
-      (when (> counter latex/max-runs)
-        (error "Number of commands run exceeded %d (%S). Something is probably wrong"
-               latex/max-runs 'latex/max-runs))
-      (message "%d Doing: %s" (cl-incf counter) next-command)
-      (set-buffer initial-buffer)
-      (TeX-command next-command 'TeX-master-file)
-      ;; `TeX-command' occasionally changes current buffer.
-      (set-buffer initial-buffer)
-      (if (null (plist-get TeX-error-report-switches (intern master-file)))
-          (if (string= next-command "BibTeX")
-              (setq next-command "LaTeX")
-            (setq next-command (TeX-command-default master-file)))
-        (setq counter -1)
-        (when (or latex/next-error-skip-confirmation
-                  (y-or-n-p "Error found. Visit it? "))
-          ;; `TeX-next-error' number of arguments changed at some
-          ;; point.
-          (call-interactively #'TeX-next-error))))
-    (when (>= counter 0) ;;
-      (set-buffer initial-buffer)
-      (when latex/view-after-compile
-        (if latex/view-skip-confirmation
-                  (pdf-sync-forward-search)
-               (if (y-or-n-p "View document? ")
-                     (pdf-sync-forward-search)))))))
-           ;; (TeX-view)
-          ;; (TeX-command TeX-command-Show 'TeX-master-file))))))
-
-
-#+END_SRC
-
-** TeX-error-buffer font lock
-#+BEGIN_SRC elisp
-(defvar latex/error-buffer-font-lock
-  '(("--- .* ---" 0 font-lock-keyword-face)
-    ("^l\\.[0-9]+" 0 'underline)
-    ("^\\([[:alpha:]]+\\):\\(.*\\)$"
-     (1 'compilation-warning) (2 font-lock-constant-face))
-    ("^\\(<recently read>\\) \\(.*\\)$"
-     (1 'compilation-warning) (2 font-lock-constant-face)))
-  "Font lock rules used in \"*TeX help*\" buffers.")
-
-(defadvice TeX-help-error (around latex/around-TeX-help-error-advice () activate)
-  "Activate `special-mode' and add font-locking in \"*TeX Help*\" buffers."
-  (let ((latex-extra-mode t))
-    (if (null latex-extra-mode)
-        ad-do-it
-      (when (buffer-live-p (get-buffer "*TeX Help*"))
-        (kill-buffer (get-buffer "*TeX Help*")))
-      ad-do-it
-      (when (buffer-live-p (get-buffer "*TeX Help*"))
-        (with-current-buffer (get-buffer "*TeX Help*")
-          (special-mode)
-          (let ((inhibit-read-only t))
-            (font-lock-add-keywords nil latex/error-buffer-font-lock)
-            (if (fboundp 'font-lock-ensure)
-                (font-lock-ensure)
-              (with-no-warnings
-                (font-lock-fontify-buffer)))))))))
-
-(ad-activate 'TeX-help-error)
-
-#+END_SRC
-
-
-** Configure LaTeX-extra
-*** Don't autofill
-    The function =latex/clean-fill-indent-environment= doesn't fill 
-#+BEGIN_SRC elisp
-(setq latex/cleanup-do-fill nil)
-
-#+END_SRC
-

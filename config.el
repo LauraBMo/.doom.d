@@ -1578,6 +1578,12 @@ If INTERACTIVE is nil the function acts like a Capf."
 ;; + variables has to be declared before loading module
 (setq +latex-viewers '(pdf-tools))
 
+;; Also before AUCTeX loads: it is read when the compile commands are built, so
+;; a setq in LaTeX-mode-hook would be too late. With this and
+;; TeX-source-correlate-mode (see brust-LaTeX--hook), C-c C-v forward-searches
+;; and double-click / C-click in the PDF jumps back to the source.
+(setq TeX-source-correlate-method 'synctex)
+
 ;; File types
 (add-to-list 'auto-mode-alist '("\\.sty\\'"  . LaTeX-mode))
 (add-to-list 'auto-mode-alist '("\\.tex\\'"  . LaTeX-mode))
@@ -1593,8 +1599,6 @@ If INTERACTIVE is nil the function acts like a Capf."
   ;; Settings
   ;; Config options
   (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "Config" t)
-  ;; Add C-c C-q for clean and indent
-  ;; (brust-endless/org-eval-eblocks "~/.config/doom/local/lisp/brusts-latex-config.org" "LaTeX-extra" t)
   )
 
 (after! (latex reftex)
@@ -1631,7 +1635,6 @@ If INTERACTIVE is nil the function acts like a Capf."
       (:map LaTeX-mode-map
        :gin "]"    #'brust-LaTeX-insert-math1
        :gin "}"    #'brust-LaTeX-insert-math2
-       ;; "C-c C-q"   #'latex/clean-fill-indent-environment ;; Now use "= G"
        "s-e"       #'brust-LaTeX-next-error
        "s-t"       #'TeX-complete-symbol ;; Auto-complete funcion of AUCTeX
        "C-c C-e"   #'brust-LaTeX-env
@@ -1649,6 +1652,9 @@ If INTERACTIVE is nil the function acts like a Capf."
         "b" #'citar-insert-citation
         "h" #'brust-LaTeX-set-header
         "SPC" #'TeX-command-master
+        ;; Doom binds SPC m m to `TeX-command-master' on this same map; the line
+        ;; below shadows it, since config.el loads after the modules. Nothing is
+        ;; lost — that command is already on SPC m SPC just above.
         "m" #'TeX-insert-macro
         "]" #'LaTeX-close-environment
         "E" #'LaTeX-environment
@@ -1793,6 +1799,44 @@ Session   w describe   W restart   Q disconnect
     ("q" nil "quit"))
 
   (map! :map LaTeX-mode-map :localleader "l" #'brust-latex-lsp/body))
+
+(after! latex
+  (require 'hydra)   ;; `defhydra' below
+
+  (defun brust-latex-discover-keys ()
+    "Show every key bound in this buffer's own keymap."
+    (interactive)
+    (describe-keymap (current-local-map)))
+
+  (defhydra brust-latex-discover (:color blue :hint nil)
+    "
+Discover LaTeX   --   SPC m ?
+
+Show me   c my cdlatex snippets    k every key in this mode    m active modes
+          K what does a key do     v variable at point
+Take me   t document TOC           a compile, bibtex, view     g PDF follows this line
+          Z fold to headings       A show everything
+          x checker errors         d LSP diagnostics           S what texlab is doing
+          l texlab menu
+          q quit
+"
+    ("c" cdlatex-command-help "my cdlatex snippets")
+    ("k" brust-latex-discover-keys "every key bound here")
+    ("m" describe-mode "active modes")
+    ("K" helpful-key "what does a key do")
+    ("v" helpful-variable "variable at point")
+    ("t" reftex-toc "document TOC")
+    ("a" TeX-command-run-all "compile, bibtex, view")
+    ("g" pdf-sync-forward-search "PDF follows this line")
+    ("Z" outline-hide-body "fold to headings")
+    ("A" outline-show-all "show everything")
+    ("x" flycheck-list-errors "checker errors")
+    ("d" consult-lsp-diagnostics "LSP diagnostics")
+    ("S" lsp-describe-session "what texlab is doing")
+    ("l" brust-latex-lsp/body "texlab menu")
+    ("q" nil "quit"))
+
+  (map! :map LaTeX-mode-map :localleader "?" #'brust-latex-discover/body))
 
 ;; (setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
 
@@ -2897,7 +2941,10 @@ Predicate for `jinx--predicates'; see `brust-jinx-latex-key-macros'."
     (brust-line-number-mode -1)
     (pdf-isearch-batch-mode +1)
     (pdf-view-themed-minor-mode +1)
-    (pdf-view-roll-minor-mode +1))  ;; faster motion
+    (pdf-view-roll-minor-mode +1)  ;; faster motion
+    ;; PDF -> source: double-click or C-click jumps to the .tex position
+    ;; (needs synctex data and TeX-source-correlate-mode on the source side).
+    (pdf-sync-minor-mode +1))
   (map!
    :map pdf-view-mode-map
    :n "g g"            #'pdf-view-first-page
