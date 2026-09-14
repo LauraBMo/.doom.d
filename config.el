@@ -1627,8 +1627,41 @@ See `org-capture-templates' for more information."
 
 (after! latex
   (require 'hydra)     ;; `defhydra' below
-  (require 'hideshow)  ;; `lsp-enable-folding' feeds texlab's ranges to hideshow,
-                       ;; which was never loaded, so folding did nothing
+  (require 'hideshow)  ;; the fold keys below call `hs-…', and hideshow's only
+                       ;; autoload cookie is on `hs-minor-mode'
+
+  ;; Folding is regex-driven, and three things had to be right before the Fold
+  ;; column below did anything at all (2026-09-15, see CONFIG-NOTES):
+  ;;  - `hs-hide-all' and its siblings are wrapped in `hs-life-goes-on', so
+  ;;    they are no-ops unless `hs-minor-mode' is on in the buffer — hence the
+  ;;    hook.  It was off here, which is what made the keys look dead.
+  ;;  - hideshow looks its rules up with `assoc' on the *exact* major-mode
+  ;;    symbol, and an AUCTeX buffer's mode is `LaTeX-mode', not `latex-mode'.
+  ;;    Doom's `:editor fold' module (disabled here) keys its entry for the
+  ;;    latter, so turning that module on would not have folded these buffers.
+  ;;  - lsp-mode never hands its folding ranges to hideshow, whatever
+  ;;    `lsp-enable-folding' suggests: nothing in lsp-mode mentions hideshow at
+  ;;    all.  texlab offers 15 ranges for a paper like mm.tex and every one of
+  ;;    them goes unused; these regexps decide what folds, not the server.
+  (add-hook 'LaTeX-mode-hook #'hs-minor-mode)
+  (setq hs-special-modes-alist
+        (append
+         '((LaTeX-mode
+            ;; `LaTeX-find-matching-end' has to be called from inside the
+            ;; environment, hence the one-character submatch: the match ends
+            ;; just after `\begin{env}'.
+            ("\\\\begin{[a-zA-Z*]+}\\(\\)" 1)
+            "\\\\end{[a-zA-Z*]+}"
+            "%"
+            (lambda (_arg)
+              ;; never fold the whole document — that hides everything
+              (unless (save-excursion
+                        (search-backward "\\begin{document}"
+                                         (line-beginning-position) t))
+                (LaTeX-find-matching-end)))
+            nil))
+         hs-special-modes-alist))
+
 
   ;; --- helpers for the commands lsp-mode cannot render ----------------------
 
@@ -1829,7 +1862,11 @@ through `dot' and open the SVG."
               (:localleader
                :desc "line or region"      "SPC" #'julia-repl-send-region-or-line
                :desc "Start process"       "o" #'+julia/open-repl
-               :desc "Start eglot server"  "." #'+lsp!
+               ;; `.' used to start LSP from here. It pointed at `+lsp!', which
+               ;; is not a function in Doom — the name has no plus — and was
+               ;; labelled eglot besides, and it was redundant anyway: Doom's
+               ;; julia module already calls `lsp!' from
+               ;; `julia-mode-local-vars-hook' (modules/lang/julia/config.el:10).
                :desc "Set dir to buffer's" "d" #'julia-repl-cd
                :desc "Doc symbol"          "h" #'julia-repl-doc
                :desc "Call \\@edit"        "e" #'julia-repl-edit
@@ -1885,24 +1922,125 @@ List if julia functions names to define wrap for.")
                                   (:prefix ("f" . "Wrap fun")
                                    :desc desc bind fun-name)))))))
 
-(defun brust-julia-update-exports nil
+(defun brust-julia-update-exports ()
+  "Write or refresh the `export' block at the top of the buffer.
+The buffer's top-level functions are collected, sorted, and written out.  An
+existing block is replaced and not appended to, so running this twice leaves
+the file unchanged.  Two kinds of name are left out: the `_' prefixed ones,
+private by convention, and qualified ones such as `Base.hash' or `Foo.bar',
+which extend someone else's method instead of declaring a name."
   (interactive)
-  (save-excursion
-    (let ((defunlist (brust-julia--collect-defuns)))
+  (let ((names (brust-julia--collect-defuns)))
+    (unless names
+      (user-error "No top-level functions in %s" (buffer-name)))
+    (save-excursion
+      (let ((old (brust-julia--export-block)))
+        (when old (delete-region (car old) (cdr old))))
       (goto-char (point-min))
-      (insert "\nexport\n")
-      (while (< 1 (length defunlist))
-        (insert (car (pop defunlist)) ",\n"))
-      (insert (car (pop defunlist)) "\n"))))
+      (insert (brust-julia--format-exports names) "\n"))
+    (message "export: %d name%s" (length names) (if (cdr names) "s" ""))))
 
-(defun brust-julia--collect-defuns nil
-  (goto-char (point-max))
-  (let ((defunlist '()))
-    (while (julia-beginning-of-defun)
-      (if (string= (thing-at-point 'word t) "function") (forward-word 2))
-      (cl-pushnew (julia-repl--symbols-at-point) defunlist :test #'equal)
-      (move-beginning-of-line 1))
-    defunlist))
+(defun brust-julia--collect-defuns ()
+  "Sorted names of the buffer's top-level functions, without duplicates.
+`julia-beginning-of-defun' walks the top-level defuns only — it passes over
+those indented inside a block — so a closure is not collected."
+  (let ((names '()))
+    (save-excursion
+      (goto-char (point-max))
+      (while (let ((pos (point)))
+               (and (julia-beginning-of-defun) (not (eql pos (point)))))
+        (let ((name (brust-julia--exportable-name)))
+          (when name (cl-pushnew name names :test #'equal)))
+        (beginning-of-line 1)))
+    (sort names #'string<)))
+
+(defun brust-julia--exportable-name ()
+  "Name to export for the defun at point, or nil when there is none.
+nil when the defun is anonymous, when its name is qualified — `Base.hash'
+extends a method rather than declaring a name — or when it starts with `_'."
+  (save-excursion
+    (beginning-of-line 1)
+    (let ((macro? nil))
+      (cond ((looking-at "\\s-*function\\_>")
+             (goto-char (match-end 0)))
+            ((looking-at "\\s-*macro\\_>")
+             (setq macro? t)
+             (goto-char (match-end 0))))
+      (skip-chars-forward " \t")
+      (let ((name (thing-at-point 'symbol t)))
+        (when (and name
+                   (not (string-prefix-p "_" name))
+                   (not (save-excursion
+                          (forward-symbol 1)
+                          (skip-chars-forward " \t")
+                          (looking-at-p "\\."))))
+          (if macro? (concat "@" name) name))))))
+
+(defun brust-julia--export-block ()
+  "Bounds of this buffer's `export' statement, or nil when it has none.
+Covers both shapes: a list wrapped over several lines — every line but the
+last ends in a comma, which is what continues the list — and a bare `export'
+followed by the names on the lines below.  The blank line that separates the
+block from the rest of the file is part of the region, so that replacing it
+with the same text lands on the same bytes."
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward "^export\\_>" nil t)
+      (let* ((beg (match-beginning 0))
+             (end (line-end-position))
+             ;; A bare `export' with the names on the lines below is the shape
+             ;; the block used to be written in.  There a comma cannot delimit
+             ;; the list — it looks finished at the first name without one —
+             ;; so that shape, and only it, also stops on a name-only line.
+             (legacy (save-excursion (goto-char (match-end 0))
+                                     (looking-at-p "[ \t]*$")))
+             (more (or legacy (brust-julia--comma-at-eol-p end))))
+        (while (and more (< end (point-max)))
+          (goto-char end)
+          (forward-line 1)
+          (setq end (line-end-position)
+                more (or (brust-julia--comma-at-eol-p end)
+                         (and legacy (brust-julia--names-only-line-p end)))))
+        (goto-char end)
+        (forward-line 1)
+        (when (looking-at-p "[ \t]*$")
+          (forward-line 1))
+        (cons beg (point))))))
+
+(defun brust-julia--names-only-line-p (pos)
+  "Non-nil when the line ending at POS holds one `export' name and nothing else.
+That is the shape the block used to be written in — a bare `export' with one
+name per line, the last without a comma — and a comma cannot delimit it, since
+the statement looks finished after the first name that lacks one."
+  (save-excursion
+    (goto-char pos)
+    (beginning-of-line 1)
+    (looking-at-p "[ \t]*[A-Za-z_][A-Za-z0-9_!]*[ \t]*,?[ \t]*$")))
+
+(defun brust-julia--comma-at-eol-p (pos)
+  "Non-nil when the line ending at POS ends in a comma."
+  (save-excursion
+    (goto-char pos)
+    (skip-chars-backward " \t")
+    (eq (char-before) ?\,)))
+
+(defun brust-julia--format-exports (names)
+  "NAMES as an `export' statement, wrapped to `fill-column'.
+One line when it fits; otherwise the continuation lines are indented to line
+up under the first name, each one but the last ending in a comma."
+  (let* ((head "export ")
+         (indent (make-string (length head) ?\s))
+         (lines '())
+         (line head))
+    (dolist (name names)
+      (let ((piece (concat name ", ")))
+        (when (and (> (+ (length line) (length piece)) (or fill-column 80))
+                   (not (string= line head)))
+          (push (string-trim-right line) lines)
+          (setq line indent))
+        (setq line (concat line piece))))
+    (push (string-remove-suffix ", " line) lines)
+    (concat (mapconcat #'identity (nreverse lines) "\n") "\n")))
 
 (defgroup brust-ollama-buddy-julia nil
   "AI-powered coding assistance for Julia using Ollama."
@@ -1992,6 +2130,99 @@ EXPLANATION STANDARDS:
 (defun brust-julia-ai-setup nil
   (ollama-buddy--set-system-prompt-with-metadata julia-ai-system-prompt "Julia (main) System" "programmer")
   )
+
+(after! julia-repl
+  (require 'hydra)     ;; `defhydra' below
+  (require 'hideshow)  ;; the Fold column below; see the LaTeX chapter for why
+                       ;; both the mode hook and the rules are needed
+
+  (add-hook 'julia-mode-hook #'hs-minor-mode)
+
+  (defun brust-julia-hs-forward-sexp (_arg)
+    "Move past the julia block whose opening keyword starts on this line.
+hideshow wants a `forward-sexp' that understands `function … end' rather than
+parentheses, so this counts the block keywords instead, scanning from the end
+of the opening line so that the keyword cannot be counted a second time.  A
+block with no `end' yet — a half-typed function — folds to the end of the
+buffer rather than signalling."
+    (let ((depth 1))
+      (goto-char (line-end-position))
+      (while (and (> depth 0)
+                  (let ((end (save-excursion
+                               (when (re-search-forward hs-block-end-regexp nil t)
+                                 (point))))
+                        (start (save-excursion
+                                 (when (re-search-forward hs-block-start-regexp nil t)
+                                   (point)))))
+                    (cond ((and end (or (null start) (< end start)))
+                           (goto-char end)
+                           (setq depth (1- depth))
+                           t)
+                          (start
+                           (goto-char start)
+                           (setq depth (1+ depth))
+                           t)
+                          (t nil)))))))
+
+  (setq hs-special-modes-alist
+        (append
+         '((julia-mode
+            ;; Both ends anchor to the line start, so `A[end]' — an index, not
+            ;; a block — is not counted as closing one.
+            "^[ \t]*\\(?:function\\|macro\\|mutable struct\\|struct\\|module\\|baremodule\\|let\\|begin\\|for\\|while\\|if\\|try\\|do\\|quote\\)\\_>"
+            "^[ \t]*end\\_>"
+            "#"
+            ;; the bare symbol, not `#'…': inside a quoted list the sharp-quote
+            ;; is just data, and `funcall' would get the list `(function …)'
+            brust-julia-hs-forward-sexp
+            nil))
+         hs-special-modes-alist))
+
+  (defun brust-julia-discover-keys ()
+    "Show every key bound in this buffer's own keymap."
+    (interactive)
+    (describe-keymap (current-local-map)))
+
+  (defhydra brust-julia-discover (:color blue :hint nil)
+    ""
+    ("M" describe-mode "active modes" :column "Show me")
+    ("k" brust-julia-discover-keys "every key in this mode")
+    ("v" helpful-variable "variable at point")
+    ("K" helpful-key "what does a key do")
+    ("o" +julia/open-repl "start / raise REPL" :column "REPL")
+    ("b" julia-repl-send-buffer "send buffer")
+    ("s" julia-repl-send-region-or-line "send region or line")
+    ("l" julia-repl-send-line "send line")
+    ("i" julia-repl-includet-buffer "includet (Revise)")
+    ("h" julia-repl-doc "doc for symbol")
+    ("e" julia-repl-edit "@edit symbol")
+    ("m" julia-repl-list-methods "methods for symbol")
+    ("d" julia-repl-cd "cd to this file's dir")
+    ("X" julia-repl-macroexpand "macroexpand")
+    ("p" julia-repl-activate-parent "activate project")
+    ("g" lsp-find-definition "definition" :column "LSP")
+    ("r" lsp-find-references "references")
+    ("R" lsp-rename "rename symbol")
+    ("f" lsp-format-buffer "format (JuliaFormatter)")
+    ("a" lsp-execute-code-action "code action")
+    ("w" consult-lsp-symbols "workspace symbols")
+    ("n" flycheck-next-error "next error" :color red)
+    ("N" flycheck-previous-error "previous error" :color red)
+    ("D" consult-lsp-diagnostics "diagnostics")
+    ("L" flycheck-list-errors "list errors")
+    ("j" lsp-julia-update-languageserver "update LanguageServer" :face hydra-face-amaranth)
+    ("I" lsp-inlay-hints-mode "inlay hints" :column "Toggle" :color red)
+    ("H" lsp-headerline-breadcrumb-mode "breadcrumb" :color red)
+    ("S" lsp-ui-sideline-mode "sideline" :color red)
+    ("C" lsp-completion-mode "completion" :color red)
+    ("U" lsp-ui-mode "lsp-ui mode" :color red)
+    ("z" hs-toggle-hiding "toggle fold" :column "Fold" :color red)
+    ("Z" hs-hide-all "hide all" :color red)
+    ("A" hs-show-all "show all" :color red)
+    ("x" brust-julia-update-exports "update exports" :column "Mine")
+    ("q" nil "quit" :column "Quit"))
+
+  (map! :map julia-mode-map :localleader "?" #'brust-julia-discover/body))
 
 (use-package! claude-code-ide
   :defer t

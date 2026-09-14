@@ -8,6 +8,34 @@ entries concrete: what happened, why, and how to repeat the fix.
 
 * Errors fixed
 
+** 2026-09-15 — =SPC m .= in =.jl= buffers pointed at =+lsp!=, which does not exist
+The julia binding block had =:desc "Start eglot server" "." #'+lsp!=. Doom's function is
+plain =lsp!= (=modules/tools/lsp/autoload/common.el:4=, "Dispatch to call the currently used
+lsp client entrypoint"); the plus-signed name appears nowhere in Doom. So the key was void
+on top of being mislabelled — there is no eglot registration for Julia in this config — and
+redundant, since Doom's julia module already calls =lsp!= from
+=julia-mode-local-vars-hook= (=modules/lang/julia/config.el:10=). The binding is gone.
+
+How it was caught: =fboundp= on every command a menu head points at. =+lsp!= failed it, and
+=symbol-file= / =documentation= on the *unprefixed* name found the real definition.
+
+** 2026-09-15 — the Fold column (=z= / =Z= / =A=) in both menus did nothing
+Three faults at once, all silent, all fixed in =config.org= the same day and written up
+under *Tricks* below: `hs-minor-mode' was never on in these buffers, and the fold commands
+are no-ops without it; the rules were keyed for a mode symbol that never occurs here
+(=latex-mode= where an AUCTeX buffer is =LaTeX-mode=); and lsp-mode never hands its folding
+ranges to hideshow at all, so the comment claiming =lsp-enable-folding= did that was simply
+wrong. Julia additionally needed a FORWARD-SEXP function of its own — without one, nothing
+folds in a keyword-delimited language.
+
+** 2026-09-15 — a Julia =export= block cannot be delimited by trailing commas
+=brust-julia-update-exports= now rewrites the block in place (it used to append a second one).
+Finding the old block is the fiddly part: the previous format put one name per line with no
+comma on the last, so "a line ending in a comma continues the list" stops at the first
+name-only line and leaves the tail behind (it left =baz= orphaned in the test). The rule now
+also accepts name-only lines, but *only* when the keyword line is a bare =export= — otherwise
+it could swallow a stray identifier line sitting under a normal block.
+
 ** 2026-09-13 — latex-mcp: fails to connect with "No module named 'mcp.server.fastmcp'"
 =claude mcp add --scope user latex -- uvx latex-mcp= registers fine, but =claude mcp list= then
 reports =latex: ... ✘ Failed to connect — -32000: MCP error -32000: Connection closed=. Running
@@ -234,6 +262,58 @@ Error when using the jinx speller (triggered by =jinx-languages= /
   notes or config copies inside the package's straight repo — straight can wipe it.
 
 * Tricks / maintenance recipes
+
+** 2026-09-15 — Folding is hideshow's, and it knows nothing about LSP
+=z= / =Z= / =A= in the LaTeX and julia menus are `hs-toggle-hiding', `hs-hide-all' and
+`hs-show-all'. Four things have to be true before they do anything, and every one of them
+fails silently:
+
+1. *`hs-minor-mode' must be on in the buffer.* =hs-hide-all= and its siblings are wrapped in
+   =hs-life-goes-on=, which is =(when hs-minor-mode …)= — with the mode off the command
+   returns without a message. That is why the Fold column read as broken rather than
+   misconfigured. Enabled per mode, in a hook:
+   =(add-hook 'LaTeX-mode-hook #'hs-minor-mode)=, likewise for =julia-mode-hook=.
+2. *The buffer must have an entry in `hs-special-modes-alist'.* =hs-grok-mode-type= looks it
+   up with =(assoc major-mode …)= — an *exact* symbol match, no =derived-mode-p=. An AUCTeX
+   buffer's mode is =LaTeX-mode=, so Doom's =:editor fold= entry, keyed =latex-mode=, could
+   never have matched even if that module were enabled. The same function refuses with "Mode
+   doesn't support Hideshow" unless *both* =comment-start= and =comment-end= are bound in the
+   buffer (Julia has ="# "= and =""=, so it passes).
+3. *lsp-mode is not in this loop at all.* =lsp-enable-folding= sounds like a bridge to
+   hideshow; it is not. Nothing in the whole lsp-mode repo mentions hideshow; the variable
+   only registers lsp-mode's own =lsp--folding-range= thing-at-point property. Measured on
+   =mm.tex=: texlab offers 15 folding ranges and not one reaches hideshow. What folds is the
+   regexps in the entry — =hs-block-start-regexp= / =hs-block-end-regexp= — and nothing else.
+4. *For a keyword-delimited language, the entry's FORWARD-SEXP function is not optional.*
+   The default is =forward-sexp=, which from =function= merely steps over the word, so nothing
+   folds. (The popular one-line recipes that pass =nil= in that slot do not work.) Julia got
+   =brust-julia-hs-forward-sexp=, a small counter that walks block keywords down to the
+   matching =end=. Its two regexps are anchored to =^[ \t]*= so =A[end]=, an index rather than
+   a block, is not counted as one; verified with =function= at 1 folding 1→9, the inner =for=
+   folding 3→5 and the inner =if= folding 6→8, with =x[end]= sitting in the middle of the first.
+
+Two traps met while writing this:
+
+- =#'foo= inside a *quoted* alist entry is data: ='((julia-mode … #'brust-julia-hs-forward-sexp
+  nil))= hands hideshow the list =(function brust-julia-hs-forward-sexp)=, and folding signals
+  =Invalid function: #'brust-julia-hs-forward-sexp=. Pass the bare symbol. Doom's latex entry
+  passing a =(lambda …)= works only because a lambda list is already funcallable.
+- =hs-hide-block-at-point= returns a *position* (the value of its last =goto-char=), not the
+  overlay, and =nil= when it does not fold. Reading it as an overlay gives
+  =Wrong type argument: overlayp= on a fold that in fact happened; collect
+  =(overlays-in (point-min) (point-max))= and filter on the =hs= overlay property instead.
+
+Checking a fold instead of eyeballing it: ask the server for its own numbers and compare what
+ends up hidden —
+#+begin_src elisp
+(mapcar (lambda (r) (cons (line-number-at-pos (lsp--folding-range-beg r))
+                          (line-number-at-pos (lsp--folding-range-end r))))
+        (lsp--get-folding-ranges))
+#+end_src
+For =\begin{itemize}= at line 118 in =mm.tex= texlab says 118→122 and the hideshow fold hides
+lines 119–122: the same region, so the regex rule agrees with the server here. (Note
+=lsp--get-folding-ranges= returns =lsp--folding-range= *structs*, not plists — =plist-get= on
+them silently yields nil, which reads like "no ranges".)
 
 ** 2026-09-14 — Editing a snippet list in =brusts-latex-config.org= needs a restart, not a re-eval
 The cdlatex snippet lists (=brust-cdlatex-math-mode-snippets=, =-text-mode-snippets=,
