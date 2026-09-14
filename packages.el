@@ -58,8 +58,6 @@
 
 (package! scihub :recipe (:host github :repo "emacs-pe/scihub.el"))
 
-(package! ob-sagemath)
-
 (package! bratex :recipe (:host github :repo "sbrisard/bratex"))
 
 (package! ollama-buddy
@@ -87,8 +85,6 @@
 (package! maplev :recipe (:host github :repo "JoeRiel/maplev"))
 
 (package! pov-mode :recipe (:host github :repo "melmothx/pov-mode"))
-
-(package! sage-shell-mode)
 
 (package! jinx)
 

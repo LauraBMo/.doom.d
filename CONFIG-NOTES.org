@@ -362,3 +362,153 @@ It prints "Restart Emacs for changes to take effect". A running Emacs keeps the 
 code until you restart or run =M-x doom/reload=. Verify a fix against the rebuilt
 =.elc= under =build-30.2/= (or the current Emacs version's build dir), not just the
 repo source.
+
+** Doom 2.2 moved the module library — dashboard renames
+After the 2026-09-14 update (doom =v2.2.4=), the module library no longer lives in
+=~/.config/emacs/modules/=; it is its own repo at =~/.config/emacs/sources/doom+/
+(=doom+ v26.09.0=). =modules/= now only holds =doom/=. *Grep the module sources under
+=sources/doom+/modules/=, not =modules/=* — the old path silently returns nothing.
+
+Three renames came with it:
+- =init.el=: =:ui doom-dashboard= → =:ui dashboard=. Doom remaps the old name, but every
+  =doom= CLI invocation prints "module was moved to (:ui dashboard) in 2.1, remapping…"
+  until you rename it.
+- Face =doom-dashboard-menu-title= → =+dashboard-menu-title= (defined in
+  =sources/doom+/modules/ui/dashboard/config.el=). The old name is *gone* —
+  =(facep 'doom-dashboard-menu-title)= → nil — so every dashboard render logs
+  =Invalid face reference= *and* =Invalid face attribute :inherit= once per icon. That
+  pair of lines is the tell. There were 14 occurrences in =config.org= (6 live =:face=
+  args in =+dashboard-menu-sections=, 8 in comments).
+- Variable =+doom-dashboard-menu-sections= → =+dashboard-menu-sections=.
+
+** flycheck's =org-lint= checker vs Org 9.8 — bug is upstream, do NOT shim
+Symptom: opening any org file printed =Error from syntax checker org-lint: Wrong type
+argument: number-or-marker-p, #("3117" 0 4 (org-lint-marker #<marker …>))=, and *no*
+org-lint diagnostic ever appeared in any org buffer.
+
+Cause: Org 9.8's =org-lint= returns each report's line as a *propertized string* (built
+for its own tabulated report UI), while flycheck puts it in =flycheck-error='s numeric
+=line= slot; =flycheck-error-<= then compares lines with =/= = and =<=, which signal
+=wrong-type-argument= on a string — so flycheck aborted the whole checker on the second
+report. The one-line upstream fix (=if (stringp line) (string-to-number line) line=)
+landed in flycheck's Sep 2026 release: *the fix is an update, not a config workaround*.
+
+How to diagnose this class — run the checker's own start function and sort its output:
+#+begin_src elisp
+(let* ((f (flycheck-checker-get 'org-lint 'start)) errors)
+  (funcall f 'org-lint (lambda (_s &optional d) (setq errors d)))
+  (mapcar #'flycheck-error-line (seq-sort #'flycheck-error-< errors)))
+#+end_src
+The checker swallows its errors and only =message=s them, so a bare
+=(evil-collection-…-setup)= or checker call returns "ok" even when it failed — check
+=*Messages*= (=how-many=), not the return value.
+
+** =org-link-search= CREATES a missing headline
+Evaluating a link whose headline target does not exist *inserts* that headline at the end
+of the buffer (2026-09-14: =(org-link-search "*** Eval julia blocks")= on the live
+=config.org= buffer added =* ** Eval julia blocks= at EOB — an unsaved buffer edit; the
+file on disk was untouched). Never call it as a probe on a buffer you care about.
+
+Internal-link syntax is =[[*Headline]]= — *one* star. A link written
+=[[org:*** Eval julia blocks]]= is not an internal link at all: org treats it as a
+relative *file* path resolved against =org-directory= (here =~/Dropbox/Org=), so org-lint
+reports both "Link to non-existent local file" and "Possibly misplaced heading line" for
+that one line. Fixed at =config.org= ≈3192: =[[*Eval Julia blocks][Eval julia src
+blocks]]=.
+
+** Parking a feature with =:tangle no= (and what it costs in =packages.el=)
+Every src block in =config.org= tangles to =config.el= by default — that is the
+=#+PROPERTY: header-args :tangle config.el= line near the top. A block carrying its own
+=:tangle packages.el= or =:tangle no= wins over that default.
+
+To park a feature — keep the code in the org file, stop it reaching the generated files —
+mark *every* block of it =:tangle no=, including the bare =#+begin_src elisp= ones. Those
+are the easy ones to miss: with no header arg they tangle into =config.el= by default.
+The =** SAGE= section is parked this way (5 blocks, all =:tangle no=): Sage is not loaded,
+but its code is still there to un-park.
+
+Two costs worth remembering:
+- *Tangling is not automatic.* =doom sync= does NOT tangle =config.org= — only
+  =M-x org-babel-tangle= in the =config.org= buffer does. A =:tangle no= edit therefore
+  stays invisible until the next tangle, and that tangle then flushes *all* pending org
+  edits at once, which shows up as a surprisingly large =config.el= diff. Seen
+  2026-09-14: an 82-line diff that was mostly a park decided days earlier.
+- *Parking a =(package! …)= block un-declares the package.* =packages.el= is generated
+  too, and =doom sync= runs autoremove from it — so the next sync *deletes* the package.
+  Parking Sage's two =package!= blocks is what dropped =ob-sagemath= and
+  =sage-shell-mode= on 2026-09-14. Parking code is free and reversible; parking its
+  =package!= block costs a reinstall.
+
+After tangling, verify the park took effect — expect nothing but false hits
+(=message= contains "sage"):
+#+begin_src sh
+grep -n -iP "(?<!mes)sage" ~/.config/doom/config.el ~/.config/doom/packages.el
+#+end_src
+
+** Hydra menus draw their own table — stop hand-padding the hint
+The two LaTeX menus (=SPC m l=, texlab/LSP, and =SPC m ?=, discover) no longer carry a
+hand-drawn ASCII grid. An *empty body string* plus a =:column= on each group's first head
+makes hydra build the table itself: =hydra--format-1= takes its =(string= docstring "")=
+branch (=hydra.el:787=), which hands over to =hydra--hint= (=:614=) →
+=hydra--generate-matrix= (=:1142=) → =hydra--hint-from-matrix= (=:1193=). That aligns the
+columns, pads the doc column to the group's longest entry and rules the headers, so nothing
+can drift when a head is added.
+
+- Head order *is* column order, and a head with no =:column= silently inherits the one above
+  it — a new head either gets a column or must sit inside the right group.
+- *The doc strings set the column widths*: one long doc widens its whole column. The budget
+  is the frame (=158= columns here); the texlab table renders at 132, so measure before
+  growing one.
+- *Colour is behaviour, not decoration*: =:color red= means the head does not exit the hydra,
+  =:color blue= (the body's colour) means it does. Red therefore reads as "pressable again" —
+  folds, the error walk, the on/off toggles. =:face= overrides only the displayed face
+  (=hydra.el:653=) and changes no behaviour: that is how =K= (deletes the PDF) and =Q= are
+  flagged, painted amaranth rather than red so that red keeps exactly one meaning.
+
+Two hydra traps, both hit on 2026-09-14:
+- Hydra *consumes* =:color= and rewrites the stored head with =:exit= instead
+  (=hydra.el:637=, =:924=). Probing =(hydra--head-property head :color)= returns nil on a
+  correctly coloured head — ask for =:exit=.
+- =NAME/<command>-and-exit= symbols are generated for *every* head, and survive a
+  redefinition in the same session, so =fboundp= on one cannot tell an exiting head from a
+  staying one. It looked like a passing check; it would also have passed on a broken menu.
+
+Read a menu without opening it: =defhydra= leaves =NAME/hint=, =NAME/heads= and
+=NAME/keymap= behind, so =(eval (symbol-value 'brust-latex-lsp/hint))= prints exactly the
+table the echo area would show.
+
+** A keymap probe in a temp buffer sees none of the localleader keys
+#+begin_src elisp
+(with-temp-buffer
+  (use-local-map LaTeX-mode-map)
+  (setq major-mode 'latex-mode)
+  (key-binding (kbd "SPC m e")))   ; => nil, for EVERY SPC m key
+#+end_src
+This returns nil for bindings that demonstrably work. Doom installs localleader keys per
+*evil state* — =where-is-internal= reports them as =<normal-state> SPC SPC e=,
+=<emacs-state> M-SPC m e= — and a plain temp buffer has none of that machinery active. On
+2026-09-14 the table it produced read as "nothing is bound anywhere", which would have been a
+false alarm of exactly the kind the audit was hunting.
+
+What works instead: =where-is-internal= with the mode's keymap as its KEYMAP argument
+(=nil= there means "the current buffer's active maps", not "every map"), plus one binding you
+already know is good as the control.
+
+** A minor-mode keymap outranks the major-mode one
+=cdlatex-mode-map= bound =SPC m e= to =cdlatex-environment=, so any =SPC m e= added to
+=LaTeX-mode-map= would be shadowed in every buffer where =cdlatex-mode= is on — and
+invisibly, since the minor map is nowhere near the binding's source. When moving a
+localleader key across that boundary, unbind it on the minor map too (=:localleader "e" nil=
+in the =map!= block, the same shape as the backtick unbind just above it). That is what let
+=SPC m e= / =SPC m E= mean insert / change a LaTeX environment with no shadowing left to
+reason about, with =brust-LaTeX-env-change= finally passing =t= explicitly instead of the
+broken =(not args)= that always inserted.
+
+** pdf-tools: =pdf-sync-forward-search= has no autoload cookie
+=pdf-tools/lisp/pdf-sync.el:651= defines it, but the file's only =;;;###autoload= is on
+=pdf-sync-minor-mode= — so the symbol is *void* until something loads =pdf-sync=, which only
+happens when the first PDF buffer opens. A key bound to it (=SPC m ?= → =g=, "PDF follows
+this line") therefore signals =void-function= in a fresh session and works after the first
+view. Fixed with an explicit =(autoload 'pdf-sync-forward-search "pdf-sync" nil t)= next to
+the menu. A name that resolves is not a name that is *reachable*: check =fboundp= /
+=commandp= on every command a menu head points at, not just the spelling.

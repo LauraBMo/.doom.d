@@ -66,47 +66,47 @@
  +word-wrap-extra-indent 'single
  )
 
-(setq +doom-dashboard-menu-sections
+(setq +dashboard-menu-sections
       '(
         ;; ("Load workspace"
         ;;  :icon
-        ;;  (all-the-icons-octicon "rocket" :face 'doom-dashboard-menu-title)
+        ;;  (all-the-icons-octicon "rocket" :face '+dashboard-menu-title)
         ;;  :action +workspace/load)
         ;; ("Open file in Dropbox"
         ;;  :icon
-        ;;  (all-the-icons-octicon "rocket" :face 'doom-dashboard-menu-title)
+        ;;  (all-the-icons-octicon "rocket" :face '+dashboard-menu-title)
         ;;  :action +workspace/load)
         ("Open my org"
-         :icon (nerd-icons-faicon "nf-fa-file_text" :face 'doom-dashboard-menu-title)
-         ;; :icon (all-the-icons-fileicon "org" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-faicon "nf-fa-file_text" :face '+dashboard-menu-title)
+         ;; :icon (all-the-icons-fileicon "org" :face '+dashboard-menu-title)
          :when (file-exists-p (expand-file-name "~/Dropbox/Org/my.org"))
          :action brust-open-my-org)
         ;; :action (lambda nil (open-file (expand-file-name "~/Dropbox/Org/my.org"))))
         ("Email"
-         :icon (nerd-icons-octicon "nf-oct-calendar" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-calendar" :face '+dashboard-menu-title)
          ;; :icon (all-the-icons-octicon "mail" :face 'font-lock-keyword-face)
          :action mu4e)
         ;; ("Open register" :icon
-        ;;  (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
+        ;;  (all-the-icons-octicon "bookmark" :face '+dashboard-menu-title)
         ;;  :action jump-to-register)
         ;; ("Jump to bookmark"
-        ;;  :icon (all-the-icons-octicon "bookmark" :face 'doom-dashboard-menu-title)
+        ;;  :icon (all-the-icons-octicon "bookmark" :face '+dashboard-menu-title)
         ;;  :action bookmark-jump)
         ("Open org-agenda"
-         :icon (nerd-icons-octicon "nf-oct-calendar" :face 'doom-dashboard-menu-title)
-         ;; :icon (all-the-icons-octicon "calendar" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-calendar" :face '+dashboard-menu-title)
+         ;; :icon (all-the-icons-octicon "calendar" :face '+dashboard-menu-title)
          :when (fboundp 'org-agenda)
          :action org-agenda)
         ;; ("Reload last session"
         ;;  :icon
-        ;;  (all-the-icons-octicon "history" :face 'doom-dashboard-menu-title)
+        ;;  (all-the-icons-octicon "history" :face '+dashboard-menu-title)
         ;;  :when (file-exists-p (expand-file-name persp-auto-save-fname persp-save-dir))
         ;;  :face
         ;;  (:inherit
-        ;;   (doom-dashboard-menu-title bold))
+        ;;   (+dashboard-menu-title bold))
         ;;  :action doom/quickload-session)
         ("Open private configuration"
-         :icon (nerd-icons-octicon "nf-oct-tools" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-tools" :face '+dashboard-menu-title)
          :when (file-directory-p doom-private-dir)
          :action brust-open-my-doom-config)
         ;; ("Notes"
@@ -119,10 +119,10 @@
         ;;  :icon (all-the-icons-faicon "comments" :face 'font-lock-keyword-face)
         ;;  :action =irc)))
         ("Open project"
-         :icon (nerd-icons-octicon "nf-oct-briefcase" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-briefcase" :face '+dashboard-menu-title)
          :action projectile-switch-project)
         ("Jump to bookmark"
-         :icon (nerd-icons-octicon "nf-oct-bookmark" :face 'doom-dashboard-menu-title)
+         :icon (nerd-icons-octicon "nf-oct-bookmark" :face '+dashboard-menu-title)
          :action bookmark-jump)
         ))
 
@@ -818,7 +818,7 @@ Used to define their `insert' and `kill-new' versions for embark actions.")
              ;; `(lambda (color) (insert (apply ',fun (list color))))
              (fset newname `(lambda (color)
                               (insert (,sym color))
-                              (pushnew! consult-colors-history color)))
+                              (cl-pushnew color consult-colors-history :test #'equal)))
              ;; (define-key 'embark-consult-color-action-map (kbd bind) (cons desc newname))
              (map! :map embark-consult-color-action-map
                    :desc desc bind newname)))
@@ -832,7 +832,7 @@ Used to define their `insert' and `kill-new' versions for embark actions.")
              ;; `(lambda (color) (kill-new (apply ',fun (list color))))
              (fset newname `(lambda (color)
                               (kill-new (,sym color))
-                              (pushnew! consult-colors-history color)))
+                              (cl-pushnew color consult-colors-history :test #'equal)))
              ;; (define-key 'embark-consult-color-action-map (kbd bind) (cons desc newname))
              (map! :map embark-consult-color-action-map
                    :desc desc bind newname)))
@@ -1409,52 +1409,6 @@ See `org-capture-templates' for more information."
        Assets:Cash:Wallet"
   "Template for cash transaction with ledger.")
 
-;;; Code:
-;; (use-package jupyter
-;;   :ensure t
-;;   :defer t)
-
-(after! org
-  (defun cape-sage-block (&optional interactive)
-    "Complete SageMath in Org or Markdown code block.
-This Capf is particularly useful for literate Emacs configurations.
-If INTERACTIVE is nil the function acts like a Capf."
-    (interactive (list t))
-    (cond
-     (interactive
-      ;; No code block check. Always complete Elisp when command was
-      ;; explicitly invoked interactively.
-      (cape-interactive #'sage-shell-edit:completion-at-point-func))
-     ((cape--inside-block-p "sage" "sagemath" "jupyter-sage")
-      (sage-shell-edit:completion-at-point-func))))
-
-  (add-hook! '(org-mode-hook markdown-mode-hook)
-    (defun +corfu-add-cape-sage-block-h ()
-      (add-hook 'completion-at-point-functions #'cape-sage-block 0 t)))
-
-  ;; (cl-pushnew (cons "jupyter-sage" 'sage-shell:sage)
-  ;;             org-src-lang-modes :key #'car)
-
-  ;; (setq org-babel-default-header-args:jupyter-sage '((:async . "yes")
-  ;;                                                    (:session . "*Sage*")
-  ;;                                                    (:kernel . "sage")))
-
-  ;; Ob-sagemath supports only evaluating with a session.
-  (require 'ob-sagemath)
-  (setq org-babel-default-header-args:sage '((:session . t)
-                                             (:results . "output")))
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((emacs-lisp . t)
-     (julia . t)
-     ;; (sagemath . t)
-     (sage . t)
-     (latex . t)
-     (python . t)
-     ;; (jupyter . t)
-     ))
-  )
-
 (after! org
   (setq org-structure-template-alist (delete '("e" . "example") org-structure-template-alist)
         ;; org-structure-template-alist (delete '("j" . "src ess-julia :results output :session *julia* :exports both") org-structure-template-alist)
@@ -1562,13 +1516,6 @@ If INTERACTIVE is nil the function acts like a Capf."
     (brust-vterm--ensure-process-alive "--julia" "julia\n")
     (brust-org-mode-vterm--eval-region-header-or-block)))
 
-(defun brust-org-mode-vterm-sage-eval nil
-  (interactive)
-  (brust-vterm--ensure-process-alive "--sage" "conda activate sage && sage\n")
-  (brust-org-mode-vterm--eval-region-header-or-block)
-  (with-current-buffer (process-buffer vterm--process)
-    (vterm-send-return)))
-
 (defun brust-endless/org-eval-current-header nil
   (interactive)
   (brust-endless/org-eval-eblocks
@@ -1657,7 +1604,13 @@ If INTERACTIVE is nil the function acts like a Capf."
         ;; lost — that command is already on SPC m SPC just above.
         "m" #'TeX-insert-macro
         "]" #'LaTeX-close-environment
-        "E" #'LaTeX-environment
+        ;; One key per role: e inserts, E changes. The change half is the one that
+        ;; also rewrites the label tag (lem:x -> prop:x). Both plain inserters
+        ;; moved off the leader — `LaTeX-environment' (AUCTeX) and
+        ;; `cdlatex-environment' are in the SPC m ? menu — so that "insert an
+        ;; environment" has exactly one answer here.
+        "e" #'brust-LaTeX-env
+        "E" #'brust-LaTeX-env-change
         )))
 
 (map! :after (latex cdlatex)
@@ -1667,7 +1620,10 @@ If INTERACTIVE is nil the function acts like a Capf."
       ;; :i "M-;" (lambda nil (insert ";"))
       :i "TAB" #'cdlatex-tab
       :localleader
-      "e" #'cdlatex-environment)
+      ;; cdlatex-mode-map is a minor-mode map, so it outranks LaTeX-mode-map and
+      ;; this SPC m e would shadow the insert binding above. cdlatex's own
+      ;; inserter keeps its entry in the SPC m ? menu.
+      "e" nil)
 
 (after! latex
   (require 'hydra)     ;; `defhydra' below
@@ -1697,20 +1653,6 @@ If INTERACTIVE is nil the function acts like a Capf."
     (when (y-or-n-p "texlab: delete build artifacts INCLUDING the PDF? ")
       (lsp-send-execute-command "texlab.cleanArtifacts" (brust-latex-lsp--doc-id))
       (message "texlab: artifacts cleaned")))
-
-  (defun brust-latex-lsp-change-environment ()
-    "texlab.changeEnvironment: rename the \\begin/\\end pair at point.
-texlab computes the edit and asks the client to apply it, so all this has to
-supply is the new name and the position."
-    (interactive)
-    (let ((new (read-string "New environment name: ")))
-      (if (string-empty-p new)
-          (message "texlab: no name given, nothing changed")
-        (lsp-send-execute-command
-         "texlab.changeEnvironment"
-         (vector (list :textDocument (list :uri (lsp--path-to-uri buffer-file-name))
-                       :position (brust-latex-lsp--position)
-                       :newName new))))))
 
   (defun brust-latex-lsp-find-environments ()
     "texlab.findEnvironments: jump to an enclosing environment.
@@ -1752,50 +1694,63 @@ through `dot' and open the SVG."
   ;; --- the menu ------------------------------------------------------------
   ;; No keys for texlab's build/forward-search: unusable through lsp-mode.
   ;; No key for cancelBuild either: there is nothing that can start a build.
+  ;;
+  ;; The body string is empty on purpose. With an empty body and a `:column' on
+  ;; each group's first head, hydra builds the hint itself
+  ;; (`hydra--generate-matrix' -> `hydra--hint-from-matrix'): it aligns the
+  ;; columns, pads the doc column to the group's longest one and draws the
+  ;; header rule — so nothing below is hand-spaced, and nothing can drift when a
+  ;; head is added. The columns stand side by side in the order the heads
+  ;; appear, and a head with no `:column' belongs to the group above it.
+  ;;
+  ;; Colour is behaviour here, not decoration: `:color red' keeps the menu open
+  ;; after the key, while the body's `:color blue' exits. The folds, the error
+  ;; walk and the whole Display column are red, because those get pressed over
+  ;; and over — Display is every on/off switch, so you flip one and watch the
+  ;; buffer. The one-shots stay blue. `:face' paints without changing
+  ;; behaviour, and that is how the two keys that bite are flagged. Amaranth
+  ;; rather than red for those, so that red keeps meaning exactly one thing.
+  ;;
+  ;; Display is lsp-mode's own UI switches, not texlab's. `lsp-lens-mode' and
+  ;; the treemacs toggles are deliberately absent: treemacs is not installed
+  ;; (there is no `lsp-treemacs-symbols-mode' to call), and texlab is not known
+  ;; to publish code lenses — check a live session before adding either.
   (defhydra brust-latex-lsp (:color blue :hint nil)
-    "
-texlab / LSP   --   prune freely
-
-Nav       d def   D declaration   i impl   t type   r refs   b back   s symbols
-Edit      R rename   f format buffer   F format region   a code action
-          h highlight symbol   e change environment   E find environments
-texlab    k clean auxiliary   K clean artifacts (deletes the PDF)   g dep graph
-Diag      l list errors   n next error   p previous error   x consult diagnostics
-Fold      z toggle   Z hide all   A show all
-Display   I inlay hints   T semantic tokens   u lsp-ui doc
-Session   w describe   W restart   Q disconnect
-          q quit
-"
-    ("d" lsp-find-definition "definition")
+    ""
+    ("d" lsp-find-definition "definition" :column "Nav")
     ("D" lsp-find-declaration "declaration")
-    ("i" lsp-find-implementation "implementation")
-    ("t" lsp-find-type-definition "type definition")
-    ("r" lsp-find-references "references")
+    ("i" lsp-find-implementation "impl")
+    ("t" lsp-find-type-definition "type")
+    ("r" lsp-find-references "refs")
     ("b" xref-go-back "back")
-    ("s" consult-lsp-symbols "workspace symbols")
-    ("R" lsp-rename "rename symbol")
+    ("s" consult-lsp-symbols "symbols")
+    ("R" lsp-rename "rename" :column "Edit")
     ("f" lsp-format-buffer "format buffer")
     ("F" lsp-format-region "format region")
     ("a" lsp-execute-code-action "code action")
     ("h" lsp-document-highlight "highlight symbol")
-    ("e" brust-latex-lsp-change-environment "change environment")
     ("E" brust-latex-lsp-find-environments "find environments")
-    ("k" brust-latex-lsp-clean-auxiliary "clean auxiliary")
-    ("K" brust-latex-lsp-clean-artifacts "clean artifacts")
-    ("g" brust-latex-lsp-dependency-graph "dependency graph")
-    ("l" flycheck-list-errors "list errors")
-    ("n" flycheck-next-error "next error")
-    ("p" flycheck-previous-error "previous error")
-    ("x" consult-lsp-diagnostics "consult diagnostics")
-    ("z" hs-toggle-hiding "toggle fold")
-    ("Z" hs-hide-all "hide all")
-    ("A" hs-show-all "show all")
-    ("I" lsp-inlay-hints-mode "inlay hints")
-    ("T" lsp-semantic-tokens-mode "semantic tokens")
+    ("k" brust-latex-lsp-clean-auxiliary "clean auxiliary" :column "texlab")
+    ("K" brust-latex-lsp-clean-artifacts "clean artifacts" :face hydra-face-amaranth)
+    ("g" brust-latex-lsp-dependency-graph "dep graph")
+    ("l" flycheck-list-errors "list errors" :column "Diag")
+    ("n" flycheck-next-error "next error" :color red)
+    ("p" flycheck-previous-error "previous error" :color red)
+    ("x" consult-lsp-diagnostics "diagnostics")
+    ("z" hs-toggle-hiding "toggle fold" :column "Fold" :color red)
+    ("Z" hs-hide-all "hide all" :color red)
+    ("A" hs-show-all "show all" :color red)
+    ("I" lsp-inlay-hints-mode "inlay hints" :column "Display" :color red)
+    ("T" lsp-semantic-tokens-mode "semantic tokens" :color red)
+    ("H" lsp-headerline-breadcrumb-mode "breadcrumb" :color red)
+    ("S" lsp-ui-sideline-mode "sideline" :color red)
+    ("M" lsp-modeline-diagnostics-mode "modeline diag" :color red)
+    ("C" lsp-completion-mode "completion" :color red)
+    ("U" lsp-ui-mode "lsp-ui mode" :color red)
     ("u" lsp-ui-doc-glance "lsp-ui doc")
-    ("w" lsp-describe-session "describe session")
-    ("W" lsp-workspace-restart "restart workspace")
-    ("Q" lsp-disconnect "disconnect")
+    ("w" lsp-describe-session "describe" :column "Session")
+    ("W" lsp-workspace-restart "restart")
+    ("Q" lsp-disconnect "disconnect" :face hydra-face-amaranth)
     ("q" nil "quit"))
 
   (map! :map LaTeX-mode-map :localleader "l" #'brust-latex-lsp/body))
@@ -1808,33 +1763,38 @@ Session   w describe   W restart   Q disconnect
     (interactive)
     (describe-keymap (current-local-map)))
 
-  (defhydra brust-latex-discover (:color blue :hint nil)
-    "
-Discover LaTeX   --   SPC m ?
+  ;; pdf-tools puts no autoload cookie on its forward-search command
+  ;; (pdf-sync.el:651 — the file's only `;;;###autoload' is on
+  ;; `pdf-sync-minor-mode'), so the symbol stays void until something has opened
+  ;; a PDF and loaded the library. Pressing the menu key in a fresh session would
+  ;; signal void-function. Declaring the autoload here makes the first call load
+  ;; pdf-sync itself.
+  (autoload 'pdf-sync-forward-search "pdf-sync" nil t)
 
-Show me   c my cdlatex snippets    k every key in this mode    m active modes
-          K what does a key do     v variable at point
-Take me   t document TOC           a compile, bibtex, view     g PDF follows this line
-          Z fold to headings       A show everything
-          x checker errors         d LSP diagnostics           S what texlab is doing
-          l texlab menu
-          q quit
-"
-    ("c" cdlatex-command-help "my cdlatex snippets")
-    ("k" brust-latex-discover-keys "every key bound here")
+  ;; Same two conventions as the texlab menu above: the body is empty so hydra
+  ;; builds the table from the `:column' properties, and `:color red' means "this
+  ;; key leaves the menu open". Only the two outline folds are red here — a
+  ;; section gets folded and unfolded over and over. Every other head hands off
+  ;; to another buffer, so it has to exit, or the hydra would follow you there.
+  (defhydra brust-latex-discover (:color blue :hint nil)
+    ""
+    ("c" cdlatex-command-help "my cdlatex snippets" :column "Show me")
+    ("k" brust-latex-discover-keys "every key in this mode")
     ("m" describe-mode "active modes")
     ("K" helpful-key "what does a key do")
     ("v" helpful-variable "variable at point")
-    ("t" reftex-toc "document TOC")
+    ("e" LaTeX-environment "environment (AUCTeX)" :column "Insert")
+    ("E" cdlatex-environment "environment (cdlatex)")
+    ("t" reftex-toc "document TOC" :column "Take me")
     ("a" TeX-command-run-all "compile, bibtex, view")
     ("g" pdf-sync-forward-search "PDF follows this line")
-    ("Z" outline-hide-body "fold to headings")
-    ("A" outline-show-all "show everything")
-    ("x" flycheck-list-errors "checker errors")
+    ("Z" outline-hide-body "fold to headings" :color red)
+    ("A" outline-show-all "show everything" :color red)
+    ("x" flycheck-list-errors "checker errors" :column "LSP")
     ("d" consult-lsp-diagnostics "LSP diagnostics")
     ("S" lsp-describe-session "what texlab is doing")
-    ("l" brust-latex-lsp/body "texlab menu")
-    ("q" nil "quit"))
+    ("l" brust-latex-lsp/body "all LSP actions + toggles")
+    ("q" nil "quit" :column "Quit"))
 
   (map! :map LaTeX-mode-map :localleader "?" #'brust-latex-discover/body))
 
@@ -1940,7 +1900,7 @@ List if julia functions names to define wrap for.")
   (let ((defunlist '()))
     (while (julia-beginning-of-defun)
       (if (string= (thing-at-point 'word t) "function") (forward-word 2))
-      (pushnew! defunlist (julia-repl--symbols-at-point))
+      (cl-pushnew (julia-repl--symbols-at-point) defunlist :test #'equal)
       (move-beginning-of-line 1))
     defunlist))
 
@@ -2427,35 +2387,6 @@ EXPLANATION STANDARDS:
   (if (get-buffer "*M2*")
       (call-interactively 'M2-send-to-program)
     (call-interactively 'M2)))
-
-(use-package! sage-shell-mode
-  :defer t
-  :custom ((sage-shell:use-simple-prompt t)
-           (sage-shell:use-prompt-toolkit nil)
-           (sage-shell:set-ipython-version-on-startup nil)
-           (sage-shell:check-ipython-version-on-startup nil)
-           (sage-shell:sage-root nil)
-           (sage-shell:sage-executable "/home/laury/miniforge3/envs/sage/bin/sage"))
-  :hook (;;(sage-shell-mode . malb/sage-shell-company-completion)
-         ;; Turn on eldoc-mode in Sage terminal and in Sage source files
-         (sage-shell:sage-mode-hook . eldoc-mode)
-         (sage-shell-mode-hook . eldoc-mode)
-         (sage-shell-after-prompt . sage-shell-view-mode))
-  :bind (:map sage-shell-mode-map
-              ("C-<up>" . comint-previous-matching-input-from-input)
-              ("C-<down>" . comint-next-matching-input-from-input)
-              ("M-p" . comint-previous-matching-input-from-input)
-              ("M-n" . comint-next-matching-input-from-input))
-  :config
-  ;; Run SageMath by M-x run-sage instead of M-x sage-shell:run-sage
-  (sage-shell:define-alias)
-  (setq sage-shell-view-default-commands 'plots
-        sage-shell-view-scale 1.5
-        sage-shell-view-default-resolution 180
-        sage-shell:input-history-cache-file (concat user-emacs-directory "sage_shell_input_history")
-        ;; sage-shell:sage-executable malb/sage-executable
-        ;; ac-sage-show-quick-help t
-        ))
 
 (setq pre-abbrev-expand-hook (quote (ignore))
       save-abbrevs 'silently)

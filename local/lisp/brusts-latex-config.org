@@ -343,7 +343,9 @@ See http://endlessparentheses.com/improving-latex-equations-with-font-lock.html
     "Insert a new environment, or with a prefix change the current one.
 
 With a prefix, also rename the environment's label tag (e.g. lem -> prop)
-when the environment carries one."
+when the environment carries one.
+
+Bound to SPC m e; `brust-LaTeX-env-change' fronts the same command on SPC m E."
     (interactive "P")
     (let ((pnt (point)))
       (save-window-excursion
@@ -367,9 +369,15 @@ when the environment carries one."
                (concat prefix-new ":" name))))))
       (goto-char pnt)))
 
-  (defun brust-LaTeX-env-change (args)
-    (interactive "p")
-    (brust-LaTeX-env (not args)))
+  ;; The change half on a key of its own (SPC m E), so switching an
+  ;; environment's type needs no prefix argument. What used to sit here took
+  ;; `args' and passed `(not args)' — nil for every numeric prefix, so it
+  ;; inserted and never changed, and nothing called it to notice.
+  (defun brust-LaTeX-env-change ()
+    "Change the current environment and rename its label tag.
+The one-key front end of `brust-LaTeX-env'."
+    (interactive)
+    (brust-LaTeX-env t))
 #+END_SRC
 
 *** Query replace only in math formulas
