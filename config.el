@@ -1599,15 +1599,15 @@ See `org-capture-templates' for more information."
         "b" #'citar-insert-citation
         "h" #'brust-LaTeX-set-header
         "SPC" #'TeX-command-master
-        ;; Doom binds SPC m m to `TeX-command-master' on this same map; the line
+        ;; Doom binds SPC SPC m to `TeX-command-master' on this same map; the line
         ;; below shadows it, since config.el loads after the modules. Nothing is
-        ;; lost — that command is already on SPC m SPC just above.
+        ;; lost — that command is already on SPC SPC SPC just above.
         "m" #'TeX-insert-macro
         "]" #'LaTeX-close-environment
         ;; One key per role: e inserts, E changes. The change half is the one that
         ;; also rewrites the label tag (lem:x -> prop:x). Both plain inserters
         ;; moved off the leader — `LaTeX-environment' (AUCTeX) and
-        ;; `cdlatex-environment' are in the SPC m ? menu — so that "insert an
+        ;; `cdlatex-environment' are in the SPC SPC ? menu — so that "insert an
         ;; environment" has exactly one answer here.
         "e" #'brust-LaTeX-env
         "E" #'brust-LaTeX-env-change
@@ -1621,46 +1621,55 @@ See `org-capture-templates' for more information."
       :i "TAB" #'cdlatex-tab
       :localleader
       ;; cdlatex-mode-map is a minor-mode map, so it outranks LaTeX-mode-map and
-      ;; this SPC m e would shadow the insert binding above. cdlatex's own
-      ;; inserter keeps its entry in the SPC m ? menu.
+      ;; this SPC SPC e would shadow the insert binding above. cdlatex's own
+      ;; inserter keeps its entry in the SPC SPC ? menu.
       "e" nil)
+
+;; Folding. The keys are evil's own — za toggles, zc / zo close and open,
+;; zr / zm do the whole buffer — and `evil-fold-list' already routes them to
+;; hideshow whenever `hs-minor-mode' is on, so nothing is bound here. What was
+;; missing was the mode being on at all, plus rules that say what a fold is.
+;; Three things had to line up (2026-09-15, see CONFIG-NOTES):
+;;  - `hs-hide-all' and its siblings are wrapped in `hs-life-goes-on', so they
+;;    are no-ops unless `hs-minor-mode' is on — with the mode off, za looked
+;;    dead rather than misconfigured. Hence the hook, and hence where it sits:
+;;    registering a mode hook is one of the things that *loads* AUCTeX, so an
+;;    `after! latex' runs in the middle of the first .tex buffer's own
+;;    mode-hook run, and a hook added mid-run is not run for that buffer. The
+;;    first buffer of a session would stay unfolded. It has to be registered
+;;    before any .tex opens, which means top level, outside `after!'.
+;;  - hideshow looks its rules up with `assoc' on the *exact* major-mode symbol,
+;;    and an AUCTeX buffer's mode is `LaTeX-mode', not `latex-mode' — Doom's
+;;    `:editor fold' module (disabled here) keys its entry for the latter, so
+;;    turning that module on would not have folded these buffers either. The
+;;    same lookup bails out with "Mode doesn't support Hideshow" unless both
+;;    `comment-start' and `comment-end' are bound in the buffer.
+;;  - lsp-mode never hands its folding ranges to hideshow, whatever
+;;    `lsp-enable-folding' suggests: nothing in lsp-mode mentions hideshow at
+;;    all. texlab offers 15 ranges for a paper like mm.tex and every one goes
+;;    unused; these regexps decide what folds, not the server.
+(require 'hideshow)   ;; hideshow's only autoload cookie is on `hs-minor-mode'
+(add-hook 'LaTeX-mode-hook #'hs-minor-mode)
+(setq hs-special-modes-alist
+      (append
+       '((LaTeX-mode
+          ;; `LaTeX-find-matching-end' has to be called from inside the
+          ;; environment, hence the one-character submatch: the match ends just
+          ;; after `\begin{env}'.
+          ("\\\\begin{[a-zA-Z*]+}\\(\\)" 1)
+          "\\\\end{[a-zA-Z*]+}"
+          "%"
+          (lambda (_arg)
+            ;; never fold the whole document — that hides everything
+            (unless (save-excursion
+                      (search-backward "\\begin{document}"
+                                       (line-beginning-position) t))
+              (LaTeX-find-matching-end)))
+          nil))
+       hs-special-modes-alist))
 
 (after! latex
   (require 'hydra)     ;; `defhydra' below
-  (require 'hideshow)  ;; the fold keys below call `hs-…', and hideshow's only
-                       ;; autoload cookie is on `hs-minor-mode'
-
-  ;; Folding is regex-driven, and three things had to be right before the Fold
-  ;; column below did anything at all (2026-09-15, see CONFIG-NOTES):
-  ;;  - `hs-hide-all' and its siblings are wrapped in `hs-life-goes-on', so
-  ;;    they are no-ops unless `hs-minor-mode' is on in the buffer — hence the
-  ;;    hook.  It was off here, which is what made the keys look dead.
-  ;;  - hideshow looks its rules up with `assoc' on the *exact* major-mode
-  ;;    symbol, and an AUCTeX buffer's mode is `LaTeX-mode', not `latex-mode'.
-  ;;    Doom's `:editor fold' module (disabled here) keys its entry for the
-  ;;    latter, so turning that module on would not have folded these buffers.
-  ;;  - lsp-mode never hands its folding ranges to hideshow, whatever
-  ;;    `lsp-enable-folding' suggests: nothing in lsp-mode mentions hideshow at
-  ;;    all.  texlab offers 15 ranges for a paper like mm.tex and every one of
-  ;;    them goes unused; these regexps decide what folds, not the server.
-  (add-hook 'LaTeX-mode-hook #'hs-minor-mode)
-  (setq hs-special-modes-alist
-        (append
-         '((LaTeX-mode
-            ;; `LaTeX-find-matching-end' has to be called from inside the
-            ;; environment, hence the one-character submatch: the match ends
-            ;; just after `\begin{env}'.
-            ("\\\\begin{[a-zA-Z*]+}\\(\\)" 1)
-            "\\\\end{[a-zA-Z*]+}"
-            "%"
-            (lambda (_arg)
-              ;; never fold the whole document — that hides everything
-              (unless (save-excursion
-                        (search-backward "\\begin{document}"
-                                         (line-beginning-position) t))
-                (LaTeX-find-matching-end)))
-            nil))
-         hs-special-modes-alist))
 
 
   ;; --- helpers for the commands lsp-mode cannot render ----------------------
@@ -1737,12 +1746,16 @@ through `dot' and open the SVG."
   ;; appear, and a head with no `:column' belongs to the group above it.
   ;;
   ;; Colour is behaviour here, not decoration: `:color red' keeps the menu open
-  ;; after the key, while the body's `:color blue' exits. The folds, the error
-  ;; walk and the whole Display column are red, because those get pressed over
-  ;; and over — Display is every on/off switch, so you flip one and watch the
-  ;; buffer. The one-shots stay blue. `:face' paints without changing
-  ;; behaviour, and that is how the two keys that bite are flagged. Amaranth
-  ;; rather than red for those, so that red keeps meaning exactly one thing.
+  ;; after the key, while the body's `:color blue' exits. The error walk and the
+  ;; whole Display column are red, because those get pressed over and over —
+  ;; Display is every on/off switch, so you flip one and watch the buffer. The
+  ;; one-shots stay blue. `:face' paints without changing behaviour, and that is
+  ;; how the two keys that bite are flagged. Amaranth rather than red for those,
+  ;; so that red keeps meaning exactly one thing.
+  ;;
+  ;; No Fold column: folding is on evil's own keys now (za / zc / zo / zr / zm,
+  ;; see the folding block above), in this buffer and in .jl alike, so a menu
+  ;; copy of it would only teach a second way to do the same thing.
   ;;
   ;; Display is lsp-mode's own UI switches, not texlab's. `lsp-lens-mode' and
   ;; the treemacs toggles are deliberately absent: treemacs is not installed
@@ -1770,9 +1783,6 @@ through `dot' and open the SVG."
     ("n" flycheck-next-error "next error" :color red)
     ("p" flycheck-previous-error "previous error" :color red)
     ("x" consult-lsp-diagnostics "diagnostics")
-    ("z" hs-toggle-hiding "toggle fold" :column "Fold" :color red)
-    ("Z" hs-hide-all "hide all" :color red)
-    ("A" hs-show-all "show all" :color red)
     ("I" lsp-inlay-hints-mode "inlay hints" :column "Display" :color red)
     ("T" lsp-semantic-tokens-mode "semantic tokens" :color red)
     ("H" lsp-headerline-breadcrumb-mode "breadcrumb" :color red)
@@ -2131,52 +2141,62 @@ EXPLANATION STANDARDS:
   (ollama-buddy--set-system-prompt-with-metadata julia-ai-system-prompt "Julia (main) System" "programmer")
   )
 
-(after! julia-repl
-  (require 'hydra)     ;; `defhydra' below
-  (require 'hideshow)  ;; the Fold column below; see the LaTeX chapter for why
-                       ;; both the mode hook and the rules are needed
+;; Folding, julia side. Same three conditions as the folding block in the LaTeX
+;; chapter, plus one of its own: a keyword-delimited language needs a
+;; FORWARD-SEXP function, because the default `forward-sexp' merely steps over
+;; the word `function' — which is why the one-line hideshow recipes for Julia
+;; fold nothing at all. Both ends anchor to `^[ \t]*' so that `A[end]', an index
+;; rather than a block, is not read as closing one.
+;;
+;; Outside `after! julia-repl' on purpose: registering the hook is one of the
+;; things that loads julia-repl, so an `after!' body would run in the middle of
+;; the first .jl buffer's own mode-hook run, and that buffer would stay unfolded
+;; (2026-09-15, CONFIG-NOTES).
+(require 'hideshow)
+(add-hook 'julia-mode-hook #'hs-minor-mode)
 
-  (add-hook 'julia-mode-hook #'hs-minor-mode)
-
-  (defun brust-julia-hs-forward-sexp (_arg)
-    "Move past the julia block whose opening keyword starts on this line.
+(defun brust-julia-hs-forward-sexp (_arg)
+  "Move past the julia block whose opening keyword starts on this line.
 hideshow wants a `forward-sexp' that understands `function … end' rather than
 parentheses, so this counts the block keywords instead, scanning from the end
 of the opening line so that the keyword cannot be counted a second time.  A
 block with no `end' yet — a half-typed function — folds to the end of the
 buffer rather than signalling."
-    (let ((depth 1))
-      (goto-char (line-end-position))
-      (while (and (> depth 0)
-                  (let ((end (save-excursion
-                               (when (re-search-forward hs-block-end-regexp nil t)
-                                 (point))))
-                        (start (save-excursion
-                                 (when (re-search-forward hs-block-start-regexp nil t)
-                                   (point)))))
-                    (cond ((and end (or (null start) (< end start)))
-                           (goto-char end)
-                           (setq depth (1- depth))
-                           t)
-                          (start
-                           (goto-char start)
-                           (setq depth (1+ depth))
-                           t)
-                          (t nil)))))))
+  (let ((depth 1))
+    (goto-char (line-end-position))
+    (while (and (> depth 0)
+                (let ((end (save-excursion
+                             (when (re-search-forward hs-block-end-regexp nil t)
+                               (point))))
+                      (start (save-excursion
+                               (when (re-search-forward hs-block-start-regexp nil t)
+                                 (point)))))
+                  (cond ((and end (or (null start) (< end start)))
+                         (goto-char end)
+                         (setq depth (1- depth))
+                         t)
+                        (start
+                         (goto-char start)
+                         (setq depth (1+ depth))
+                         t)
+                        (t nil)))))))
 
-  (setq hs-special-modes-alist
-        (append
-         '((julia-mode
-            ;; Both ends anchor to the line start, so `A[end]' — an index, not
-            ;; a block — is not counted as closing one.
-            "^[ \t]*\\(?:function\\|macro\\|mutable struct\\|struct\\|module\\|baremodule\\|let\\|begin\\|for\\|while\\|if\\|try\\|do\\|quote\\)\\_>"
-            "^[ \t]*end\\_>"
-            "#"
-            ;; the bare symbol, not `#'…': inside a quoted list the sharp-quote
-            ;; is just data, and `funcall' would get the list `(function …)'
-            brust-julia-hs-forward-sexp
-            nil))
-         hs-special-modes-alist))
+(setq hs-special-modes-alist
+      (append
+       '((julia-mode
+          ;; Both ends anchor to the line start, so `A[end]' — an index, not a
+          ;; block — is not counted as closing one.
+          "^[ \t]*\\(?:function\\|macro\\|mutable struct\\|struct\\|module\\|baremodule\\|let\\|begin\\|for\\|while\\|if\\|try\\|do\\|quote\\)\\_>"
+          "^[ \t]*end\\_>"
+          "#"
+          ;; the bare symbol, not `#'…': inside a quoted list the sharp-quote is
+          ;; just data, and `funcall' would be handed `(function …)'
+          brust-julia-hs-forward-sexp
+          nil))
+       hs-special-modes-alist))
+
+(after! julia-repl
+  (require 'hydra)     ;; `defhydra' below
 
   (defun brust-julia-discover-keys ()
     "Show every key bound in this buffer's own keymap."
@@ -2189,15 +2209,8 @@ buffer rather than signalling."
     ("k" brust-julia-discover-keys "every key in this mode")
     ("v" helpful-variable "variable at point")
     ("K" helpful-key "what does a key do")
-    ("o" +julia/open-repl "start / raise REPL" :column "REPL")
-    ("b" julia-repl-send-buffer "send buffer")
-    ("s" julia-repl-send-region-or-line "send region or line")
-    ("l" julia-repl-send-line "send line")
+    ("l" julia-repl-send-line "send line" :column "REPL")
     ("i" julia-repl-includet-buffer "includet (Revise)")
-    ("h" julia-repl-doc "doc for symbol")
-    ("e" julia-repl-edit "@edit symbol")
-    ("m" julia-repl-list-methods "methods for symbol")
-    ("d" julia-repl-cd "cd to this file's dir")
     ("X" julia-repl-macroexpand "macroexpand")
     ("p" julia-repl-activate-parent "activate project")
     ("g" lsp-find-definition "definition" :column "LSP")
@@ -2216,10 +2229,6 @@ buffer rather than signalling."
     ("S" lsp-ui-sideline-mode "sideline" :color red)
     ("C" lsp-completion-mode "completion" :color red)
     ("U" lsp-ui-mode "lsp-ui mode" :color red)
-    ("z" hs-toggle-hiding "toggle fold" :column "Fold" :color red)
-    ("Z" hs-hide-all "hide all" :color red)
-    ("A" hs-show-all "show all" :color red)
-    ("x" brust-julia-update-exports "update exports" :column "Mine")
     ("q" nil "quit" :column "Quit"))
 
   (map! :map julia-mode-map :localleader "?" #'brust-julia-discover/body))

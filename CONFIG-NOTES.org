@@ -8,7 +8,7 @@ entries concrete: what happened, why, and how to repeat the fix.
 
 * Errors fixed
 
-** 2026-09-15 — =SPC m .= in =.jl= buffers pointed at =+lsp!=, which does not exist
+** 2026-09-15 — =SPC SPC .= in =.jl= buffers pointed at =+lsp!=, which does not exist
 The julia binding block had =:desc "Start eglot server" "." #'+lsp!=. Doom's function is
 plain =lsp!= (=modules/tools/lsp/autoload/common.el:4=, "Dispatch to call the currently used
 lsp client entrypoint"); the plus-signed name appears nowhere in Doom. So the key was void
@@ -19,14 +19,38 @@ redundant, since Doom's julia module already calls =lsp!= from
 How it was caught: =fboundp= on every command a menu head points at. =+lsp!= failed it, and
 =symbol-file= / =documentation= on the *unprefixed* name found the real definition.
 
-** 2026-09-15 — the Fold column (=z= / =Z= / =A=) in both menus did nothing
-Three faults at once, all silent, all fixed in =config.org= the same day and written up
-under *Tricks* below: `hs-minor-mode' was never on in these buffers, and the fold commands
-are no-ops without it; the rules were keyed for a mode symbol that never occurs here
-(=latex-mode= where an AUCTeX buffer is =LaTeX-mode=); and lsp-mode never hands its folding
-ranges to hideshow at all, so the comment claiming =lsp-enable-folding= did that was simply
-wrong. Julia additionally needed a FORWARD-SEXP function of its own — without one, nothing
-folds in a keyword-delimited language.
+** 2026-09-15 — the fold keys did nothing in a .tex or a .jl, in three separate ways
+The hydra Fold columns (=z= / =Z= / =A=) had been added the day before and did nothing. Three
+faults at once, all silent, all written up under *Tricks* below: `hs-minor-mode' was never on
+in these buffers, and the fold commands are no-ops without it; the rules were keyed for a mode
+symbol that never occurs here (=latex-mode= where an AUCTeX buffer is =LaTeX-mode=); and
+lsp-mode never hands its folding ranges to hideshow at all, so the comment claiming
+=lsp-enable-folding= did that was simply wrong. Julia additionally needed a FORWARD-SEXP
+function of its own — without one, nothing folds in a keyword-delimited language.
+
+Both Fold columns were removed in the end. Their columns were a second way to do what evil's
+own =za= / =zc= / =zo= / =zr= / =zm= already do, once `hs-minor-mode' is on — and those keys
+work in a =.jl= and a =.tex= alike, which was the point.
+
+** 2026-09-15 — a mode hook added inside `after!' arrives too late for the first buffer
+The hook that was supposed to turn `hs-minor-mode' on lived in =(after! latex …)= /
+=(after! julia-repl …)=. It was *in* the hook variable — and the first buffer of each mode
+still came up with the mode off, in a freshly started Emacs. Cause: registering that hook is
+one of the things that *loads* AUCTeX / julia-repl, so the `after!' body runs in the middle of
+the first buffer's own `run-mode-hooks', and Emacs does not run a hook that was added
+mid-run. Every later buffer gets it; only the first one of the session misses.
+
+- *Fix:* register the hook at top level, outside any `after!'. Both of ours moved there.
+- *How it was caught:* a daemon started from the shell, because an in-session check cannot see
+  this — by then the hook is already installed (the first attempt at verifying this was
+  invalid for exactly that reason). The probe that does work:
+  #+begin_src sh
+  emacs --init-directory ~/.config/emacs --daemon=probe
+  emacsclient -s probe --eval '(with-current-buffer (find-file-noselect "/tmp/x.jl") (bound-and-true-p hs-minor-mode))'
+  #+end_src
+  Note =--batch= is *not* equivalent: language packages do not load there, so a =.jl= opens in
+  =fundamental-mode= and a =.tex= in the built-in =latex-mode=, and the check proves nothing
+  about the real config.
 
 ** 2026-09-15 — a Julia =export= block cannot be delimited by trailing commas
 =brust-julia-update-exports= now rewrites the block in place (it used to append a second one).
@@ -263,16 +287,22 @@ Error when using the jinx speller (triggered by =jinx-languages= /
 
 * Tricks / maintenance recipes
 
-** 2026-09-15 — Folding is hideshow's, and it knows nothing about LSP
-=z= / =Z= / =A= in the LaTeX and julia menus are `hs-toggle-hiding', `hs-hide-all' and
-`hs-show-all'. Four things have to be true before they do anything, and every one of them
-fails silently:
+** 2026-09-15 — Folding: evil's keys, hideshow's rules, and no LSP anywhere in it
+The keys are evil's own, in normal state, and need no binding: =za= adds or removes the fold
+at point, =zc= / =zo= close and open one, =zO= opens recursively, =zr= / =zm= do the whole
+buffer (=evil-maps.el:87-92=). They dispatch through =evil-fold-list= (=evil-commands.el=),
+which already carries an entry for =hs-minor-mode= — routing to =hs-toggle-hiding=,
+=hs-hide-block=, =hs-show-block=, =hs-show-all=, =hs-hide-all= — and another for
+=outline-minor-mode=. So the real question is only whether `hs-minor-mode' is on and whether
+the buffer has a hideshow rule. Four things have to be true, and every one fails silently:
 
-1. *`hs-minor-mode' must be on in the buffer.* =hs-hide-all= and its siblings are wrapped in
-   =hs-life-goes-on=, which is =(when hs-minor-mode …)= — with the mode off the command
-   returns without a message. That is why the Fold column read as broken rather than
-   misconfigured. Enabled per mode, in a hook:
-   =(add-hook 'LaTeX-mode-hook #'hs-minor-mode)=, likewise for =julia-mode-hook=.
+1. *`hs-minor-mode' must be on, and its hook must be registered before the buffer opens.*
+   =hs-hide-all= and its siblings are wrapped in =hs-life-goes-on=, which is
+   =(when hs-minor-mode …)= — with the mode off the command returns without a message, which is
+   why folding read as broken rather than misconfigured. =(add-hook 'LaTeX-mode-hook
+   #'hs-minor-mode)=, likewise for =julia-mode-hook= — but *outside* any =after!=, or the hook
+   arrives during the first buffer's own mode-hook run and that buffer stays unfolded (see the
+   error entry above; this one cost a round of testing to find).
 2. *The buffer must have an entry in `hs-special-modes-alist'.* =hs-grok-mode-type= looks it
    up with =(assoc major-mode …)= — an *exact* symbol match, no =derived-mode-p=. An AUCTeX
    buffer's mode is =LaTeX-mode=, so Doom's =:editor fold= entry, keyed =latex-mode=, could
@@ -526,7 +556,7 @@ grep -n -iP "(?<!mes)sage" ~/.config/doom/config.el ~/.config/doom/packages.el
 #+end_src
 
 ** Hydra menus draw their own table — stop hand-padding the hint
-The two LaTeX menus (=SPC m l=, texlab/LSP, and =SPC m ?=, discover) no longer carry a
+The two LaTeX menus (=SPC SPC l=, texlab/LSP, and =SPC SPC ?=, discover) no longer carry a
 hand-drawn ASCII grid. An *empty body string* plus a =:column= on each group's first head
 makes hydra build the table itself: =hydra--format-1= takes its =(string= docstring "")=
 branch (=hydra.el:787=), which hands over to =hydra--hint= (=:614=) →
@@ -562,7 +592,7 @@ table the echo area would show.
 (with-temp-buffer
   (use-local-map LaTeX-mode-map)
   (setq major-mode 'latex-mode)
-  (key-binding (kbd "SPC m e")))   ; => nil, for EVERY SPC m key
+  (key-binding (kbd "SPC SPC e")))   ; => nil, for EVERY SPC SPC key
 #+end_src
 This returns nil for bindings that demonstrably work. Doom installs localleader keys per
 *evil state* — =where-is-internal= reports them as =<normal-state> SPC SPC e=,
@@ -575,19 +605,19 @@ What works instead: =where-is-internal= with the mode's keymap as its KEYMAP arg
 already know is good as the control.
 
 ** A minor-mode keymap outranks the major-mode one
-=cdlatex-mode-map= bound =SPC m e= to =cdlatex-environment=, so any =SPC m e= added to
+=cdlatex-mode-map= bound =SPC SPC e= to =cdlatex-environment=, so any =SPC SPC e= added to
 =LaTeX-mode-map= would be shadowed in every buffer where =cdlatex-mode= is on — and
 invisibly, since the minor map is nowhere near the binding's source. When moving a
 localleader key across that boundary, unbind it on the minor map too (=:localleader "e" nil=
 in the =map!= block, the same shape as the backtick unbind just above it). That is what let
-=SPC m e= / =SPC m E= mean insert / change a LaTeX environment with no shadowing left to
+=SPC SPC e= / =SPC SPC E= mean insert / change a LaTeX environment with no shadowing left to
 reason about, with =brust-LaTeX-env-change= finally passing =t= explicitly instead of the
 broken =(not args)= that always inserted.
 
 ** pdf-tools: =pdf-sync-forward-search= has no autoload cookie
 =pdf-tools/lisp/pdf-sync.el:651= defines it, but the file's only =;;;###autoload= is on
 =pdf-sync-minor-mode= — so the symbol is *void* until something loads =pdf-sync=, which only
-happens when the first PDF buffer opens. A key bound to it (=SPC m ?= → =g=, "PDF follows
+happens when the first PDF buffer opens. A key bound to it (=SPC SPC ?= → =g=, "PDF follows
 this line") therefore signals =void-function= in a fresh session and works after the first
 view. Fixed with an explicit =(autoload 'pdf-sync-forward-search "pdf-sync" nil t)= next to
 the menu. A name that resolves is not a name that is *reachable*: check =fboundp= /
