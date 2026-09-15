@@ -57,7 +57,9 @@
        :editor
        (evil +everywhere)  ; come to the dark side, we have cookies
        file-templates      ; auto-snippets for empty files
-       ;; fold                ; (nigh) universal code folding
+       fold                ; (nigh) universal code folding: za/zc/zo, and
+                           ; hs-minor-mode is turned on only when a fold key
+                           ; is first used in a buffer (see CONFIG-NOTES)
        ;; format              ; automated prettiness
        ;; (format +onsave) ; automated prettiness
        ;;god               ; run Emacs commands without modifier keys

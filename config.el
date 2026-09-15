@@ -1541,7 +1541,7 @@ See `org-capture-templates' for more information."
   ;; ::TODO Mirà que conecta el customize-map-.... de outline.
 
   ;; Doom stuff
-  (remove-hook 'TeX-mode-hook #'TeX-fold-mode)
+  (add-hook 'TeX-mode-hook #'TeX-fold-mode)
 
   ;; Settings
   ;; Config options
@@ -1624,49 +1624,6 @@ See `org-capture-templates' for more information."
       ;; this SPC SPC e would shadow the insert binding above. cdlatex's own
       ;; inserter keeps its entry in the SPC SPC ? menu.
       "e" nil)
-
-;; Folding. The keys are evil's own — za toggles, zc / zo close and open,
-;; zr / zm do the whole buffer — and `evil-fold-list' already routes them to
-;; hideshow whenever `hs-minor-mode' is on, so nothing is bound here. What was
-;; missing was the mode being on at all, plus rules that say what a fold is.
-;; Three things had to line up (2026-09-15, see CONFIG-NOTES):
-;;  - `hs-hide-all' and its siblings are wrapped in `hs-life-goes-on', so they
-;;    are no-ops unless `hs-minor-mode' is on — with the mode off, za looked
-;;    dead rather than misconfigured. Hence the hook, and hence where it sits:
-;;    registering a mode hook is one of the things that *loads* AUCTeX, so an
-;;    `after! latex' runs in the middle of the first .tex buffer's own
-;;    mode-hook run, and a hook added mid-run is not run for that buffer. The
-;;    first buffer of a session would stay unfolded. It has to be registered
-;;    before any .tex opens, which means top level, outside `after!'.
-;;  - hideshow looks its rules up with `assoc' on the *exact* major-mode symbol,
-;;    and an AUCTeX buffer's mode is `LaTeX-mode', not `latex-mode' — Doom's
-;;    `:editor fold' module (disabled here) keys its entry for the latter, so
-;;    turning that module on would not have folded these buffers either. The
-;;    same lookup bails out with "Mode doesn't support Hideshow" unless both
-;;    `comment-start' and `comment-end' are bound in the buffer.
-;;  - lsp-mode never hands its folding ranges to hideshow, whatever
-;;    `lsp-enable-folding' suggests: nothing in lsp-mode mentions hideshow at
-;;    all. texlab offers 15 ranges for a paper like mm.tex and every one goes
-;;    unused; these regexps decide what folds, not the server.
-(require 'hideshow)   ;; hideshow's only autoload cookie is on `hs-minor-mode'
-(add-hook 'LaTeX-mode-hook #'hs-minor-mode)
-(setq hs-special-modes-alist
-      (append
-       '((LaTeX-mode
-          ;; `LaTeX-find-matching-end' has to be called from inside the
-          ;; environment, hence the one-character submatch: the match ends just
-          ;; after `\begin{env}'.
-          ("\\\\begin{[a-zA-Z*]+}\\(\\)" 1)
-          "\\\\end{[a-zA-Z*]+}"
-          "%"
-          (lambda (_arg)
-            ;; never fold the whole document — that hides everything
-            (unless (save-excursion
-                      (search-backward "\\begin{document}"
-                                       (line-beginning-position) t))
-              (LaTeX-find-matching-end)))
-          nil))
-       hs-special-modes-alist))
 
 (after! latex
   (require 'hydra)     ;; `defhydra' below
@@ -1753,9 +1710,9 @@ through `dot' and open the SVG."
   ;; how the two keys that bite are flagged. Amaranth rather than red for those,
   ;; so that red keeps meaning exactly one thing.
   ;;
-  ;; No Fold column: folding is on evil's own keys now (za / zc / zo / zr / zm,
-  ;; see the folding block above), in this buffer and in .jl alike, so a menu
-  ;; copy of it would only teach a second way to do the same thing.
+  ;; No Fold column: folding is AUCTeX's TeX-fold-mode in these buffers (C-c C-o
+  ;; …, see above), plus za on a section heading via outline, so a menu column
+  ;; would only teach a third way to do the same thing.
   ;;
   ;; Display is lsp-mode's own UI switches, not texlab's. `lsp-lens-mode' and
   ;; the treemacs toggles are deliberately absent: treemacs is not installed
@@ -2141,19 +2098,24 @@ EXPLANATION STANDARDS:
   (ollama-buddy--set-system-prompt-with-metadata julia-ai-system-prompt "Julia (main) System" "programmer")
   )
 
-;; Folding, julia side. Same three conditions as the folding block in the LaTeX
-;; chapter, plus one of its own: a keyword-delimited language needs a
-;; FORWARD-SEXP function, because the default `forward-sexp' merely steps over
-;; the word `function' — which is why the one-line hideshow recipes for Julia
-;; fold nothing at all. Both ends anchor to `^[ \t]*' so that `A[end]', an index
-;; rather than a block, is not read as closing one.
+;; Folding, julia side. The keys are evil's own — za toggles, zc / zo close and
+;; open, zr / zm do the whole buffer — and Doom's `:editor fold' module (on since
+;; 2026-09-15, see init.el) remaps them to `+fold/*', which turns
+;; `hs-minor-mode' on in a buffer the first time a fold key is used there and
+;; never at buffer open. So no mode hook here, and nothing bound: what this block
+;; contributes is the rule that says what a fold is, plus the one thing a
+;; keyword-delimited language needs of its own — a FORWARD-SEXP function,
+;; because the default `forward-sexp' merely steps over the word `function',
+;; which is why the one-line hideshow recipes for Julia fold nothing at all.
+;; Both ends anchor to `^[ \t]*' so that `A[end]', an index rather than a block,
+;; is not read as closing one.
 ;;
-;; Outside `after! julia-repl' on purpose: registering the hook is one of the
-;; things that loads julia-repl, so an `after!' body would run in the middle of
-;; the first .jl buffer's own mode-hook run, and that buffer would stay unfolded
-;; (2026-09-15, CONFIG-NOTES).
+;; Top level rather than inside `after! julia-repl': rules set up in an `after!'
+;; would arrive after the first .jl buffer is already open, and the load order
+;; that bit us when a *hook* lived in one (2026-09-15, CONFIG-NOTES) is worth
+;; not repeating. LaTeX folding is AUCTeX's TeX-fold-mode instead — see that
+;; chapter; this is julia's alone.
 (require 'hideshow)
-(add-hook 'julia-mode-hook #'hs-minor-mode)
 
 (defun brust-julia-hs-forward-sexp (_arg)
   "Move past the julia block whose opening keyword starts on this line.

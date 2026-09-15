@@ -32,6 +32,12 @@ Both Fold columns were removed in the end. Their columns were a second way to do
 own =za= / =zc= / =zo= / =zr= / =zm= already do, once `hs-minor-mode' is on — and those keys
 work in a =.jl= and a =.tex= alike, which was the point.
 
+Where it settled, later the same day: LaTeX folds through AUCTeX's =TeX-fold-mode= instead
+(=C-c C-o= …), and hideshow serves Julia alone. The eager hook that briefly turned
+`hs-minor-mode' on in every buffer of both modes is gone — that was too much, too early — and
+Doom's =:editor fold= module now enables it on demand, in a buffer, the first time a fold key
+is used there. *Tricks* has the arrangement as it stands.
+
 ** 2026-09-15 — a mode hook added inside `after!' arrives too late for the first buffer
 The hook that was supposed to turn `hs-minor-mode' on lived in =(after! latex …)= /
 =(after! julia-repl …)=. It was *in* the hook variable — and the first buffer of each mode
@@ -287,22 +293,29 @@ Error when using the jinx speller (triggered by =jinx-languages= /
 
 * Tricks / maintenance recipes
 
-** 2026-09-15 — Folding: evil's keys, hideshow's rules, and no LSP anywhere in it
+** 2026-09-15 — Folding: evil's keys, Doom's module, hideshow's rules, no LSP anywhere
 The keys are evil's own, in normal state, and need no binding: =za= adds or removes the fold
 at point, =zc= / =zo= close and open one, =zO= opens recursively, =zr= / =zm= do the whole
-buffer (=evil-maps.el:87-92=). They dispatch through =evil-fold-list= (=evil-commands.el=),
-which already carries an entry for =hs-minor-mode= — routing to =hs-toggle-hiding=,
-=hs-hide-block=, =hs-show-block=, =hs-show-all=, =hs-hide-all= — and another for
-=outline-minor-mode=. So the real question is only whether `hs-minor-mode' is on and whether
-the buffer has a hideshow rule. Four things have to be true, and every one fails silently:
+buffer (=evil-maps.el:87-92=). What a keypress *runs*, though, is not evil's command: with
+=:editor fold= enabled (=init.el=, since 2026-09-15) evil's fold commands are remapped to
+Doom's =+fold/toggle= and friends, which prefer vimish-fold, then outline, then treesit, then
+hideshow, and which call =+fold--ensure-hideshow-mode= first — so `hs-minor-mode' comes on in a
+buffer the first time a fold key is used there, and never at buffer open. That is what replaced
+the eager =julia-mode-hook= this config carried for a few hours, and it is why no hook is
+needed now.
 
-1. *`hs-minor-mode' must be on, and its hook must be registered before the buffer opens.*
-   =hs-hide-all= and its siblings are wrapped in =hs-life-goes-on=, which is
-   =(when hs-minor-mode …)= — with the mode off the command returns without a message, which is
-   why folding read as broken rather than misconfigured. =(add-hook 'LaTeX-mode-hook
-   #'hs-minor-mode)=, likewise for =julia-mode-hook= — but *outside* any =after!=, or the hook
-   arrives during the first buffer's own mode-hook run and that buffer stays unfolded (see the
-   error entry above; this one cost a round of testing to find).
+So if the mode is not the question any more, the *rule* is, and three more things still have to
+be true. Every one of them fails silently:
+
+1. *A hideshow fold needs a rule for the buffer's mode.* =hs-hide-all= and its siblings are
+   wrapped in =hs-life-goes-on=, =(when hs-minor-mode …)= — called with the mode off they
+   return without a message, which is what made folding look broken rather than misconfigured
+   before the module was on. LaTeX does not rely on any of this: folding in those buffers is
+   AUCTeX's =TeX-fold-mode= (=add-hook 'TeX-mode-hook #'TeX-fold-mode= — =LaTeX-mode= runs that
+   hook as well, =latex.el:8419=), on the =C-c C-o= prefix: =C-o= dwim, =C-e= environment,
+   =C-m= macro, =C-s= section, =C-b= buffer, with lowercase =b= / =r= / =s= to unfold. =za= in
+   a .tex folds *sections* through outline, and off a heading it switches hs-minor-mode on and
+   folds nothing — harmless, but it is why the mode can turn up in a .tex you folded in.
 2. *The buffer must have an entry in `hs-special-modes-alist'.* =hs-grok-mode-type= looks it
    up with =(assoc major-mode …)= — an *exact* symbol match, no =derived-mode-p=. An AUCTeX
    buffer's mode is =LaTeX-mode=, so Doom's =:editor fold= entry, keyed =latex-mode=, could
@@ -322,7 +335,7 @@ the buffer has a hideshow rule. Four things have to be true, and every one fails
    a block, is not counted as one; verified with =function= at 1 folding 1→9, the inner =for=
    folding 3→5 and the inner =if= folding 6→8, with =x[end]= sitting in the middle of the first.
 
-Two traps met while writing this:
+Four traps met while writing this:
 
 - =#'foo= inside a *quoted* alist entry is data: ='((julia-mode … #'brust-julia-hs-forward-sexp
   nil))= hands hideshow the list =(function brust-julia-hs-forward-sexp)=, and folding signals
@@ -332,6 +345,16 @@ Two traps met while writing this:
   overlay, and =nil= when it does not fold. Reading it as an overlay gives
   =Wrong type argument: overlayp= on a fold that in fact happened; collect
   =(overlays-in (point-min) (point-max))= and filter on the =hs= overlay property instead.
+- *A remap only happens in the command loop.* With =:editor fold= on, =za= runs
+  =+fold/toggle=; but calling =(evil-toggle-fold)= as a *function* — from a probe, or from
+  =M-x evil-toggle-fold= — goes straight to evil's own command, which consults
+  =evil-fold-list= itself and, with no fold mode active, dies with "Enable one of the following
+  modes for folding to work: …". That is a different code path, and an earlier check of mine
+  measured it and drew the wrong conclusion about the module. Test the key path
+  (=(funcall '+fold/toggle)=) if you want to know what =za= does.
+- *`hs-minor-mode' is buffer-local*, so reading it without =(with-current-buffer BUF …)=
+  reports nil from whatever buffer happens to be current — which is exactly how a verified
+  "the hook did not fire" reading was produced from a buffer where it would have said ON.
 
 Checking a fold instead of eyeballing it: ask the server for its own numbers and compare what
 ends up hidden —
