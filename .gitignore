@@ -6,6 +6,7 @@
 /local/session.*
 /local/tramp
 /CLAUDE.md
+/.claude/
 /local/emojis/
 /local/projectile-frecency.eld
 /custom.el
