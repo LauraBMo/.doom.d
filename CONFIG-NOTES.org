@@ -8,6 +8,50 @@ entries concrete: what happened, why, and how to repeat the fix.
 
 * Errors fixed
 
+** 2026-09-25 — the ispell-then-abbrev helper was dead code; ported to jinx
+=*** TODO Endless ispell & abbrev= in =config.org= was parked (=:tangle no=) and its =l i=
+hydra head commented out: the port of endlessparentheses' "Ispell and abbrev" ran on =flyspell=
+overlays and =ispell-get-word=, and this config spells with =jinx= now (=global-jinx-mode=,
+=ispell-word= remapped to =jinx-correct=). Ported and un-parked; the head is
+=:desc "jinx & abbrev" "i" #'brust-jinx-word-then-abbrev=.
+
+What it does, and the three jinx internals it stands on — all verified by reading
+=jinx.el=, none of them public API, so a jinx upgrade that renames them breaks this *loudly*
+(a void-function) rather than quietly:
+- misspellings are the overlays jinx tags with 'category =jinx-overlay= (=jinx.el:525=), and
+  =jinx--get-overlays= (=:531=) returns them already rotated to start at point;
+- =jinx--bounds-of-word= (=:869=) is the word at point, where the original used
+  =ispell-get-word=;
+- =jinx--correct-overlay= (=:784=) corrects one overlay and **returns nil either way** — so
+  "was it corrected?" has to be read off the text. The *public* =jinx-correct-word= (=:1093=)
+  loops to the next word, which is why it is the wrong tool here: after it, there is no telling
+  which word the abbrev should be taught.
+Also of note: =jinx--correct-guard= kills jinx's re-check timer for the duration, so the overlay
+list cannot go stale mid-loop, and it turns =jinx-mode= on in the buffer if it was off.
+
+The abbrev is the point of the whole thing — it makes the typo fix itself from then on — and it
+is engine-agnostic: =abbrev-mode= is on by default here and =save-abbrevs 'silently= with
+=abbrev-file-name= → =~/Dropbox/config/abbrev-def.el= (=config.org=, above the block) already
+handled persistence.
+
+- *Verified* (2026-09-25) in a live session, on a displayed temp buffer (jinx only checks the
+  window's visible text, so an undisplayed buffer finds nothing and reports "no misspelled word"
+  — that cost one confusing run). With only =completing-read= stubbed and a throwaway abbrev
+  table: two typos, answer the first unchanged → it is skipped and *not* taught; answer the
+  second → the text is corrected and =brownn= → =brown= is defined, locally for a prefix arg and
+  globally otherwise. Nothing misspelled signals an error and defines nothing — with jinx's own
+  "No misspelled word in visible text", which surfaces before this command's own message.
+- *Trap that cost two rounds, worth repeating:* writing this block by hand, the outer =let= was
+  closed one paren early. The *count* was then balanced by luck, so =read= returned a complete
+  form and only the "next form" check showed a stray paren; after trimming it, the *nesting* was
+  still wrong and the command died with =void-variable fix=. Paren counting by eye is not a
+  check. What catches it is reading the form and asserting its *shape* — outer =after!=, two
+  =defun=s, body =(docstring interactive let)=, let body =(save-excursion unless define-abbrev
+  message)= — which is also how the block was finally written: into a scratch file, checked
+  structurally in =emacs -Q --batch=, then spliced in whole rather than patched. A splice that
+  inserts at =line-end-position= also put =(after! jinx= on the =#+BEGIN_SRC elisp= line, which
+  shifted every form that was then read from there — grep for the merged line, not for the fix.
+
 ** 2026-09-25 — a click on the Doom dashboard split the frame
 Asked for straight after the entry below, and the same branch of the same rule at fault.
 

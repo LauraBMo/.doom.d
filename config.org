@@ -1407,7 +1407,7 @@ From the PDF specification 1.7:
    :desc "code screenshot"   "p"    #'screenshot
    :desc "visual rx replace" "%"    #'vr/query-replace
    :desc "macro insert str"  "<f3>" #'kmacro-query-my
-   ;; :desc "ispell & abbrev"   "i"    #'endless/ispell-word-then-abbrev
+   :desc "jinx & abbrev"     "i"    #'brust-jinx-word-then-abbrev
    "1" #'zoom-out ;; enlarge font
    "2" #'zoom-in ;; reduce font
    ))
@@ -4639,66 +4639,60 @@ No need since loading python with +conda in init.el.
 (add-hook 'emacs-startup-hook #'quietly-read-abbrev-file)
 #+END_SRC
 
-*** TODO Endless ispell & abbrev
-It comes from [[http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html][Ispell and abbrev]], to find the misspelled work plain =ispell= is used, I adapted it to use =flyspell=, now I just get words which are underlined as misspelled (red curvi line under the word).
-That's useful in TeX files where plain ispell has many false misspellings, but it could be a problem on buffers without =flyspell= minormode.
-#+BEGIN_SRC elisp :tangle no
-(defun endless/simple-get-word ()
-  (car-safe (save-excursion (ispell-get-word nil))))
+*** Jinx and abbrev: correct a typo, and teach abbrev to fix it from then on
+It comes from [[http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html][Ispell and abbrev]], ported to =jinx=, which is the speller here: the candidates are jinx's own overlays — exactly the words it underlines — and jinx's completion menu does the correcting. The point is the abbrev: =abbrev-mode= is on and this config saves abbrevs (=save-abbrevs 'silently=, and =abbrev-file-name= points at =~/Dropbox/config/abbrev-def.el= when that file exists, which it does), so teaching it the typo means that word corrects itself from then on, not just this once.
+With a prefix argument the abbrev is local to the buffer, otherwise global. Submitting a word unchanged skips it and moves on to the next misspelling in the window; =C-g= aborts.
 
-(defun endless/ispell-word-then-abbrev (p)
-  "Call `ispell-word', then create an abbrev for it.
-  With prefix P, create local abbrev. Otherwise it will
-  be global.
-  If there's nothing wrong with the word at point, keep
-  looking for a typo until the beginning of buffer. You can
-  skip typos you don't want to fix with `SPC', and you can
-  abort completely with `C-g'."
-  (interactive "P")
+#+BEGIN_SRC elisp
+(after! jinx
+  (defun brust-jinx--correct-to-abbrev (ov)
+    "Correct the misspelled word given by overlay OV.
+Return (TYPO . FIX) when the text changed, nil otherwise.  TYPO and FIX are
+downcased, so they work as abbrev name and expansion."
+    (let ((start (overlay-start ov))
+          (end (overlay-end ov)))
+      (when (and start end (overlay-buffer ov) (> end start))
+        (let ((word (buffer-substring-no-properties start end))
+              now)
+          ;; One word per call, deliberately.  `jinx--correct-overlay' corrects
+          ;; OV and returns nil either way, so "was it corrected?" has to be read
+          ;; off the text -- and the public `jinx-correct-word' would advance to
+          ;; the next word instead, after which there is no telling which word
+          ;; the abbrev should be taught.  It is an internal: if jinx ever
+          ;; renames it, this breaks loudly instead of quietly doing the wrong
+          ;; thing.
+          (jinx--correct-overlay ov)
+          (setq now (save-excursion (goto-char start) (jinx--bounds-of-word)))
+          (when (and now
+                     (not (equal (buffer-substring-no-properties (car now) (cdr now))
+                                 word)))
+            (cons (downcase word)
+                  (downcase (buffer-substring-no-properties (car now) (cdr now)))))))))
 
-  (let ((top (window-start))
-        (bot (window-end))
-        (position (point))
-        incorrect-word-pos
-        position-at-incorrect-word
-        bef aft)
-    (save-excursion
-      (save-restriction
-        ;; make sure that word under point is checked first
-        (forward-word)
+  (defun brust-jinx-word-then-abbrev (p)
+    "Correct a misspelled word, then teach abbrev the typo it came from.
+With prefix P the abbrev is local to this buffer, otherwise global.
 
-        ;; narrow the region
-        (narrow-to-region top bot)
-        (overlay-recenter (point))
-
-        (let ((overlay-list (overlays-in (point-min) (+ position 1)))
-              (overlay 'dummy-value))
-
-          (while overlay
-            (setq overlay (car-safe overlay-list))
-            (setq overlay-list (cdr-safe overlay-list))
-            (when (and overlay
-                       (flyspell-overlay-p overlay))
-              (setq incorrect-word-pos (overlay-start overlay))
-
-              ;; try to correct word
-              (save-excursion
-                (goto-char incorrect-word-pos)
-                (setq bef (endless/simple-get-word))
-                ;; `flyspell-correct-at-point' returns t when there is
-                ;; nothing to correct. In such case we just skip current word.
-                (unless (flyspell-correct-at-point)
-                  (setq overlay nil)
-                  (setq aft (endless/simple-get-word)))))))))
-    (if (and aft bef (not (equal aft bef)))
-        (let ((aft (downcase aft))
-              (bef (downcase bef)))
-          (define-abbrev
-            (if p local-abbrev-table global-abbrev-table)
-            bef aft)
-          (message "\"%s\" now expands to \"%s\" %sally"
-                   bef aft (if p "loc" "glob")))
-      (user-error "No typo at or before point"))))
+Misspellings come from jinx's own overlays, in the window, starting at or after
+point; jinx's menu does the correcting, and submitting a word unchanged skips it
+and moves on to the next one.  C-g aborts.  Once a word has been corrected, the
+abbrev makes that typo expand to the correction from then on."
+    (interactive "P")
+    (let ((overlays (jinx--force-overlays (window-start) (window-end) t))
+          pair seen)
+      (save-excursion
+        (jinx--correct-guard
+         (while (and overlays (null pair))
+           (setq seen t)
+           (setq pair (brust-jinx--correct-to-abbrev (pop overlays))))))
+      (unless pair
+        (user-error "%s" (if seen
+                             "No typo corrected"
+                           "No misspelled word in this window")))
+      (define-abbrev (if p local-abbrev-table global-abbrev-table)
+        (car pair) (cdr pair))
+      (message "\"%s\" now expands to \"%s\" %sally"
+               (car pair) (cdr pair) (if p "loc" "glob")))))
 #+END_SRC
 
 ** Auto revert
