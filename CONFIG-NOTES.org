@@ -52,83 +52,40 @@ handled persistence.
   inserts at =line-end-position= also put =(after! jinx= on the =#+BEGIN_SRC elisp= line, which
   shifted every form that was then read from there — grep for the merged line, not for the fix.
 
-** 2026-09-25 — a click on the Doom dashboard split the frame
-Asked for straight after the entry below, and the same branch of the same rule at fault.
+** 2026-09-25 — the window rule asks what is being *read*; the two doors are gone
+Supersedes the two entries this replaces: a =*helpful*= link and a Doom-dashboard click each split
+a single-window frame, and each was answered with a *door* — =display-buffer-overriding-action=
+bound around one specific call. Both doors, and everything holding them up, are removed; the rule
+itself now knows about reading.
 
-- *What happened.* The dashboard is shown in a lone window (it is the startup screen), so a
-  click on one of its items — "Open private configuration" is =find-file= on =config.org=,
-  "Open my org" the same for =my.org= — hit the policy's "frame has a single window" branch
-  and split the frame, leaving the dashboard in the pane beside the file. Measured in the
-  live session: one window showing =*doom*= became =*doom*= | =config.org=.
-- *Fix* (=config.org=, the door beside the helpful one): a click asks for the thing it names,
-  so that should fill the window the dashboard is in. Doom's =+dashboard-mode-map= remaps
-  =push-button= to =+dashboard/push-button=, so every activation -- mouse or =RET=, the
-  button's own keymap binding included -- lands there; =my/dashboard-click-in-place= is
-  =:around= advice on it, binding =display-buffer-overriding-action= to the same
-  =my/in-place-display-action= the helpful links use. No new alist entry: the condition would
-  have to be "the *selected* window is the dashboard", which a rule cannot express (its
-  condition matches the *target* buffer), and a second catch-all entry would shadow the
-  policy's — only the first matching entry is used.
-- *Verified* (2026-09-25). Batch, =D1-D5= in =local/tests/window-policy-test.el=: the advice
-  is installed; a =find-file= from a lone =+dashboard-mode= window splits (control, =D2=); the
-  same through the door fills that window (=D3=); with a second pane open, the dashboard's own
-  pane takes the target and the pane beside it is untouched (=D4=); a target already on screen
-  in the other pane is reused, not duplicated (=D5=). The real dashboard needs Doom, so those
-  drive the door on a stand-in buffer; the remap and the click itself were checked live
-  instead: =(command-remapping 'push-button)= in =*doom*= → =+dashboard/push-button=, and
-  pushing "Open private configuration" through it took the frame from =("*doom*")= to
-  =("config.org")= — one window, no split.
-- *Accepted, not covered:* with the dashboard in a split frame, "whole window" is its own
-  pane, not the frame — the pane beside it survives (=D4=). The dashboard is normally the
-  whole frame anyway (=+dashboard/open=, the only other way to it, has no keybinding), and
-  taking the frame would destroy whatever was beside it.
-- *Trick worth keeping:* =advice-add= on a symbol that is only *autoloaded* at the time — which
-  is what =+dashboard/push-button= is when =config.el= runs — survives the real definition, so
-  the dashboard module needs no =with-eval-after-load= wrapper (measured in =emacs -Q=).
-
-** 2026-09-25 — a link in a =*helpful*= buffer split the frame; a dedicated pane let a third window through
-Two holes in the window policy of the entry below, both found by testing rather than reading.
-
-- *Helpful split a single-window frame.* Built-in =help-mode= keeps one =*Help*= buffer and
-  reuses it, so following a link never opens a window. Helpful makes a new buffer per symbol
-  (=*helpful function: car*=, but =*helpful command: helpful-callable*= for a command), so
-  =display-buffer-reuse-window= finds nothing to reuse, the "frame has a single window"
-  branch of the policy fires, and every link click in a lone help buffer split the frame.
-- *Fix* (=config.org=, right below the policy): a link followed from a helpful buffer is
-  shown where the help being read is. =helpful-switch-buffer-function= is set to
-  =my/helpful-in-place= — helpful's one door for symbol links, which Doom's
-  =+emacs-lisp/helpful-next/previous= also use — and =my/helpful-navigate-in-place= is
-  =:around= advice on =helpful--navigate= for the "defined in foo.el" links. Both wrap
-  =pop-to-buffer= in a =let= binding =display-buffer-overriding-action= to
-  =((display-buffer-reuse-window display-buffer-same-window))=: an overriding action beats
-  =display-buffer-alist=, which is the whole point, and reuse-first leaves a target that is
-  already on screen where it is. That action is nil when the selected window is not a
-  helpful one (=C-h f= from a source file, or a pane pinned with =window-dedicated-p=), so
-  those keep the plain =pop-to-buffer= and the policy.
-  - The value is written =((fn1 fn2))= — a *list* of functions. A bare =(fn1 fn2)= has its
-    =car= read as a single function and silently drops the second one.
-  - Wired to helpful's two doors only, so a buffer arriving from anywhere else (REPL,
-    compilation, Claude Code) keeps obeying the policy whatever is in the pane.
-- *The dedicated-pane hole was in the policy itself.* When the *selected* window is
-  dedicated, every branch of =my/display-buffer-max-two-windows= declined, the function
-  returned nil, and nil hands the buffer to the default chain — whose first useful step,
-  =display-buffer--maybe-pop-up-frame-or-window=, splits a THIRD window. A =free= binding
-  (first window in the frame not dedicated to its buffer) now catches that case and the
-  other pane takes the buffer, so "dedicated windows are never written into" holds for the
-  selected one too.
-- *Verified* (2026-09-25): =local/tests/window-policy-test.el=, 26 checks, all pass, ~1s,
-  exit code = verdict. Cases 1-8 are the policy, =5b= is the dedicated selected pane,
-  =H1-H6= drive the *real* helpful — =helpful-callable= as its button action calls it, and a
-  real "defined in" button pushed with =push-button=, and =D1-D5= are the dashboard door
-  (entry above). Covered: help opened from a source
-  file (splits, by policy), a symbol link in place, help *alone* in a frame (stays one
-  window), the file link in place, a dedicated help pane left untouched, and an unrelated
-  buffer in both geometries. The harness caught two wrong assumptions of its own while being
-  written — =helpful-callable= is a command, so its buffer is =*helpful command: …*=, and the
-  first save-verification of the entry under *Tricks* was a no-op.
-- *Not covered:* when *every* window of the frame is dedicated there is nowhere legal to put
-  the buffer and the default chain still decides (a frame of side windows only, say), so
-  "never three windows" holds only while a free pane exists.
+- *Why doors were needed at all:* the policy is a match-all entry at the top of
+  =display-buffer-alist=, which outranks even the action a caller passes explicitly, so "the same
+  window please" from =find-file= went unheard and every case wanting it back needed an escape hatch
+  *plus* a way to decide when it applied — two =defconst=s, five =defun=s, an =with-eval-after-load=
+  and two advices. The action order itself is in *Tricks*.
+- *What replaced it.* The rule asks about the **selected window's buffer**: a buffer in
+  =my/in-place-modes= (helpful, =brust-julia-doc-mode=, =+dashboard-mode=) takes the pane it was asked
+  from instead of the pane beside it; =my/in-place-window-p= is that test, and it keeps the old guard
+  that a *dedicated* selected window is never written into. One question, the same for all three
+  callers, so nothing else is needed: =helpful-switch-buffer-function= is back to its own default
+  =#'pop-to-buffer= (=helpful.el:135=), =helpful--navigate= and =+dashboard/push-button= are
+  unadvised, and the four Julia call sites call plain =pop-to-buffer= again.
+- *The cost, accepted, and now a case of its own:* the trigger is "documentation is being read here",
+  not "the call came through this door", so a buffer arriving while the docs sit in the *left* pane
+  takes **that** pane rather than the one beside it (=H6b=). Where the docs are rightmost nothing
+  widened — the policy took that pane anyway.
+- *Verified* (2026-09-25), three ways: =local/tests/window-policy-test.el=, 26 checks, all pass
+  (1-8 the policy, =5b= the dedicated selected pane, =H1-H7= the real helpful, =D1-D4= the
+  dashboard's =find-file=); =local/tests/julia-doc-test.el= passes and no longer reads the policy
+  block at all; and a *freshly started* Emacs
+  (=~/.claude/test-scripts/-home-laury--config-doom/fresh-window-policy.sh=) passes 13 checks against
+  the loaded config on a real frame — including that the catch-all is still first in
+  =display-buffer-alist= once every Doom module has had its say.
+- *Not covered:* the real dashboard buffer — the harness stands in for it with =+dashboard-mode= on
+  another buffer, so "the dashboard's own buffer carries that mode" is read by eye. What was measured
+  live instead is that both modes are real: =(get '+dashboard-mode 'derived-mode-parent)= →
+  =special-mode=, and the same for =brust-julia-doc-mode=. And with *every* window of the frame
+  dedicated there is nowhere legal to put the buffer, so the default chain decides.
 
 ** 2026-09-15 — =SPC SPC .= in =.jl= buffers pointed at =+lsp!=, which does not exist
 The julia binding block had =:desc "Start eglot server" "." #'+lsp!=. Doom's function is
@@ -415,6 +372,24 @@ Error when using the jinx speller (triggered by =jinx-languages= /
 
 * Tricks / maintenance recipes
 
+** 2026-09-25 — what a match-all =display-buffer-alist= entry outranks
+=display-buffer= tries its actions in this order (=window.el:7924=):
+=display-buffer-overriding-action=, the matching =display-buffer-alist= entry,
+=display-buffer--special-action=, *the ACTION argument the caller passed*, then
+=display-buffer-base-action= and =display-buffer-fallback-action=. So a match-all entry at the top of
+the alist beats even =find-file=, whose "same window" arrives as that ACTION argument through
+=pop-to-buffer-same-window= — which is why the window policy's exceptions used to need
+=display-buffer-overriding-action= around each caller. What covers all of them instead is asking the
+rule about the *selected window's buffer*: the source buffer is current and selected when a click or
+a link displays something (=window-normalize-buffer-to-switch-to= does not =set-buffer=,
+=window.el:9013=), so "what is being read here" is answerable from inside the rule.
+
+- The same function in =display-buffer-base-action= would leave every explicit wish alone — the
+  caller's action *and* every other alist rule — the better seam when the policy is a default rather
+  than the law. Not used here because it applies only where nobody else has an opinion, so anything
+  displaying itself with a plain =pop-to-buffer= (a REPL, the dashboard's agenda and mail items)
+  would still need a door.
+
 ** 2026-09-25 — custom.el is transient here: a detector, and a skill that folds it back in
 Settings in this config live in =config.org=, but Emacs has its own place to put them:
 Customize's saves, and the =safe-local-variable-values= pairs appended when you answer =!= at a
@@ -657,6 +632,9 @@ split only when the frame has a single window.
   selected, buffer already visible, dedicated other pane, caller's =inhibit-same-window=,
   and no room to split. All pass; a third window never appears (window count asserted in
   every case). Live: new Claude session lands right, a second one replaces it in that pane.
+  - *The next day:* the same cases are still there and still pass, in a harness that now has 26
+    checks — the rule grew the reading case, and the doors that had been added on top of it were
+    removed again. See the 2026-09-25 entry at the top of this section.
 - *Correction to the entry above:* "on a frame too narrow to split, Emacs reuses an existing
   window" is true only with *two or more* windows. With a *sole* window,
   =split-window-sensibly= has a third branch — "if WINDOW is the only usable window on its
@@ -701,6 +679,12 @@ It prints "Restart Emacs for changes to take effect". A running Emacs keeps the 
 code until you restart or run =M-x doom/reload=. Verify a fix against the rebuilt
 =.elc= under =build-30.2/= (or the current Emacs version's build dir), not just the
 repo source.
+
+- *The user config is not one of those =.elc= files* (measured 2026-09-25): =find ~/.config/emacs
+  -name config.elc= finds nothing. The straight build dir holds one directory per *package*, none
+  for =$DOOMDIR/config.el=, which Doom loads as source — so an edit to =config.org= reaches a running
+  Emacs only through =doom/reload= or a restart, and there is no stale bytecode to suspect when a
+  change does not show up.
 
 ** Doom 2.2 moved the module library — dashboard renames
 After the 2026-09-14 update (doom =v2.2.4=), the module library no longer lives in

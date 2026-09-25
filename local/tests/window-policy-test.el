@@ -4,34 +4,32 @@
 ;;
 ;; Exit code is the verdict: 0 = every case passed, 1 = something failed.
 ;;
-;; WHAT IT CHECKS, both from config.org, section "Evil mode >> Settings":
+;; WHAT IT CHECKS, both from config.org, section "Change a few defaults >> Window
+;; display":
 ;;
 ;;   1. `my/display-buffer-max-two-windows' itself -- which pane a new buffer
 ;;      lands in, and that a THIRD window never appears;
-;;   2. following a link inside a *helpful* buffer -- a symbol link and a
-;;      "defined in foo.el" link both land in the window the help being read is
-;;      in, so a single-window frame is not split, and the dedicated-window and
-;;      unrelated-buffer paths still behave;
-;;   3. clicking an item on the Doom dashboard -- what it opens fills the window
-;;      the dashboard is in instead of splitting the frame. The real dashboard
-;;      needs Doom, so that section drives the door the config installs (and
-;;      asserts it is installed) on a stand-in buffer in `+dashboard-mode'; the
-;;      `push-button' remap that reaches that door, and a real click, are
-;;      checked in a live session (see CONFIG-NOTES.org).
+;;   2. the one exception to it: a buffer being *read* -- `my/in-place-modes',
+;;      helpful, the Julia doc buffers and the Doom dashboard -- takes the window
+;;      it was asked from instead of the pane beside it. A case for each of the
+;;      three: both kinds of link followed in a real helpful buffer, a stand-in in
+;;      `brust-julia-doc-mode', and the `find-file' a dashboard click runs (the
+;;      real dashboard needs Doom, so its clicks are driven on a stand-in buffer
+;;      in `+dashboard-mode');
+;;   3. and that the exception is scoped to reading: an unrelated buffer landing
+;;      while documentation is selected obeys the policy instead.
 ;;
 ;; HOW THE CODE GETS HERE.  The forms are read out of config.org -- no copy, so
-;; this tests the bytes you will tangle -- and evaluated in this process.  Each
-;; form is also checked against the one expected next: an unbalanced `defun'
-;; makes `read' swallow whatever follows, so the block would still "work" while
-;; quietly losing the `add-to-list' (that happened once; see CONFIG-NOTES.org).
+;; this tests the bytes you will tangle -- and each is checked against the one
+;; expected next: an unbalanced `defun' makes `read' swallow what follows, so the
+;; block would still "work" while quietly losing the `add-to-list' (that happened
+;; once; see CONFIG-NOTES.org).
 ;;
-;; The helpful cases run the REAL helpful package -- a symbol link's button
-;; action is `helpful-callable', and a file link's is `helpful--navigate' -- so
-;; Doom's straight build directory goes on `load-path' and this file needs a
-;; Doom install to run.  It is not standalone.  Helpful names its buffers
-;; itself -- "*helpful function: car*", but "*helpful command: ...*" for a
-;; command -- so where the name is not certain a case picks the buffer up from
-;; the window instead.
+;; The helpful cases run the REAL helpful package, so Doom's straight build
+;; directory goes on `load-path' and this file needs a Doom install to run; it is
+;; not standalone.  Helpful names its buffers itself ("*helpful function: car*",
+;; but "*helpful command: ...*" for a command), so where the name is not certain a
+;; case picks the buffer up from the window instead.
 ;;
 ;; Geometry: batch frames are 80 columns wide, so `split-width-threshold' 40
 ;; stands in for "there is room to split" and 1000 for "there is not".  Those
@@ -75,23 +73,17 @@
 ;;; The forms, straight out of config.org
 
 (defconst my/expected-forms
-  '((defun . my/display-buffer-max-two-windows)
-    (add-to-list . display-buffer-alist)
-    (defconst . my/in-place-display-action)
-    (defun . my/helpful-link-window-p)
-    (defun . my/helpful-in-place-action)
-    (defun . my/helpful-in-place)
-    (defun . my/helpful-navigate-in-place)
-    (with-eval-after-load . helpful)
-    (defun . my/dashboard-click-in-place)
-    (advice-add . +dashboard/push-button))
+  '((defconst . my/in-place-modes)
+    (defun . my/in-place-window-p)
+    (defun . my/display-buffer-max-two-windows)
+    (add-to-list . display-buffer-alist))
   "Forms expected in config.org, in order, as (HEAD . NAME).")
 
 (defun my/form-name (form)
   "The name FORM introduces, for `my/expected-forms'; nil if it is not one of them."
   (pcase (car-safe form)
     ((or 'defun 'defconst) (nth 1 form))
-    ((or 'add-to-list 'with-eval-after-load 'advice-add) (nth 1 (nth 1 form)))))
+    ('add-to-list (nth 1 (nth 1 form)))))
 
 (defun my/read-config-forms ()
   "Read and check every policy form in `my/config-org', in order."
@@ -100,8 +92,8 @@
     (with-temp-buffer
       (insert-file-contents my/config-org)
       (goto-char (point-min))
-      (unless (search-forward "(defun my/display-buffer-max-two-windows" nil t)
-        (error "%s: policy defun not found" my/config-org))
+      (unless (search-forward "(defconst my/in-place-modes" nil t)
+        (error "%s: policy block not found" my/config-org))
       (goto-char (match-beginning 0))
       (while expected
         (let* ((want (car expected))
@@ -128,13 +120,16 @@
     (setq my/test-failures (1+ my/test-failures))
     (princ (format "FAIL  %-38s expected %S, got %S\n" name expected got))))
 
-(defconst my/test-buffers '("*A*" "*B*" "*C*" "*source.el*")
+(defconst my/test-buffers '("*A*" "*B*" "*C*" "*source.el*" "*dash*" "*doc*")
   "Buffers the cases below display; reset (and emptied) before each one.")
 
 (defun my/reset-buffers ()
   "A clean slate: no dedicated windows and no leftover displayable buffer.
 A leftover *helpful* buffer would be found by `display-buffer-reuse-window'
-and quietly change the answer, so those go too."
+and quietly change the answer, so those go too.  The stand-in buffers get
+their major mode back too: two of the cases below put `+dashboard-mode' and
+`brust-julia-doc-mode' into one of `my/test-buffers', and a mode left behind
+would make the next case read as documentation."
   (dolist (w (window-list nil 'nomini))
     (set-window-dedicated-p w nil))
   (dolist (b (buffer-list))
@@ -145,6 +140,7 @@ and quietly change the answer, so those go too."
   (dolist (name my/test-buffers)
     (with-current-buffer (get-buffer-create name)
       (setq buffer-read-only nil)
+      (setq major-mode 'fundamental-mode)
       (erase-buffer))))
 
 (defun my/state ()
@@ -339,16 +335,20 @@ carrying a `path' property."
           '("*helpful function: cdr*" "*helpful function: car*" side-by-side 2)
           (my/state))
 
-;; H6. Scoped to helpful's own doors: a buffer arriving from anywhere else while
-;;     you read help obeys the policy, not the help rule.  Both geometries, so a
-;;     leak would show up either way -- in a, the help pane (rightmost, selected)
-;;     is taken over by the policy; in b, help is on the left and survives.
+;; H6. The exception is scoped by what is *read*, not by who asked -- the whole
+;;     difference from the doors it replaced.  An unrelated buffer arriving while
+;;     documentation is selected follows the exception; where the docs are
+;;     rightmost that is the pane the policy would have taken anyway, so only
+;;     the left-hand geometry shows the change.
 (my/one-window "*source.el*")
 (helpful-callable 'car)
 (display-buffer "*B*")
 (my/check "H6a unrelated buffer, help rightmost"
           '("*source.el*" "*B*" side-by-side 2) (my/state))
 
+;; H6b. The cost accepted with the simplification, stated as a case so it cannot
+;;      change unnoticed: help on the LEFT loses its own pane to the arriving
+;;      buffer instead of the pane beside it.
 (my/one-window "*source.el*")
 (helpful-callable 'car)
 (let* ((r (selected-window))
@@ -357,24 +357,34 @@ carrying a `path' property."
   (set-window-buffer r "*source.el*")
   (select-window l)
   (display-buffer "*B*")
-  (my/check "H6b unrelated buffer, help left selected"
-            '("*helpful function: car*" "*B*" side-by-side 2) (my/state)))
+  (my/check "H6b unrelated buffer, help left: takes its pane"
+            '("*B*" "*source.el*" side-by-side 2) (my/state)))
+
+;; H7. The third entry of `my/in-place-modes', and the reason no Julia code
+;;     binds anything for this any more: a doc buffer is the same question as a
+;;     helpful one.  Single window, which is where the split used to happen.
+(my/one-window "*source.el*")
+(let ((doc (get-buffer-create "*doc*")))
+  (with-current-buffer doc (setq major-mode 'brust-julia-doc-mode))
+  (set-window-buffer (selected-window) doc)
+  (display-buffer "*B*")
+  (my/check "H7 doc buffer, single window: stays one" '("*B*" single 1) (my/state)))
 
 ;;; 3. Clicking an item on the Doom dashboard
 
-;; The real dashboard needs Doom (the module, its icons, `doom-fallback-buffer'),
-;; so what is driven here is the *door* the config installs -- and an assertion
-;; that it is installed -- on a stand-in buffer in `+dashboard-mode'. The door
-;; is reached by the remap in `+dashboard-mode-map' whatever the click was; that
-;; remap, and the end-to-end click, are checked in the live session instead.
-
-(my/check "D1 wiring: advice on +dashboard/push-button"
-          t (and (advice-member-p #'my/dashboard-click-in-place
-                                  #'+dashboard/push-button)
-                 t))
+;; What a dashboard click runs is `find-file' on the file the item names ("Open
+;; private configuration" is config.org, "Open my org" is my.org), so unlike the
+;; helpful cases there is no door to stand in for: the file and the rule are the
+;; whole story, and what the click adds -- `+dashboard/push-button', reached by
+;; the remap in `+dashboard-mode-map' -- only decides that `find-file' is what
+;; runs.  The real dashboard needs Doom (the module, its icons,
+;; `doom-fallback-buffer'), so these drive a stand-in buffer in
+;; `+dashboard-mode', which is a real `define-derived-mode' from `special-mode'
+;; (doom+/modules/ui/dashboard/config.el), so `derived-mode-p' answers about it
+;; the way it will in a live session.
 
 (defun my/dash-window (buf)
-  "A sole window showing BUF, pretending to be the dashboard."
+  "A sole window showing BUF, standing in for the dashboard."
   (my/one-window buf)
   (with-current-buffer buf (setq-local major-mode '+dashboard-mode))
   buf)
@@ -384,31 +394,33 @@ carrying a `path' property."
   (my/two-windows "*dash*" other)
   (with-current-buffer "*dash*" (setq-local major-mode '+dashboard-mode)))
 
-;; D2. Control, no door: a `find-file' from a lone window splits the frame and
-;;     leaves the dashboard beside the file. This is the complaint.
+;; D1. The complaint: a click on a dashboard that fills the frame. The file
+;;     takes the window whole -- no split, and no dashboard left beside it.
 (my/dash-window "*dash*")
 (find-file "helpful.el")
-(my/check "D2 control: a lone window splits"
-          '("*dash*" "helpful.el" side-by-side 2) (my/state))
+(my/check "D1 click on a lone dashboard" '("helpful.el" single 1) (my/state))
 
-;; D3. The door: the same click, and the file fills the window instead.
-(my/dash-window "*dash*")
-(my/dashboard-click-in-place (lambda () (find-file "helpful.el")))
-(my/check "D3 click on the dash: whole window" '("helpful.el" single 1) (my/state))
-
-;; D4. With a second pane open, the dashboard's own pane takes the target (the
-;;     pane beside it is left alone) -- "whole window" when the dashboard fills
-;;     the frame, which is the usual way it is shown.
+;; D2. With a second pane open, the dashboard's own pane takes the target and
+;;     the pane beside it is left alone.
 (my/dash-two-windows "*source.el*")
-(my/dashboard-click-in-place (lambda () (find-file "helpful.el")))
-(my/check "D4 second pane open: in place"
+(find-file "helpful.el")
+(my/check "D2 second pane open: in place"
           '("helpful.el" "*source.el*" side-by-side 2) (my/state))
 
-;; D5. A target that is already on screen in the other pane is reused, not
+;; D3. A target that is already on screen in the other pane is reused, not
 ;;     duplicated, and not moved.
 (my/dash-two-windows "*B*")
-(my/dashboard-click-in-place (lambda () (pop-to-buffer "*B*")))
-(my/check "D5 target already visible: reused" '("*dash*" "*B*" side-by-side 2) (my/state))
+(pop-to-buffer "*B*")
+(my/check "D3 target already visible: reused"
+          '("*dash*" "*B*" side-by-side 2) (my/state))
+
+;; D4. The accepted cost in its dashboard form: the dashboard is normally the
+;;     whole frame, so a buffer arriving from elsewhere takes it. Same answer as
+;;     D1, from the same rule.
+(my/dash-window "*dash*")
+(display-buffer "*B*")
+(my/check "D4 unrelated buffer, dashboard selected"
+          '("*B*" single 1) (my/state))
 
 ;;; Verdict
 
