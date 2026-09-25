@@ -1,14 +1,6 @@
 #-*- mode: org -*-
 #+TITLE: Main config file
 #+STARTUP: overview
-# Default tangle target: without this line a plain '#+begin_src elisp' block has no
-# target (org's ':tangle' default is 'no') and is silently dropped when tangling.
-# Blocks with their own ':tangle packages.el' / ':tangle no' still win over it.
-# Tangling, all three ways round (CONFIG-NOTES has the evidence): 'doom sync' tangles
-# this file first, from 'doom-before-sync-hook' (bin/doom-sync:107; '--reload' skips
-# it); saving any .org in this directory retangles in the background; and
-# 'M-x org-babel-tangle' in this buffer does it now. config.el is generated, so git
-# does not track it: a fresh clone gets it from its first 'doom sync'.
 #+PROPERTY: header-args :tangle config.el
 
 #+begin_quote
@@ -417,9 +409,9 @@ good ten seconds to do by hand.
 ;; makes that one rule with no advice and no overriding action; the cost accepted
 ;; is that a buffer arriving while documentation sits in the *left* pane takes
 ;; that pane rather than the right one.
-(defconst my/in-place-modes '(helpful-mode brust-julia-doc-mode +dashboard-mode)
+(defconst my/in-place-modes '(helpful-mode julia-help-mode +dashboard-mode)
   "Buffers that are read, not worked in.
-Documentation (elisp's from `helpful', Julia's from `brust-julia-doc-mode') and
+Documentation (elisp's from `helpful', Julia's from `julia-help-mode') and
 the Doom dashboard: what is asked for from one of these takes the window it was
 asked from instead of the pane beside it.  A mode named here that is not loaded
 yet is harmless -- `derived-mode-p' simply never matches it.")
@@ -4016,385 +4008,31 @@ buffer rather than signalling."
 *** TODO EmacsVTerm
 From [[https://github.com/wentasah/EmacsVterm.jl][EmacsVTerm.jl]]; Modify it so docs are shown into helpful.el buffer with helpful bindings and clicable links...
 
-The docs arrive as HTML, and it is not EmacsVterm.jl that renders them badly.
-EmacsVterm.jl turns the Julia =Markdown.MD= into HTML and base64s it down a
-vterm escape; =julia-repl--show= -- which lives in =julia-repl.el=, not in
-EmacsVterm.jl -- is what drops it into a plain buffer with =shr-render-region=
-and =view-mode=. So the rendering half is ours to change, and the Julia half
-need only start sending more than the HTML.
+The Emacs half of this lives in its own repo now, [[file:~/src/julia-help.el/][julia-help.el]], so the Julia side can point
+at something shareable.  Julia's =@doc= opens a buffer of its own --
+=*julia-help: sin*= -- holding the binding, the defining module, the
+signature, a =Methods= table whose rows open the source, and docstring
+cross-references that are buttons.
 
-The buffer is per symbol (=*julia-doc: sin*=), rebuilt from a JSON payload that
-carries the docstring's HTML plus the metadata Julia already attaches to it:
-the binding, the defining module, and per method the signature, file and line.
-Two things come out of that beyond nicer text.
+Its README has what it does and how the wire works; CONFIG-NOTES has the
+traps the package must keep.  The short version: =julia-repl--show= is what
+renders the HTML badly, and it lives in =julia-repl.el= rather than in
+EmacsVterm.jl, so the rendering half is ours to change.
 
-*Cross-references work.* A Julia docstring is full of ~[`foo`](@ref)~ links and
-=Markdown.html= writes every one of them as =href="@ref"= with the symbol in the
-link *text*, which =shr= hands to =browse-url= as the literal string "@ref".
-They are the most useful links a docstring has and the only ones that go
-nowhere. Here they become buttons that ask the REPL for that symbol's docs, so
-following one behaves like =M-x helpful-*= on an elisp symbol.
-
-*Every method gets a source line.* The =Methods= rows carry the file and line
-Julia records for that method, and open it. Stdlib methods need care: the path
-they carry is baked on the machine Julia was built on (=/cache/build/...=), so
-the Julia side rebases it under =Sys.STDLIB= before sending; a row whose file
-still cannot be found is left as plain text rather than a button that opens
-nothing.
-
-The transport is worth knowing before touching either half. Commands travel as
-=vterm= escape sequences (=ESC ]51;E...ESC \=) and =vterm--eval= splits the
-arguments with =split-string-and-unquote=, which *unquotes* =\\"= and =\\\\= -- so
-the payload stays base64 all the way and is decoded here. Measured at the point
-=vterm--eval= runs, the current buffer is the vterm buffer, which is how the
-buffer learns which REPL to send back to.
+It is on =load-path= rather than a =package!=, the way =brust-line-number.el=
+is: the checkout under =~/src= is the copy being edited, and straight's
+=:local-repo= is a repository *name* rather than a path, so a recipe would
+clone a second one.
 
 #+begin_src elisp
-;; Julia documentation, rendered in a buffer of its own.
-;;
-;; Checked by `local/tests/julia-doc-test.el', which reads these forms out of
-;; this file and clicks the links for real -- a version that gets the target
-;; right but leaves shr's keymap in place passes a parse-level check and still
-;; sends nothing, so the test has to follow the click.
-
-(require 'shr)
-
-(defvar-local brust-julia-doc-follow-function nil
-  "Function that fetches the documentation of a cross-reference target.
-Called with one argument, the symbol the link points at.  Set by
-`brust-julia-doc--linkify-refs' and read by `brust-julia-doc--follow-ref';
-here it is `brust-julia-doc--send'.
-
-Buffer-local on purpose: two doc buffers open side by side may have come from
-different REPLs, so following a link in one must not send into the other.")
-
-(defun brust-julia-doc--ref-target (href text)
-  "The Julia symbol an `@ref' link in a rendered docstring points at, else nil.
-HREF is the link's `shr-url' property and TEXT the text it covers.  Nil means
-\"not a cross-reference\", and shr is left to handle the link as before.
-
-Julia's Markdown.html writes a cross-reference in two shapes, both measured
-against `@doc sin' on 1.13:
-
-  [text](@ref)      -> href \"@ref\"       the target is the link text
-  [text](@ref sym)  -> href \"@ref sym\"   the target is written out
-
-The first is why a signature link such as ``[`sin(x)`](@ref)`` needs no
-special case here: the text is what goes to `@doc', and `@doc sin(x)'
-resolves the method on its own.  The two shapes are told apart exactly rather
-than with a bare `string-prefix-p', which would take \"@referenced\" for a
-cross-reference and hand `@doc' the tail of it."
-  (let* ((raw (cond ((equal href "@ref") text)
-                    ((string-prefix-p "@ref " href) (substring href 5))))
-         (target (and raw (string-trim raw))))
-    (if (equal target "") nil target)))
-
-(defun brust-julia-doc--follow-ref (button)
-  "Button action: fetch the documentation of the symbol BUTTON points at.
-A named function rather than a closure over the sender: the harness in
-`local/tests/' evals the forms read out of this file in a buffer carrying no
-`lexical-binding' cookie, where a closure would not survive.  Reading the
-target off the button with `button-get' is what carries it instead."
-  (let ((target (button-get button 'brust-julia-doc-ref)))
-    (unless brust-julia-doc-follow-function
-      (error "No Julia doc sender here -- see `brust-julia-doc--linkify-refs'"))
-    (setq brust-julia-doc--pending-back (current-buffer))
-    (funcall brust-julia-doc-follow-function target)))
-
-(defun brust-julia-doc--linkify-refs (follow)
-  "Make every `@ref' link in the current buffer a button calling FOLLOW.
-FOLLOW is stored in `brust-julia-doc-follow-function' and called with the
-symbol the link points at.  Call once, after `shr-render-region'.
-
-Two lines here are load-bearing and neither is obvious:
-
-`make-text-button', not `add-text-properties'.  Properties of `button' t built
-by hand are not a button at all: `button-at' and `next-button' want a marker
-and find nothing, so such a link stays inert.  shr's own links do carry that
-marker -- measured, `button-at' on one returns a marker and `next-button'
-walks them -- but they carry no `action', so `push-button' on one signals
-`void-function nil'.  `make-text-button' is what supplies the action.
-
-The `keymap' write after it.  `make-text-button' will not replace a keymap
-already on the text, and shr puts `shr-map' on every link, sending RET and
-mouse-2 to `shr-browse-url' -- so without that line the span has an action and
-RET still never reaches it, and the cross-reference goes on feeding the
-literal \"@ref\" to `browse-url'.  Half fixed, and it reads as done.
-
-shr's `face' is deliberately left alone, so a cross-reference looks exactly as
-it did and only behaves differently."
-  (setq brust-julia-doc-follow-function follow)
-  (let ((pos (point-min)))
-    (while (< pos (point-max))
-      (let ((url (get-text-property pos 'shr-url)))
-        (if (null url)
-            (setq pos (or (next-single-property-change pos 'shr-url)
-                          (point-max)))
-          (let* ((end (or (next-single-property-change pos 'shr-url)
-                          (point-max)))
-                 (target (brust-julia-doc--ref-target
-                          url (buffer-substring-no-properties pos end))))
-            (when target
-              (make-text-button pos end
-                                'brust-julia-doc-ref target
-                                'action #'brust-julia-doc--follow-ref)
-              (put-text-property pos end 'keymap button-map))
-            (setq pos end)))))))
-
-(defface brust-julia-doc-heading
-  '((t :inherit bold))
-  "Face for the symbol and the section headings in a doc buffer.")
-
-(defvar-local brust-julia-doc--payload nil
-  "The decoded payload this buffer was last drawn from.")
-
-(defvar-local brust-julia-doc--repl-buffer nil
-  "The vterm buffer the documentation in this buffer arrived from.
-Captured when the payload is displayed: measured at the point `vterm--eval'
-runs, the current buffer is the vterm buffer, so that is where a
-cross-reference is sent back to.")
-
-(defvar-local brust-julia-doc--back nil
-  "Buffer this documentation was reached from, for `brust-julia-doc-back'.")
-
-(defvar-local brust-julia-doc--forward nil
-  "Buffer reached from this documentation, for `brust-julia-doc-forward'.")
-
-(defvar brust-julia-doc--pending-back nil
-  "Buffer a link was followed from; the next doc buffer links back to it.
-A link has to set this before it sends, because the buffer it is asking for
-does not exist yet -- the payload that creates it arrives later, from the
-REPL, through the vterm filter.")
-
-(defun brust-julia-doc--nonempty (value)
-  "VALUE if it is a non-empty string, else nil.
-A docstring sent by `?help' rather than `@doc' reaches here with no binding
-attached: Julia's help mode displays a different `MD' from the one `Docs.doc'
-annotates, so `symbol', `binding', `module' and `typesig' all arrive as \"\".
-That is what this exists for -- an empty string is *true* in elisp, so a guard
-of the shape (when field ...) prints an empty heading, an empty \"Defined in\"
-and an empty \"Signature\" rather than skipping them."
-  (and (stringp value)
-       (not (equal value ""))
-       value))
-
-(defvar brust-julia-doc-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "RET")       #'push-button)
-    (define-key map (kbd "TAB")       #'forward-button)
-    (define-key map (kbd "<backtab>") #'backward-button)
-    (define-key map (kbd "n")         #'forward-button)
-    (define-key map (kbd "p")         #'backward-button)
-    (define-key map (kbd "h")         #'brust-julia-doc-back)
-    (define-key map (kbd "l")         #'brust-julia-doc-forward)
-    ;; `gr', never `g': these buffers open in evil's normal state, where `g' is
-    ;; a prefix, and a bare `g' here would swallow `gg' along with it.  A `g'
-    ;; prefix that does not bind `gg' falls through to evil (measured), so this
-    ;; costs nothing.
-    (define-key map (kbd "gr")        #'brust-julia-doc-revert)
-    map)
-  "Keymap for `brust-julia-doc-mode', under `special-mode-map' for `q'.
-These are the keys that actually fire: the mode map is given precedence over
-evil's normal state, which is where these buffers open -- see \"Evil mode >>
-Settings\".")
-
-(define-derived-mode brust-julia-doc-mode special-mode "Julia-Doc"
-  "Major mode for Julia documentation, in the shape of a helpful buffer.
-
-Cross-references are buttons: RET follows one, TAB and `n' / `p' walk them,
-TAB being `forward-button' off a link as well as on one.  `h' and `l' return
-to the documentation this one was reached from and came back from; `gr'
-redraws."
-  ;; The methods table is aligned with `indent-to', and a tab there would make
-  ;; the columns depend on `tab-width' rather than on column 44.
-  (setq-local indent-tabs-mode nil))
-
-(defun brust-julia-doc-revert ()
-  "Draw this buffer again from the payload it was built from."
-  (interactive)
-  (unless brust-julia-doc--payload
-    (user-error "This buffer has nothing to redraw"))
-  (brust-julia-doc--render))
-
-(defun brust-julia-doc--visit (buffer missing)
-  "Show the documentation buffer BUFFER, or complain that there is none.
-MISSING is the complaint.  A link followed inside a doc buffer takes over the
-window it was read in: the policy does that for anything in `my/in-place-modes'."
-  (if (buffer-live-p buffer)
-      (pop-to-buffer buffer)
-    (user-error "%s" missing)))
-
-(defun brust-julia-doc-back ()
-  "Go to the documentation this one was reached from."
-  (interactive)
-  (brust-julia-doc--visit brust-julia-doc--back "Nothing earlier to go back to"))
-
-(defun brust-julia-doc-forward ()
-  "Go to the documentation reached from this one."
-  (interactive)
-  (brust-julia-doc--visit brust-julia-doc--forward "Nothing later to go on to"))
-
-(defun brust-julia-doc--open-source (button)
-  "Button action: visit the file and line BUTTON names."
-  (let ((file (button-get button 'brust-julia-doc-file))
-        (line (button-get button 'brust-julia-doc-line)))
-    (pop-to-buffer (find-file-noselect file))
-    (goto-char (point-min))
-    (forward-line (1- line))
-    (recenter)))
-
-(defun brust-julia-doc--insert-heading (text)
-  "Insert TEXT as a section heading."
-  (insert (propertize text 'face 'brust-julia-doc-heading) "\n"))
-
-(defun brust-julia-doc--insert-header (payload)
-  "Insert the heading block for PAYLOAD: what this documentation is about.
-Inserts nothing at all when the payload names nothing, which is what a
-docstring fetched with `?help' looks like -- see `brust-julia-doc--nonempty'.
-The blank separator goes in only when something was written, so the buffer
-never opens on an empty line."
-  (let ((binding (brust-julia-doc--nonempty (plist-get payload :binding)))
-        (symbol (brust-julia-doc--nonempty (plist-get payload :symbol)))
-        (module (brust-julia-doc--nonempty (plist-get payload :module)))
-        ;; Union{} is what Julia reports for a binding with no methods -- a
-        ;; constant, a macro -- and "Signature: Union{}" would be noise.
-        (typesig (brust-julia-doc--nonempty (plist-get payload :typesig)))
-        (wrote nil))
-    (when (equal typesig "Union{}")
-      (setq typesig nil))
-    (when (or binding symbol)
-      (brust-julia-doc--insert-heading (or binding symbol))
-      (setq wrote t))
-    (when module
-      (insert (format "Defined in:  %s\n" module))
-      (setq wrote t))
-    (when typesig
-      (insert (format "Signature:   %s\n" typesig))
-      (setq wrote t))
-    (when wrote
-      (insert "\n"))))
-
-(defun brust-julia-doc--insert-methods (results)
-  "Insert a Methods section, one row per entry in RESULTS.
-A row whose file is known becomes a button that visits it; a row without one
-stays plain text, because a button that opens nothing is worse than no button."
-  (when results
-    (insert "\n")
-    (brust-julia-doc--insert-heading (format "Methods (%d)" (length results)))
-    (dolist (row results)
-      (let ((beg (point))
-            (file (plist-get row :file))
-            (line (plist-get row :line)))
-        (insert "  " (or (plist-get row :sig) "?"))
-        (indent-to 44)
-        (insert (format "%s:%s" (or (plist-get row :path) "?") (or line "?")))
-        ;; The button is made before the newline, so it covers the row and not
-        ;; the line break -- clicking anywhere on the row opens the file.
-        (when file
-          (make-text-button beg (point)
-                            'brust-julia-doc-file file
-                            'brust-julia-doc-line line
-                            'action #'brust-julia-doc--open-source))
-        (insert "\n")))))
-
-(defun brust-julia-doc--render ()
-  "Draw `brust-julia-doc--payload' into the current buffer."
-  (let ((inhibit-read-only t)
-        (payload brust-julia-doc--payload))
-    (erase-buffer)
-    (brust-julia-doc--insert-header payload)   ; brings its own separator
-    (brust-julia-doc--insert-heading "Documentation")
-    (let ((beg (point)))
-      (insert (or (plist-get payload :html) ""))
-      (shr-render-region beg (point)))
-    (brust-julia-doc--insert-methods (plist-get payload :results))
-    (brust-julia-doc--linkify-refs #'brust-julia-doc--send)
-    (goto-char (point-min))))
-
-(defun brust-julia-doc--buffer-name (payload)
-  "The name of the buffer PAYLOAD belongs in.
-One buffer per symbol, as helpful does -- so following a link to a symbol
-already on screen reuses what is there instead of piling up buffers.
-
-Two kinds of payload have no symbol and get the plain name: the HTML-only one
-an older EmacsVterm.jl sends, and the one `?help' produces, which arrives with
-`symbol' present but empty.  That second case is why this asks
-`brust-julia-doc--nonempty' rather than `if-let': with an empty string, naming
-the buffer after it gives `*julia-doc: *'."
-  (if-let ((symbol (brust-julia-doc--nonempty (plist-get payload :symbol))))
-      (format "*julia-doc: %s*" symbol)
-    "*julia-doc*"))
-
-;; Following a link, and opening a method's source, both take over the window the
-;; documentation was being read in, and neither call does anything to bring that
-;; about: `brust-julia-doc-mode' is in `my/in-place-modes'.  Opening a doc buffer
-;; *from a REPL* is the same rule seen from the other side -- there the selected
-;; window is the REPL, so the docs go to the pane beside it.
-
-(defun brust-julia-doc--send (target)
-  "Ask the REPL this documentation came from to show TARGET's docs.
-`@doc' takes a call expression as well as a name, so a cross-reference to
-``sin(x)'' resolves the method on its own."
-  (unless (buffer-live-p brust-julia-doc--repl-buffer)
-    (user-error "The Julia REPL this documentation came from is gone"))
-  (with-current-buffer brust-julia-doc--repl-buffer
-    (vterm-send-string (concat "@doc " target "\n") t)))
-
-(defun brust-julia-doc--display (payload repl-buffer)
-  "Show PAYLOAD, the documentation a Julia REPL sent, in its own buffer.
-REPL-BUFFER is that REPL, where cross-references are sent back to."
-  (let* ((name (brust-julia-doc--buffer-name payload))
-         (buffer (get-buffer-create name))
-         (back brust-julia-doc--pending-back))
-    (setq brust-julia-doc--pending-back nil)
-    (with-current-buffer buffer
-      (unless (derived-mode-p 'brust-julia-doc-mode)
-        (brust-julia-doc-mode))
-      (setq brust-julia-doc--payload payload
-            brust-julia-doc--repl-buffer repl-buffer)
-      (brust-julia-doc--render))
-    ;; Wire the two buffers together, so `l' comes back and `r' goes on, and
-    ;; only in the direction just travelled: following a link again from a
-    ;; buffer already on the chain must not make it its own ancestor.
-    (when (and (buffer-live-p back) (not (eq back buffer)))
-      (with-current-buffer buffer (setq brust-julia-doc--back back))
-      (with-current-buffer back (setq brust-julia-doc--forward buffer)))
-    (pop-to-buffer buffer)
-    buffer))
-
-(defun brust-julia-doc--show (kind mime data)
-  "Show documentation sent from Julia through the vterm escape.
-KIND is the sort of thing being sent, MIME how DATA is encoded, DATA a base64
-string.  Registered in `vterm-eval-cmds' for EmacsVterm.jl to call, which
-sends `documentation' as `application/json'; `text/html' is what an older
-EmacsVterm.jl sends, and it still renders, minus the header and the methods,
-because HTML alone does not say what symbol it describes."
-  (cond
-   ((and (equal kind "documentation") (equal mime "application/json"))
-    (brust-julia-doc--display
-     (json-parse-string (brust-julia-doc--decode data)
-                        :object-type 'plist :array-type 'list)
-     (current-buffer)))
-   ((and (equal kind "documentation") (equal mime "text/html"))
-    (brust-julia-doc--display
-     (list :html (brust-julia-doc--decode data))
-     (current-buffer)))
-   ;; Anything else -- an image, say -- is left to julia-repl, which is where
-   ;; documentation used to go too.
-   ((fboundp 'julia-repl--show) (julia-repl--show kind mime data))
-   (t (error "Unsupported data kind `%s' or MIME type `%s'" kind mime))))
-
-(defun brust-julia-doc--decode (base64)
-  "Decode BASE64, as UTF-8 text.
-The payload is base64 all the way from Julia because `vterm--eval' splits the
-escape sequence's arguments with `split-string-and-unquote', which would eat
-the backslashes in raw JSON."
-  (decode-coding-string (base64-decode-string base64) 'utf-8))
-
-(with-eval-after-load 'vterm
-  (add-to-list 'vterm-eval-cmds
-               '("brust-julia-doc--show" brust-julia-doc--show)))
+(add-to-list 'load-path (expand-file-name "~/src/julia-help.el/"))
+(require 'julia-help)
 #+end_src
+
+Where a doc buffer lands is the window policy's business rather than the
+package's: =julia-help-mode= is in =my/in-place-modes=, and the mode map is
+given precedence over evil's normal state further down.
+
 
 ** Claude Code
 Bridges the Claude Code CLI into Emacs via [[https://github.com/manzaltu/claude-code-ide.el][claude-code-ide.el]]
@@ -5588,7 +5226,7 @@ back, switch =:tangle no= to =:tangle packages.el= / =:tangle config.el= and run
 ;; which is also what Doom already binds for helpful.  helpful needed its `g'
 ;; cleared for the same reason: it binds that key alone.
 (with-eval-after-load 'evil
-  (evil-make-overriding-map brust-julia-doc-mode-map 'normal)
+  (evil-make-overriding-map julia-help-mode-map 'normal)
   (evil-make-overriding-map help-mode-map 'normal)
   (define-key help-mode-map (kbd "h")  #'help-go-back)
   (define-key help-mode-map (kbd "l")  #'help-go-forward)
@@ -6020,49 +5658,18 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
   )
 #+end_src
 ** Tidal Coding music
+
 #+begin_src elisp :tangle packages.el
 (package! tidal)
-
-#+end_src
-
-#+begin_src elisp :tangle no
-;;; TidalCycles Configuration (Stack Version)
-(use-package! tidal
-  :config
-  ;; Use stack to manage the Haskell environment
-  (setq tidal-interpreter "stack")
-  (setq tidal-interpreter-arguments '("ghci"))
-  
-  ;; Auto-detect BootTidal.hs with simpler command
-  (setq tidal-boot-script-path
-        (string-trim
-         (shell-command-to-string
-          "find ~/.stack -name BootTidal.hs -type f 2>/dev/null | head -1")))
-  
-  ;; Visual settings
-  (setq tidal-brightness 'dark)
-  
-  ;; Optional: Show a message when starting the REPL
-  (add-hook 'tidal-repl-start-hook
-            (lambda ()
-              (message "Tidal REPL started with Stack!"))))
-
 #+end_src
 
 #+begin_src elisp
-;; # Just install Tidal globally (the warning is harmless for testing)
-;; cabal install --lib tidal --package-env .
-
-;; # Then use a simpler Emacs config
-(setq tidal-boot-script-path "~/src/tidal-music/BootTidal.hs")
-
-;; (use-package! tidal
-;;   :config
-;;   p
-;;   (setq tidal-interpreter "ghci")
-;;   (setq tidal-interpreter-arguments '())
-;;   (setq tidal-boot-script-path nil)  ; Use default
-;;   (setq tidal-brightness 'dark))
+;; Tidal 1.10.2 came from `cabal install --lib tidal --package-env .' run in
+;; ~/src/tidal-music, so ghci finds it through a package environment file
+;; rather than the global package db. See CONFIG-NOTES.org.
+ (use-package! tidal
+   :config
+   (setq tidal-boot-script-path "~/src/tidal-music/BootTidal.hs"))
 #+end_src
 
 ** Transpose frames

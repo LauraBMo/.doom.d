@@ -8,6 +8,89 @@ entries concrete: what happened, why, and how to repeat the fix.
 
 * Errors fixed
 
+** 2026-09-26 — TAB did nothing in a doc buffer: =[tab]= and ="\t"= are different key sequences
+Reported from a live session as "evil-jump on tab", while =(key-binding (kbd "TAB"))= insisted
+TAB was =forward-button=.  Both were true, because a TAB keypress arrives in *two* shapes that a
+keymap lookup does not treat as one:
+- a graphical frame delivers the VECTOR =[tab]=;
+- a terminal, and =C-i=, deliver the STRING ="\t"= (character 9).
+=(kbd "TAB")= is the string, so a binding written that way is one =key-binding' finds and a real
+keypress never uses.  =julia-help-mode-map= bound the string; =config.org='s own =:n [tab]=
+dispatch (Hlissner's "More handy TABs", added long before) binds the vector -- so the user's own
+global binding answered every real TAB.  Fixed by binding *both* shapes, in
+=julia-help-mode-map= and in =julia-help--link-keymap=.
+- *Measured* in a daemon against the real config: =(key-binding [tab])= =evil-jump-item= while
+  =(key-binding (kbd "TAB"))= =forward-button=, with the mode map holding no =[tab]= at all.
+  After the fix both read =forward-button= in prose and on a link, S-TAB both
+  =backward-button=, and RET on the link still =shr-browse-url=.
+- *=key-binding= is not a substitute for pressing the key.*  Every probe that asked about the
+  string form reported the binding was fine.  What settled it was =C-h k= on the real key, run
+  by the user -- the one measurement no probe of mine was making.
+- *Evil's own docstring is wrong here.*  =evil-make-overriding-map= says it gives "lower
+  precedence than custom STATE bindings", but a bare =(define-key julia-help-mode-map [tab]
+  ...)= was measured to beat the user's =:n [tab]= in =evil-normal-state-map=.  So a mode map can
+  take a key back from a global state binding without an auxiliary keymap -- worth trying before
+  reaching for =evil-define-key=.
+- *Behaviour change to sanction:* in a doc buffer TAB now walks buttons rather than running
+  =evil-jump-item=.  Outside those buffers the =:n [tab]= dispatch is untouched.
+- The mutation script now refuses to run at all when the unmutated suite is red: one broken
+  assertion had made all five mutants report CAUGHT, with the failure lines naming the broken
+  test rather than the mutation.
+Two testing lessons, both surfaced by that check and neither by reading:
+- *A test that checks one shape of a key is not testing the key.*  =julia-help-test--tab-runs-p=
+  asserts both shapes now.  Every assertion it replaced passed while the real key did nothing.
+- *The test fixture had to become a real doc buffer.*  Without the mode, TAB resolved through
+  =button-map= on the string form and found *nothing* on the vector form -- so the fixture was
+  the reason the gap was invisible.  Mode first, content inside =inhibit-read-only=, exactly as
+  =julia-help--display= does it (the other order lets =julia-help-mode= run
+  =kill-all-local-variables= and wipe the buffer-local follow function linkify just set).
+- *A mutation must break the thing, not a neighbour.*  ="s/'keymap button-map/'keymap nil/="
+  *removes* shr's keymap as well, so RET fell through to the mode map and still worked.  It only
+  looked caught while the fixture had no mode map; the moment the fixture became a real doc
+  buffer it started MISSing.  The faithful mutation deletes the =put-text-property= and leaves
+  shr's keymap in place.
+
+
+** 2026-09-25 — Tidal's ghci could not find the package outside =~/src/tidal-music=
+Tidal 1.10.2 was installed with =cabal install --lib tidal --package-env .= run inside
+=~/src/tidal-music=. That does **not** register tidal in the global package db: it writes
+=~/src/tidal-music/.ghc.environment.x86_64-linux-9.10.3=, pointing at
+=~/.local/state/cabal/store/ghc-9.10.3-inplace/package.db=. GHC reads that file from the
+current directory **or a parent, never from =$HOME=** — so the package was reachable only from
+under =~/src/tidal-music=, and nowhere else on the machine.
+
+The symptom looks like a different bug. Opening a =.tidal= file in =~/Dropbox/Music/= and
+pressing =C-c C-s= starts ghci normally, then the boot script dies at =import
+Sound.Tidal.Boot=. Nothing plays and there is no error until you read the =*tidal*= buffer.
+
+Fix — give GHC an environment file it reads from any directory:
+#+begin_src shell
+ln -sfn ~/src/tidal-music/.ghc.environment.x86_64-linux-9.10.3 \
+        ~/.ghc/x86_64-linux-9.10.3/environments/default
+#+end_src
+=-n= is the part that is not optional: with =default= already a symlink to a directory, plain
+=ln -sf= writes a link *inside* the target instead of replacing it. =-r= (store the link target
+relative) is a reasonable addition and costs nothing.
+
+Two things that made this harder to guess than it should have been:
+- The GHC user guide documents only the XDG path
+  (=$XDG_DATA_HOME/ghc/<arch>-<os>-<ver>/environments/default=) as read automatically, and does
+  **not** list =~/.ghc/<arch>-<os>-<ver>/environments/default=. GHC 9.10.3 honours both. Verify
+  against the binary, not the document.
+- =ghci= exits **0** even when the module is missing, so the exit code is worthless here. Assert
+  on the output line: =:t fast= must print =fast :: Pattern Time -> Pattern a -> Pattern a=.
+  Checked from =/tmp=, =~/Dropbox/Music= and =~/Dropbox/Music/Curse1=.
+
+Related, and not a fault: =d1=, =d2=, =hush= and =cps= come from =Sound.Tidal.Boot= — pulled in by
+the =:script= line that points at =BootTidal.hs= — and **not** from =Sound.Tidal.Context=. A bare
+ghci knows =fast= but not =d1=. That is expected, not a broken install.
+
+Repeating this after a GHC upgrade: the compiler version sits inside every path involved
+(=~/.ghc/x86_64-linux-9.10.3=, the =.ghc.environment.*= filename, =store/ghc-9.10.3-inplace=), so
+re-run =cabal install --lib tidal --package-env .= in =~/src/tidal-music= and re-run the =ln -sfn=
+above — a cabal rewrite of the env file can break the symlink. Neither path needs root, and
+=~/.local/share= is not system-managed here.
+
 ** 2026-09-25 — the ispell-then-abbrev helper was dead code; ported to jinx
 =*** TODO Endless ispell & abbrev= in =config.org= was parked (=:tangle no=) and its =l i=
 hydra head commented out: the port of endlessparentheses' "Ispell and abbrev" ran on =flyspell=
@@ -224,6 +307,48 @@ Error when using the jinx speller (triggered by =jinx-languages= /
 
 * Package decisions
 
+- *The Julia doc buffers left =config.org= for a package of their own* (2026-09-25).
+  The Emacs half of EmacsVterm.jl -- 29 forms, the =*** EmacsVTerm= section -- is now
+  =~/src/julia-help.el/=, a git repo of its own, so the Julia side can point a PR
+  at something shareable.  =config.org= keeps a pointer, a =load-path=/=require=
+  pair and nothing else; the design prose moved to the package's README, and the
+  traps stay here.
+  - *Naming.* Everything is =julia-help-*=, including the buffer (=*julia-help:
+    sin*=) and the mode-line lighter.  The old =*julia-doc*= was upstream's name
+    for a *different* buffer -- the one =julia-repl--show= drew -- so reusing it was
+    actively misleading.
+  - *The vterm command name is a literal shared with Julia,* not a symbol.  The
+    package registers =julia-help-show= in =vterm-eval-cmds=, and Julia's
+    =SHOW_COMMAND= has to send that string: renaming the elisp function does not
+    rename the protocol.
+  - =brust-julia-doc--show= was registered as a second name for a day, and *buys
+    no compatibility with anything released*.  Measured on HEAD (=944fb4e=, "Bump
+    version to 0.3.0"): the released half sends
+    =julia-repl--show documentation text/html=, which this package does not
+    intercept at all.  =brust-*= was only ever this config's own prefix, so the
+    alias kept an un-renamed checkout working and nothing more -- and once the
+    Julia half was renamed later the same day, nothing sent it, so it was dropped.
+    The lesson is the measurement rather than the alias: it had been justified as
+    preserving a *released* package, and it never did.
+  - *On =load-path=, not a =package!=.*  straight's =:local-repo= is the *name* of a
+    repository under =straight/repos/=, **not** a path to one (=straight.el=,
+    README §=:local-repo=) -- a recipe written as =(:local-repo "~/src/x")= would
+    look for a repo by that name and clone a second copy of the package.  The
+    =add-to-list= + =require= pair is what this config already does for
+    =brust-line-number.el= and =~/src/mu/mu4e/=.
+  - *Verified* (2026-09-25; counts brought up to date 2026-09-26).  The package's
+    own ERT suite -- 13 tests, exit code = verdict -- behind a mutation check that
+    breaks each trap in turn and requires the suite to go *red* for each one
+    (5 mutants, one per trap, and gated on the unmutated suite being green);
+    =local/tests/window-policy-test.el= all pass; =doom sync= clean, exit 0; and a
+    throwaway daemon against the real config answering =(:feature t :mode t
+    :override normal :in-place t :wire t)= -- loaded, the mode in
+    =my/in-place-modes=, the wire name registered, and the evil precedence
+    installed.  That last reading is =(lookup-key julia-help-mode-map
+    [override-state])= = =normal=: the magic key =[override-state]= is all
+    =evil-make-overriding-map= writes (=evil-core.el:461=).
+
+
 - *EmacsVterm.jl is a checkout here now, and the docstring metadata was the point* (2026-09-25).
   It left the registry for =~/.julia/dev/EmacsVterm= — a plain clone of
   =wentasah/EmacsVterm.jl=, whose HEAD was byte-identical to the 0.3.0 copy under
@@ -398,6 +523,32 @@ Error when using the jinx speller (triggered by =jinx-languages= /
 
 * Tricks / maintenance recipes
 
+** 2026-09-25 — under =batch-byte-compile=, neither =load-file-name= nor =buffer-file-name= is set
+A file that puts its own directory on =load-path= with a bare =add-to-list= cannot
+be byte-compiled.  The compiler *evaluates* a top-level =(require …)= -- it has to,
+to get macros -- but does not evaluate the =add-to-list=, so the require fails
+with =Cannot open load file= while *loading* the very same file works fine.  Which
+variable holds the path is not guessable; measured:
+
+#+begin_src elisp
+(eval-and-compile
+  (message "load-file-name=%S buffer-file-name=%S byte-compile-current-file=%S"
+           load-file-name buffer-file-name (bound-and-true-p byte-compile-current-file)))
+#+end_src
+
+prints =load-file-name=nil buffer-file-name=nil byte-compile-current-file="/abs/x.el"=.
+So the fix takes all three, =eval-and-compile=d, and guarded by a =when= -- any of
+the three can be nil, and =file-name-directory= on nil signals.  Three smaller
+traps from the same file, all cost time:
+- =ert-deftest= takes its docstring *positionally* -- =(ert-deftest name () "doc"
+  body…)= -- not as =:doc=, which dies as "Keyword argument :doc not one of
+  (:expected-result :tags)".
+- =princ= prints nothing inside =eval-and-compile= under =batch-byte-compile=,
+  because byte-compile rebinds =standard-output=.  Use =message=.
+- =provided-mode-derived-p= returns the mode *symbol* it matched, not =t=.  A test
+  written to expect =t= fails on a correct package.
+
+
 ** 2026-09-25 — what a match-all =display-buffer-alist= entry outranks
 =display-buffer= tries its actions in this order (=window.el:7924=):
 =display-buffer-overriding-action=, the matching =display-buffer-alist= entry,
@@ -469,6 +620,26 @@ replace a keymap that is already on the text. Do only the first and the link is 
 =button-at= and fires under =push-button= while RET still runs =shr-browse-url= — half fixed, and
 a test that inspects properties instead of following the link passes it. The check that bites is
 =(key-binding (kbd "RET"))= with point on the link, against =push-button=.
+*And the same keymap swallows TAB, but only on the links shr keeps.*  =shr-map= is put on every
+*link span* (=shr.el:1338=, "Don't overwrite any keymaps that are already in the buffer"), and it
+binds TAB -- and C-i, one and the same event -- to =shr-next-link=.  So TAB reached the mode map in
+the prose and on a cross-reference (whose keymap is replaced), but on any link shr kept -- a URL in a
+docstring -- it ran shr's link walker instead of =forward-button=.  Reported from a live session as
+"tab still does not work", and it was the *partial* nature that made it hard to see: an empty test
+buffer has no links at all, so TAB looked fine there.  Fixed with
+=julia-help--retarget-shr-links=: a keymap whose parent is =shr-map= with TAB / =[backtab]=
+overridden, written over each span whose =keymap= property *is* =shr-map=, so RET still browses.
+Two traps in testing it, and the mutation check caught both -- reading did not:
+- *A position one character past the link is outside the span.*  =search-forward "docs"= leaves
+  point after the link text, where shr's keymap no longer applies, so TAB reads =forward-button=
+  there even against a fix that does nothing.  Check *inside* the link, at both ends.
+- *A mutation can invert a guard rather than disable it.*  =(eq (get-text-property pos 'keymap)
+  nil)= is not "never true" -- it is true wherever there is *no* keymap -- so the mutant went on
+  producing =forward-button= and read as a caught mutation.  Disable a guard with a value the
+  property can never hold.
+The mutation script had to learn the same lesson: a run that fails *without naming a failing test*
+proves nothing, and an unbalanced test file made all four mutants look caught.  It reports SUSPECT
+for that now.
 Two smaller things from the same afternoon. =text-property-any= compares with =eq=, so it never
 matches a string value — walk with =next-single-property-change= instead. And =shr-render-region=
 reflows differently under =--batch= (one word per line) than it does in a live window, so a

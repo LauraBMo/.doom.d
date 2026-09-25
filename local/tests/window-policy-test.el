@@ -13,7 +13,7 @@
 ;;      helpful, the Julia doc buffers and the Doom dashboard -- takes the window
 ;;      it was asked from instead of the pane beside it. A case for each of the
 ;;      three: both kinds of link followed in a real helpful buffer, a stand-in in
-;;      `brust-julia-doc-mode', and the `find-file' a dashboard click runs (the
+;;      `julia-help-mode', and the `find-file' a dashboard click runs (the
 ;;      real dashboard needs Doom, so its clicks are driven on a stand-in buffer
 ;;      in `+dashboard-mode');
 ;;   3. and that the exception is scoped to reading: an unrelated buffer landing
@@ -128,7 +128,7 @@
 A leftover *helpful* buffer would be found by `display-buffer-reuse-window'
 and quietly change the answer, so those go too.  The stand-in buffers get
 their major mode back too: two of the cases below put `+dashboard-mode' and
-`brust-julia-doc-mode' into one of `my/test-buffers', and a mode left behind
+`julia-help-mode' into one of `my/test-buffers', and a mode left behind
 would make the next case read as documentation."
   (dolist (w (window-list nil 'nomini))
     (set-window-dedicated-p w nil))
@@ -365,7 +365,7 @@ carrying a `path' property."
 ;;     helpful one.  Single window, which is where the split used to happen.
 (my/one-window "*source.el*")
 (let ((doc (get-buffer-create "*doc*")))
-  (with-current-buffer doc (setq major-mode 'brust-julia-doc-mode))
+  (with-current-buffer doc (setq major-mode 'julia-help-mode))
   (set-window-buffer (selected-window) doc)
   (display-buffer "*B*")
   (my/check "H7 doc buffer, single window: stays one" '("*B*" single 1) (my/state)))
