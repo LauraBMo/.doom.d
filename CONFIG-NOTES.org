@@ -224,6 +224,32 @@ Error when using the jinx speller (triggered by =jinx-languages= /
 
 * Package decisions
 
+- *EmacsVterm.jl is a checkout here now, and the docstring metadata was the point* (2026-09-25).
+  It left the registry for =~/.julia/dev/EmacsVterm= — a plain clone of
+  =wentasah/EmacsVterm.jl=, whose HEAD was byte-identical to the 0.3.0 copy under
+  =~/.julia/packages/=, so the checkout starts from exactly what was running and a PR stays
+  possible. Point a REPL at it with =Pkg.develop(path=...)= in whichever environment that REPL
+  uses: =EmacsVterm= is listed in both =environments/v1.12= and =v1.13=.
+  The reason is what a docstring already carries. =Base.display(d::Display, md::Markdown.MD)=
+  is handed an =MD= that =REPL.doc= has annotated: =md.meta[:binding]=, =[:typesig]=,
+  =[:results]=, and inside each result =:module=, =:path= and =:linenumber=. The old code sent
+  =Markdown.html(md)= and nothing else, so all of it was computed and thrown away. Sending it
+  too is what lets the Emacs side draw a heading, a module, and a methods table with a
+  =file:line= per method; it costs one JSON object per docstring.
+  Two things to know before touching the Julia half. =EmacsVterm.options.image = true= in
+  =~/.julia/config/startup.jl=, so images come down the very same vterm escape — the new
+  command (=brust-julia-doc--show=) delegates anything that is not =documentation= to
+  =julia-repl--show=, which is what keeps them working. And =Docs.doc(binding)= needs =REPL=
+  loaded (Julia 1.11+): =using Base.Docs= alone gives
+  =MethodError: no method matching doc(::Base.Docs.Binding)=, which reads like the API moved
+  when the answer is that the implementation lives in =REPL= (see =REPL/src/docview.jl=).
+  A third: =DocStr.data[:path]= has three shapes — =math.jl= relative to =<julia>/base=, an
+  absolute path inside an ordinary package, and a stdlib path baked on the machine Julia was
+  built on (=/cache/build/.../usr/share/julia/stdlib/v1.13/LinearAlgebra/src/dense.jl=, which
+  does not exist here). =Base.find_source_file= handles the first; the third needs rebasing on
+  =Sys.STDLIB=, which already ends in =stdlib/<version>=. Resolve or return =nothing=, never a
+  path that looks openable and is not.
+
 - *reftex's completion backends are wired to a completion engine that is off here* (2026-09-14).
   Doom's =lang/latex= module runs
   =(set-company-backend! 'reftex-mode 'company-reftex-labels 'company-reftex-citations)=
@@ -389,6 +415,62 @@ a link displays something (=window-normalize-buffer-to-switch-to= does not =set-
   than the law. Not used here because it applies only where nobody else has an opinion, so anything
   displaying itself with a plain =pop-to-buffer= (a REPL, the dashboard's agenda and mail items)
   would still need a door.
+
+** 2026-09-25 — an empty JSON field is not an absent one, and elisp will happily print it
+=Markdown.MD= for a docstring fetched with =?help= has *nothing* attached to it: that path goes through
+=REPL.helpmode=, which displays an MD of its own making, so =:binding=, =:typesig= and =:results= are all
+missing (measured: =?sin= sends =symbol/binding/module/typesig = ""= and no results, while the docstring
+HTML is perfectly good). The payload is built by a serializer that writes =""= for a field it has nothing
+for — and *an empty string is true in elisp*, so every guard of the shape =(when field ...)= passed. The
+buffer came out named =*julia-doc: *= after the empty symbol, opening on a blank heading line, with
+"="Defined in:  "= and "="Signature:   "= printed with nothing after them.
+Two fixes, and keep both. The sender now writes =null= for an empty field (=json_or_null=), and the
+receiver treats =""= as absent anyway (=brust-julia-doc--nonempty=), because a half-updated Julia still
+sends the old form. The check worth keeping is on the rendered buffer: its first line is the first
+heading, and no line matches =^\(Defined in:\|Signature:\|Methods\)\s*$=. In general: "absent" and "empty"
+are different things on either side of a serialization boundary, and in elisp guard on =(equal x "")= or a
+helper, never on truthiness alone.
+
+** 2026-09-25 — shr draws links as buttons that have no action, and =make-text-button= will not take over shr's keymap
+=shr-render-region= puts a =button= property on link text that *is* marker-backed, so =button-at=
+and =next-button= / =forward-button= do find those links. What they do not have is an =action=:
+=push-button= on one signals =void-function nil=.
+Following the link does not go through the button at all. shr also sets the text's =keymap= to
+=shr-map=, which sends RET and mouse-2 to =shr-browse-url= — and a text-property keymap outranks
+the buffer's major-mode map, so binding RET to =push-button= in the mode does *nothing* while
+point is on a link.
+Retargeting one therefore needs two lines, not one: =make-text-button= to supply the action, and
+=put-text-property ... 'keymap button-map= to take the keymap back. =make-text-button= will not
+replace a keymap that is already on the text. Do only the first and the link is found by
+=button-at= and fires under =push-button= while RET still runs =shr-browse-url= — half fixed, and
+a test that inspects properties instead of following the link passes it. The check that bites is
+=(key-binding (kbd "RET"))= with point on the link, against =push-button=.
+Two smaller things from the same afternoon. =text-property-any= compares with =eq=, so it never
+matches a string value — walk with =next-single-property-change= instead. And =shr-render-region=
+reflows differently under =--batch= (one word per line) than it does in a live window, so a
+rendered buffer printed by a batch test is not what the user will see; check layout in a real
+Emacs before believing it.
+
+** 2026-09-25 — a buffer that is not there reads as an empty one
+=(get-file-buffer FILE)= returns nil when the file is simply not open — and =(buffer-modified-p
+nil)=, =(buffer-size nil)= and the rest then quietly answer about the *current* buffer instead of
+signalling. On 2026-09-25 that cost real time: a size read this way (168,076, from a hidden
+= *tangle config*= buffer) was compared against =config.org= on disk (252,775) and read as
+"a bad edit truncated the buffer", and the user was told to revert work that had never been
+damaged. There was no =config.org= buffer open at all. Bind the buffer first and test it —
+=(when-let ((b (get-file-buffer f))) ...)= — and remember that a number coming back is not
+evidence that the thing you asked about exists. This is the same shape as a tool reporting
+success while it lied: check the subject, not just the reading.
+
+** 2026-09-25 — the =51;E= vterm escape: whitelisted commands, unquoted arguments
+=vterm-eval-cmds= is a whitelist, and a name that is not on it only prints "Failed to find
+command" — a new command goes in that list, which is why the doc entry point is registered there.
+Arguments are split with =split-string-and-unquote=, which *unquotes* =\"= and =\\=; a raw JSON
+argument would be mangled in transit, so the payload travels base64 (which has no whitespace and
+no backslashes). Measured rather than assumed: at the moment =vterm--eval= runs, =(current-buffer)=
+is the vterm buffer — that is how a doc buffer learns which REPL to send =@doc= back to.
+Testable without Julia at all: in a vterm buffer, send
+=printf '\033]51;E<command> <args>\033\\'= and the escape is parsed and dispatched.
 
 ** 2026-09-25 — custom.el is transient here: a detector, and a skill that folds it back in
 Settings in this config live in =config.org=, but Emacs has its own place to put them:
