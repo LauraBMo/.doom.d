@@ -8,6 +8,84 @@ entries concrete: what happened, why, and how to repeat the fix.
 
 * Errors fixed
 
+** 2026-09-25 — a click on the Doom dashboard split the frame
+Asked for straight after the entry below, and the same branch of the same rule at fault.
+
+- *What happened.* The dashboard is shown in a lone window (it is the startup screen), so a
+  click on one of its items — "Open private configuration" is =find-file= on =config.org=,
+  "Open my org" the same for =my.org= — hit the policy's "frame has a single window" branch
+  and split the frame, leaving the dashboard in the pane beside the file. Measured in the
+  live session: one window showing =*doom*= became =*doom*= | =config.org=.
+- *Fix* (=config.org=, the door beside the helpful one): a click asks for the thing it names,
+  so that should fill the window the dashboard is in. Doom's =+dashboard-mode-map= remaps
+  =push-button= to =+dashboard/push-button=, so every activation -- mouse or =RET=, the
+  button's own keymap binding included -- lands there; =my/dashboard-click-in-place= is
+  =:around= advice on it, binding =display-buffer-overriding-action= to the same
+  =my/in-place-display-action= the helpful links use. No new alist entry: the condition would
+  have to be "the *selected* window is the dashboard", which a rule cannot express (its
+  condition matches the *target* buffer), and a second catch-all entry would shadow the
+  policy's — only the first matching entry is used.
+- *Verified* (2026-09-25). Batch, =D1-D5= in =local/tests/window-policy-test.el=: the advice
+  is installed; a =find-file= from a lone =+dashboard-mode= window splits (control, =D2=); the
+  same through the door fills that window (=D3=); with a second pane open, the dashboard's own
+  pane takes the target and the pane beside it is untouched (=D4=); a target already on screen
+  in the other pane is reused, not duplicated (=D5=). The real dashboard needs Doom, so those
+  drive the door on a stand-in buffer; the remap and the click itself were checked live
+  instead: =(command-remapping 'push-button)= in =*doom*= → =+dashboard/push-button=, and
+  pushing "Open private configuration" through it took the frame from =("*doom*")= to
+  =("config.org")= — one window, no split.
+- *Accepted, not covered:* with the dashboard in a split frame, "whole window" is its own
+  pane, not the frame — the pane beside it survives (=D4=). The dashboard is normally the
+  whole frame anyway (=+dashboard/open=, the only other way to it, has no keybinding), and
+  taking the frame would destroy whatever was beside it.
+- *Trick worth keeping:* =advice-add= on a symbol that is only *autoloaded* at the time — which
+  is what =+dashboard/push-button= is when =config.el= runs — survives the real definition, so
+  the dashboard module needs no =with-eval-after-load= wrapper (measured in =emacs -Q=).
+
+** 2026-09-25 — a link in a =*helpful*= buffer split the frame; a dedicated pane let a third window through
+Two holes in the window policy of the entry below, both found by testing rather than reading.
+
+- *Helpful split a single-window frame.* Built-in =help-mode= keeps one =*Help*= buffer and
+  reuses it, so following a link never opens a window. Helpful makes a new buffer per symbol
+  (=*helpful function: car*=, but =*helpful command: helpful-callable*= for a command), so
+  =display-buffer-reuse-window= finds nothing to reuse, the "frame has a single window"
+  branch of the policy fires, and every link click in a lone help buffer split the frame.
+- *Fix* (=config.org=, right below the policy): a link followed from a helpful buffer is
+  shown where the help being read is. =helpful-switch-buffer-function= is set to
+  =my/helpful-in-place= — helpful's one door for symbol links, which Doom's
+  =+emacs-lisp/helpful-next/previous= also use — and =my/helpful-navigate-in-place= is
+  =:around= advice on =helpful--navigate= for the "defined in foo.el" links. Both wrap
+  =pop-to-buffer= in a =let= binding =display-buffer-overriding-action= to
+  =((display-buffer-reuse-window display-buffer-same-window))=: an overriding action beats
+  =display-buffer-alist=, which is the whole point, and reuse-first leaves a target that is
+  already on screen where it is. That action is nil when the selected window is not a
+  helpful one (=C-h f= from a source file, or a pane pinned with =window-dedicated-p=), so
+  those keep the plain =pop-to-buffer= and the policy.
+  - The value is written =((fn1 fn2))= — a *list* of functions. A bare =(fn1 fn2)= has its
+    =car= read as a single function and silently drops the second one.
+  - Wired to helpful's two doors only, so a buffer arriving from anywhere else (REPL,
+    compilation, Claude Code) keeps obeying the policy whatever is in the pane.
+- *The dedicated-pane hole was in the policy itself.* When the *selected* window is
+  dedicated, every branch of =my/display-buffer-max-two-windows= declined, the function
+  returned nil, and nil hands the buffer to the default chain — whose first useful step,
+  =display-buffer--maybe-pop-up-frame-or-window=, splits a THIRD window. A =free= binding
+  (first window in the frame not dedicated to its buffer) now catches that case and the
+  other pane takes the buffer, so "dedicated windows are never written into" holds for the
+  selected one too.
+- *Verified* (2026-09-25): =local/tests/window-policy-test.el=, 26 checks, all pass, ~1s,
+  exit code = verdict. Cases 1-8 are the policy, =5b= is the dedicated selected pane,
+  =H1-H6= drive the *real* helpful — =helpful-callable= as its button action calls it, and a
+  real "defined in" button pushed with =push-button=, and =D1-D5= are the dashboard door
+  (entry above). Covered: help opened from a source
+  file (splits, by policy), a symbol link in place, help *alone* in a frame (stays one
+  window), the file link in place, a dedicated help pane left untouched, and an unrelated
+  buffer in both geometries. The harness caught two wrong assumptions of its own while being
+  written — =helpful-callable= is a command, so its buffer is =*helpful command: …*=, and the
+  first save-verification of the entry under *Tricks* was a no-op.
+- *Not covered:* when *every* window of the frame is dedicated there is nowhere legal to put
+  the buffer and the default chain still decides (a frame of side windows only, say), so
+  "never three windows" holds only while a free pane exists.
+
 ** 2026-09-15 — =SPC SPC .= in =.jl= buffers pointed at =+lsp!=, which does not exist
 The julia binding block had =:desc "Start eglot server" "." #'+lsp!=. Doom's function is
 plain =lsp!= (=modules/tools/lsp/autoload/common.el:4=, "Dispatch to call the currently used
@@ -441,8 +519,10 @@ Claude Code, julia-repl, PDF...) on the RIGHT. Buffers were instead opening stac
         split-height-threshold nil) ; never auto-split top/bottom — force side-by-side
   #+end_src
   New buffer lands on the right (=split-window-right= semantics), current stays left.
-  Bump =80= up if you want each half wider before Emacs is willing to split. On a frame
-  too narrow to split, Emacs reuses an existing window instead of forcing a thin split.
+  Bump =80= up if you want each half wider before Emacs is willing to split. *Corrected
+  2026-09-24:* on a frame too narrow to split, Emacs reuses an existing window only when
+  there are *two or more* windows; a *sole* window gets split anyway, stacked — see the
+  correction in the 2026-09-24 entry below.
   Verified: julia-repl, Claude Code, and LaTeX =C-c C-v= (PDF) all split right.
 - *Note:* =split-height-threshold nil= means Emacs will never *auto*-create a stacked
   split anymore; manual evil splits are unaffected (=evil-vsplit-window-right t=).
@@ -461,6 +541,55 @@ forces the side regardless of thresholds). Match on major mode or on a buffer-na
 #+end_src
 Find the mode with =C-h m= in the misbehaving buffer, or the exact buffer name with
 =C-x C-b=. (We had this ready for LaTeX's PDF viewer but the global fix already covered it.)
+
+** 2026-09-24 — Never more than two windows: a new buffer takes the other pane
+Follow-on to the entry above. With two panes already open, a command that shows a new
+buffer (new Claude Code session, julia-repl, help...) split the frame a *third* time
+instead of using the pane that was already there. Wanted: the pane on the RIGHT of the
+selected window; if the selected window is already the rightmost, take over that pane;
+split only when the frame has a single window.
+
+- *Why it happened:* the default action chain cannot express "the other pane".
+  =display-buffer--maybe-pop-up-frame-or-window= splits whichever window it likes — third
+  window included — and it runs *before* =display-buffer-use-some-window=; and that latter,
+  with =inhibit-same-window= nil, counts the selected window as its best "second best"
+  candidate, so it hands back the window you are already in. No threshold tuning reaches
+  this — =split-width-threshold= only decides whether a split is possible, never which
+  window gets used.
+- *Fix* (in =config.org=, just below the thresholds above): an action function plus a
+  match-all rule, so every =display-buffer= call obeys it.
+  #+begin_src elisp
+  (defun my/display-buffer-max-two-windows (buffer alist) ...)
+  (add-to-list 'display-buffer-alist
+               '("\\`" my/display-buffer-max-two-windows)) ; every buffer name
+  #+end_src
+  Order matters: =add-to-list= and =push= both *prepend*, so a rule added later in the
+  config sits earlier in the list and wins over this one.
+- *Consequences, accepted:* help, compilation, magit and Vertico's buffer view now take
+  the other pane rather than opening a third window. Vertico's is safe — its
+  =vertico-buffer--setup= records =old-buf= of whichever window it lands in and puts it
+  back on minibuffer exit; the =delete-window= path only runs for windows Vertico created.
+- *Dedicated windows are never used* (side windows: treemacs, pdf-tools, Claude with
+  =use-side-window t=). =window--display-buffer= silently *un*-dedicates a window it is
+  handed, so the rule tests =window-dedicated-p= itself and falls back to the selected
+  pane instead.
+- *Verified* (2026-09-24): batch harness =local/tests/window-policy-test.el= (=emacs -Q --batch -l ...=,
+  exit code = verdict; it lived in =/tmp= for a day, see the 2026-09-25 entry) reads the defun
+  and the =add-to-list= *out of =config.org=* — no copy —
+  then drives =display-buffer= through 9 cases: sole window, left selected, rightmost
+  selected, buffer already visible, dedicated other pane, caller's =inhibit-same-window=,
+  and no room to split. All pass; a third window never appears (window count asserted in
+  every case). Live: new Claude session lands right, a second one replaces it in that pane.
+- *Correction to the entry above:* "on a frame too narrow to split, Emacs reuses an existing
+  window" is true only with *two or more* windows. With a *sole* window,
+  =split-window-sensibly= has a third branch — "if WINDOW is the only usable window on its
+  frame... split it vertically disregarding the value of =split-height-threshold=" — which
+  splits it *stacked*, below =split-width-threshold= (measured; case 6 of the harness).
+- *Trick worth keeping:* an unbalanced =defun= in a =config.org= block fails silently —
+  =read= (and therefore tangling) swallows the following forms, so the block still "works"
+  while the =add-to-list= disappears into the defun's body. A batch script that =read=s the
+  forms out of =config.org= and asserts *the next form is the one expected* catches it; it
+  caught exactly this while the rule above was being written.
 
 ** Unblocking =doom sync -u= when it aborts on a package repo
 =doom sync -u= runs in batch mode. If any straight repo under
@@ -561,11 +690,23 @@ The =** SAGE= section is parked this way (5 blocks, all =:tangle no=): Sage is n
 but its code is still there to un-park.
 
 Two costs worth remembering:
-- *Tangling is not automatic.* =doom sync= does NOT tangle =config.org= — only
-  =M-x org-babel-tangle= in the =config.org= buffer does. A =:tangle no= edit therefore
-  stays invisible until the next tangle, and that tangle then flushes *all* pending org
+- *Tangling happens on save, not on =doom sync=.* =doom sync= does NOT tangle
+  =config.org= — until 2026-09-25 =config.org='s own header read "config.el only updates
+  via =M-x org-babel-tangle=", and that is wrong. With =:config literate= enabled,
+  =after-save-hook= runs =+literate-recompile-maybe-h=, which shells out to a batch Emacs
+  and retangles when you save *any* org file in =doom-user-dir= — measured 2026-09-25: a
+  =tangle-config= process, "Done tangling 2 file(s)!", 0.4s. =M-x org-babel-tangle= is
+  only needed to tangle *without* saving. A =:tangle no= edit still stays invisible until
+  some save or tangle happens, and that tangle then flushes *all* pending org
   edits at once, which shows up as a surprisingly large =config.el= diff. Seen
   2026-09-14: an 82-line diff that was mostly a park decided days earlier.
+  - *Do not read =config.el='s timestamp to tell whether a save retangled:* org skips the
+    write when the tangled text is unchanged, so a successful retangle of a comment-only
+    edit leaves the file — and its mtime — exactly as it was. Ask
+    =(process-live-p +literate-tangle--async-proc)= or read the = *tangle config*= buffer
+    instead. (Two "verifications" of this trick were wrong before that was noticed: the
+    first save was a no-op — =save-buffer= does nothing to an unmodified buffer, so no
+    hook ran — and the second wrote nothing because the text had not changed.)
 - *Parking a =(package! …)= block un-declares the package.* =packages.el= is generated
   too, and =doom sync= runs autoremove from it — so the next sync *deletes* the package.
   Parking Sage's two =package!= blocks is what dropped =ob-sagemath= and

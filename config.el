@@ -2195,6 +2195,8 @@ buffer rather than signalling."
 
   (map! :map julia-mode-map :localleader "?" #'brust-julia-discover/body))
 
+
+
 (use-package! claude-code-ide
   :defer t
   :init
@@ -2603,6 +2605,8 @@ buffer rather than signalling."
 
 (add-hook! 'emacs-startup-hook (global-auto-revert-mode +1))
 
+(add-hook! 'emacs-startup-hook (auto-image-file-mode +1))
+
 (setq ediff-window-setup-function 'ediff-setup-windows-plain
       ediff-split-window-function 'split-window-horizontally)
 
@@ -2882,15 +2886,156 @@ FACE defaults to inheriting from default and highlight."
 
 ;; Global window-placement policy for `display-buffer' (used by nearly every
 ;; command that shows a buffer: Claude Code, julia-repl, compilation, help...).
-;; `split-window-sensibly' tries a side-by-side split first, but only if the
-;; window is at least `split-width-threshold' columns wide (default 160 — too
-;; wide for most frames, so it falls back to a stacked top/bottom split).
-;; Lowering the width threshold and disabling the height threshold forces
-;; side-by-side splits, with the new buffer landing on the RIGHT and the current
-;; buffer staying on the LEFT (`split-window-right' semantics). Bump 80 up if you
-;; want each half wider before Emacs is willing to split.
+;; At most two windows, ever: a new buffer goes to the pane on the RIGHT of the
+;; selected window; if the selected window is already the rightmost, it takes
+;; over that pane. A split happens only when the frame has a single window.
+;; The thresholds below govern whether that split is possible at all:
+;; `split-window-sensibly' splits side-by-side only if the window is at least
+;; `split-width-threshold' columns wide (default 160 — too wide for most frames),
+;; hence 80; `split-height-threshold' nil forbids the stacked top/bottom
+;; fallback, so a split is always a side-by-side one and the new window is the
+;; one on the RIGHT. Bump 80 up if you want each half wider before Emacs is
+;; willing to split. Below that width the sole-window case does NOT reuse the
+;; window: `split-window-sensibly' has a third branch that splits the only
+;; usable window anyway — stacked, ignoring `split-height-threshold' (measured,
+;; see CONFIG-NOTES). With two windows it does reuse one, as intended.
 (setq split-width-threshold 80
       split-height-threshold nil)
+
+;; The default action chain cannot express "the other pane". It tries
+;; `display-buffer--maybe-pop-up-frame-or-window' first — which splits whichever
+;; window it likes, third window included — and only then
+;; `display-buffer-use-some-window', which hands back the window you are already
+;; in. So put this action FIRST in `display-buffer-alist', for every buffer name.
+;; Consequence, accepted deliberately: no buffer of any kind opens a third
+;; window — help, compilation, magit, Vertico's buffer view etc. all take the
+;; other pane. (Vertico restores that pane's buffer when the minibuffer exits:
+;; `vertico-buffer--setup' remembers `old-buf' and puts it back.)
+;; A later rule that must WIN over this one has to sit earlier in the list —
+;; `add-to-list' and `push' both prepend, so simply add it below this block.
+(defun my/display-buffer-max-two-windows (buffer alist)
+  "Display BUFFER without ever creating more than two windows.
+Use the window on the right of the selected one; if the selected
+window is already the rightmost, use the selected window itself;
+split to the right only when the frame has a single window.  A
+dedicated selected window is never written into: the frame's other
+pane takes the buffer instead."
+  (or (display-buffer-reuse-window buffer alist)
+      (let* ((selected (selected-window))
+             (right (window-in-direction 'right selected))
+             (others (delq selected
+                           (window-list-1 nil 'nomini (window-frame selected))))
+             (other (or right (car others)))
+             ;; First window we are allowed to write into: the one on the
+             ;; right if there is one, otherwise any other pane.
+             (free (seq-find (lambda (w) (and w (not (window-dedicated-p w))))
+                             (cons right others))))
+        (cond
+         ;; A pane on the right — or a caller insisting on another window.
+         ((and other
+               (not (window-dedicated-p other))
+               (or right (cdr (assq 'inhibit-same-window alist))))
+          (window--display-buffer buffer other 'reuse alist))
+         ;; The selected window is dedicated (a side window: treemacs,
+         ;; pdf-tools, Claude with `use-side-window'), so it must not be
+         ;; written into, and "take over this pane" below is out. The frame's
+         ;; other pane is the answer: returning nil here instead would hand
+         ;; the buffer to the default chain, which splits a THIRD window
+         ;; (measured, see CONFIG-NOTES).
+         ((and (window-dedicated-p selected) free)
+          (window--display-buffer buffer free 'reuse alist))
+         ;; Single window: split it, or reuse it if splitting is impossible.
+         ((null others)
+          (and (not (window-dedicated-p selected))
+               (or (and pop-up-windows (display-buffer-pop-up-window buffer alist))
+                   (window--display-buffer buffer selected 'reuse alist))))
+         ;; Rightmost of two: take over this pane.
+         ((not (window-dedicated-p selected))
+          (window--display-buffer buffer selected 'reuse alist))))))
+
+(add-to-list 'display-buffer-alist
+             '("\\`" my/display-buffer-max-two-windows)) ; every buffer name
+
+;; Two doors where the policy above is deliberately not what is wanted, both
+;; because they ask for one specific thing: a link followed inside a *helpful*
+;; buffer, and an item clicked on the Doom dashboard. In both, the target takes
+;; the window whole. `display-buffer-overriding-action' is what makes that stick
+;; -- it is consulted before `display-buffer-alist' -- and reuse-first leaves a
+;; target that is already on screen where it is. Everything else arriving in
+;; either case (a REPL, compilation, Claude Code) still obeys the rule above.
+;;
+;; *Helpful.* Built-in `help-mode' keeps one *Help* buffer and reuses it, so
+;; following a link never opens a window; helpful makes a new buffer per symbol
+;; (=*helpful function: car*=), so nothing is ever reusable, the "frame has a
+;; single window" branch fires, and every link click in a lone help buffer split
+;; the frame. Wired to helpful's two doors: `helpful-switch-buffer-function' for
+;; symbol links, and `helpful--navigate' for the "defined in foo.el" ones.
+;;
+;; *Dashboard.* A click there asks for the file (or agenda, or mail) it names,
+;; so that should fill the window the dashboard is in rather than splitting the
+;; frame and leaving the dashboard beside it. Doom routes every click -- mouse
+;; or RET -- through `+dashboard/push-button', which is the door.
+;;
+;; These forms stay vanilla elisp -- `with-eval-after-load' rather than Doom's
+;; `after!', defuns outside it -- because local/tests/window-policy-test.el
+;; reads them out of this file and evaluates them in bare Emacs, with no Doom.
+
+(defconst my/in-place-display-action
+  '((display-buffer-reuse-window display-buffer-same-window))
+  "Display action: show a target in the window it was asked from.
+The value is a LIST of two functions -- a bare `(fn1 fn2)' would have its car
+read as a single function and drop the second one.")
+
+(defun my/helpful-link-window-p ()
+  "Non-nil when the selected window is showing a helpful buffer.
+A dedicated one (a side window, say) does not count: as with the rule above,
+this policy never writes into a dedicated window."
+  (and (not (window-dedicated-p (selected-window)))
+       (eq (buffer-local-value 'major-mode (window-buffer (selected-window)))
+           'helpful-mode)))
+
+(defun my/helpful-in-place-action ()
+  "`my/in-place-display-action' in a helpful window, else nil.
+Nil means the normal policy, which is what a link clicked anywhere else
+gets -- there the window's buffer is not help being read."
+  (when (my/helpful-link-window-p)
+    my/in-place-display-action))
+
+(defun my/helpful-in-place (buffer)
+  "Show BUFFER in the window the helpful buffer being read is in.
+Value for `helpful-switch-buffer-function', which helpful calls for symbol
+links (and which Doom's `+emacs-lisp/helpful-next'/`previous' use).  With the
+selected window not showing help -- `C-h f' from a source file -- this is the
+plain `pop-to-buffer' it replaces, so opening help is unchanged."
+  (let ((display-buffer-overriding-action (my/helpful-in-place-action)))
+    (pop-to-buffer buffer)))
+
+(defun my/helpful-navigate-in-place (fn button)
+  "Open the file BUTTON points at where the helpful buffer being read is.
+`:around' advice for `helpful--navigate', i.e. the \"defined in foo.el\" links."
+  (let ((display-buffer-overriding-action (my/helpful-in-place-action)))
+    (funcall fn button)))
+
+(with-eval-after-load 'helpful
+  (setq helpful-switch-buffer-function #'my/helpful-in-place)
+  (advice-add #'helpful--navigate :around #'my/helpful-navigate-in-place))
+
+;; The dashboard door. `+dashboard-mode-map' remaps `push-button' to
+;; `+dashboard/push-button', so a mouse click and RET both land here -- a click
+;; runs the button's own `push-button' binding, and the remap catches it either
+;; way. `browse-url' items (the footer) are untouched. Advised unconditionally:
+;; `advice-add' on a symbol that is only autoloaded survives the real
+;; definition (measured), and nothing else in this config calls that name.
+(defun my/dashboard-click-in-place (fn)
+  "Run the dashboard button FN, with what it opens taking this window whole.
+A click on the dashboard asks for the thing clicked, so it should fill the
+window the dashboard is in instead of splitting the frame -- which is what the
+policy above does to a single-window frame -- and leaving the dashboard in the
+pane beside it."
+  (let ((display-buffer-overriding-action my/in-place-display-action))
+    (funcall fn)))
+
+(advice-add '+dashboard/push-button :around #'my/dashboard-click-in-place)
 
 ;; Swap evil surround default space insertion.
 ;; (after! evil-surround
@@ -2915,7 +3060,8 @@ FACE defaults to inheriting from default and highlight."
   :hook (emacs-startup . global-jinx-mode)
   :init
   ;; Set your preferred languages (order matters: first = primary)
-  (setq jinx-languages "en ca es"
+  (setq jinx-languages "en_US ca_ES es_ES")
+  (setq ;; jinx-languages "en ca es"
         jinx-delay 1.0)
 
   ;; Exclude code-like faces; include comments/strings
@@ -2998,6 +3144,8 @@ Predicate for `jinx--predicates'; see `brust-jinx-latex-key-macros'."
 
 ;; Prevent lsp-mode from launching semgrep-ls (not needed for Julia dev)
 (add-to-list 'lsp-disabled-clients 'semgrep-ls)
+(setq lsp-julia-command
+      (expand-file-name "~/.julia/juliaup/julia-1.12.7+0.x64.linux.gnu/bin/julia"))
 
 (use-package! lsp-ui
   :after lsp
