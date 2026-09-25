@@ -523,6 +523,27 @@ Error when using the jinx speller (triggered by =jinx-languages= /
 
 * Tricks / maintenance recipes
 
+** 2026-09-26 — =git filter-branch HEAD= rewrites EVERY commit reachable from HEAD
+Used to append an attribution trailer to one commit.  It appended it to all 24 on the
+branch -- including upstream's, since the branch was cut from someone else's repository
+-- so a public pull request briefly carried the maintainer's own =Initial commit= and
+=Initial version= attributed to Claude Code.  The fork was force-pushed back within
+minutes; nothing was lost, but it was public for that time.
+
+- *=HEAD= is a range, not a commit.*  =git filter-branch --msg-filter … HEAD= means
+  "every commit reachable from HEAD".  To touch only your own work give it the base --
+  =git filter-branch … 944fb4e..HEAD= -- and for a single commit just
+  =git commit --amend -F FILE=, which cannot reach further back.
+- *A message with no trailing newline gets the trailer glued on.*  A =cat; echo; echo
+  "…"= filter turned =Initial commit= into =Initial commit Co-Authored-By: …= on the
+  root commit, which is how this was noticed.
+- *Count before pushing.*  =git log --format=%B | grep -c "Co-Authored-By"= after the
+  rewrite reads 24, not 1.  The check is one command; the push is the irreversible part.
+- *It was recoverable here only because =main= still pointed at the pristine upstream
+  commit*, so the branch could be rebuilt as one commit on top of it.  On a branch that
+  is the only copy of its own history, the same slip is not recoverable.
+
+
 ** 2026-09-25 — under =batch-byte-compile=, neither =load-file-name= nor =buffer-file-name= is set
 A file that puts its own directory on =load-path= with a bare =add-to-list= cannot
 be byte-compiled.  The compiler *evaluates* a top-level =(require …)= -- it has to,
