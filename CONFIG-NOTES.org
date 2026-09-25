@@ -394,9 +394,12 @@ Rather than move =custom-file= out of the config dir, the file is treated as *tr
 - *The one thing that had to move:* =safe-local-variable-values= with =(tramp-default-method
   . "ssh")= and =(projectile-project-root . t)=, now in that =setq= block. Verified by reading
   the pair back *out of config.org* and applying it to a cleared variable; the =shadow= face
-  was verified the same way. A whole-config batch check was abandoned deliberately: =DOOMDIR=
-  is not set in a plain shell here, and a batch Emacs with the wrong env loads a *different*
-  config without complaining — a false pass is worse than no check.
+  was verified the same way. A whole-config batch check was abandoned after one failed attempt,
+  wrongly blamed here on =DOOMDIR= — which Doom sets itself. The command pointed at
+  =~/.config/emacs/init.el=, the *install* directory, which has no init.el at all; the config's
+  own entry point is =~/.config/doom/init.el=. That is the path to load if such a check is
+  wanted. (The general trap stands, though: a batch Emacs with the wrong env loads a
+  *different* config and passes anyway, so check the env before believing the result.)
 - *Do not "clean up" the skill's job by deleting custom.el on sight:* it holds the settings
   until they are folded in. Fold first, delete second.
 

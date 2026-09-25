@@ -49,10 +49,13 @@ exists. This skill is what removes it again, by moving what it holds into
      `emacs -Q --batch --eval '(org-babel-tangle-file "config.org")'`.
    Saving the buffer also retangles, asynchronously, via the `:config literate`
    module — see CONFIG-NOTES.org for why that is worth knowing.
-5. Verify: `git diff config.el` should show only the hunks you expect, and the
-   moved settings should read back correctly in a *fresh* Emacs (the user tests
-   that way) — the values in the current session come from whatever custom.el
-   held when it started, so they prove nothing.
+5. Verify by reading the settings back, not by `git diff`: neither `config.el`
+   nor `packages.el` is tracked any more, so git shows nothing about either. Read
+   the moved value out of `config.el` (or re-evaluate the form from `config.org`),
+   and have it confirmed in a *fresh* Emacs — the user tests that way. The value
+   in the current session comes from whatever custom.el held when it started, so
+   it proves nothing. To see what a retangle actually changed, tangle to a scratch
+   file and compare: `emacs -Q --batch --eval '(org-babel-tangle-file "config.org" "/tmp/tangled.el")'`.
 6. Delete `custom.el` (`rm`), then report what moved where. Nothing else needs
    cleaning up: the file is gitignored, and it will not be recreated until
    something writes a customisation again.
