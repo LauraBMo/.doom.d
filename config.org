@@ -4,9 +4,11 @@
 # Default tangle target: without this line a plain '#+begin_src elisp' block has no
 # target (org's ':tangle' default is 'no') and is silently dropped when tangling.
 # Blocks with their own ':tangle packages.el' / ':tangle no' still win over it.
-# 'doom sync' does NOT tangle. config.el is rewritten when you save this file (or any
-# other .org in this directory): the ':config literate' module retangles it in the
-# background on save. 'M-x org-babel-tangle' in this buffer does it now.
+# Tangling, all three ways round (CONFIG-NOTES has the evidence): 'doom sync' tangles
+# this file first, from 'doom-before-sync-hook' (bin/doom-sync:107; '--reload' skips
+# it); saving any .org in this directory retangles in the background; and
+# 'M-x org-babel-tangle' in this buffer does it now. config.el is generated, so git
+# does not track it: a fresh clone gets it from its first 'doom sync'.
 #+PROPERTY: header-args :tangle config.el
 
 #+begin_quote
@@ -41,7 +43,6 @@ good ten seconds to do by hand.
   - [[#packagesel][Packages.el]]
 - [[#change-a-few-defaults][Change a few defaults]]
   - [[#set-some-vars][Set some vars]]
-  - [[#dashboard-menu][Dashboard menu]]
   - [[#lookup-online][Lookup online]]
   - [[#delete-selection-on-type][Delete selection on type.]]
   - [[#faces][Faces]]
@@ -208,6 +209,12 @@ good ten seconds to do by hand.
 
  ;; Local Variables Set save all local variable and do not query.
  ;; enable-local-variables :all
+ ;; The two variables you have answered "!" (always safe) to at a file-local
+ ;; prompt. They belong here, not in custom.el: Emacs writes what Customize and
+ ;; "!" produce to custom-file, and the `migrate-custom-el' skill folds that
+ ;; back in here and deletes it (CONFIG-NOTES has the arrangement).
+ safe-local-variable-values '((tramp-default-method . "ssh")
+                              (projectile-project-root . t))
 
  ;; Buffer line numbers
  ;; Line numbers are pretty slow all around. The performance boost of
@@ -257,9 +264,19 @@ good ten seconds to do by hand.
  ;; For visual-fill-mode see https://github.com/hlissner/doom-emacs/pull/1906/files
  +word-wrap-extra-indent 'single
  )
+;; Everything Customize saves -- and everything `en/disable-command' appends when
+;; you answer "!" to a file-local prompt -- goes to `custom-file', which Doom
+;; points at $DOOMDIR/custom.el (doom-emacs.el:284). Settings are meant to live in
+;; this file instead, so an existing custom.el means something was saved outside
+;; it: say so, loudly, and fold it back in with the `migrate-custom-el' skill.
+;; A missing custom.el is the normal state and this stays silent.
+(when-let* ((file (bound-and-true-p custom-file))
+            ((file-exists-p file)))
+  (display-warning
+   'my/custom-file
+   (format "Settings were saved outside config.org: %s.\nRun the `migrate-custom-el' skill to fold them in, then delete that file." file)
+   :warning))
 #+END_SRC
-
-** Dashboard menu
 #+begin_src elisp
 (setq +dashboard-menu-sections
       '(
@@ -3911,8 +3928,109 @@ buffer rather than signalling."
 *** TODO EmacsVTerm
 From [[https://github.com/wentasah/EmacsVterm.jl][EmacsVTerm.jl]]; Modify it so docs are shown into helpful.el buffer with helpful bindings and clicable links...
 
-#+begin_src elisp
+The docs arrive as HTML, and it is not EmacsVterm.jl that renders them badly.
+EmacsVterm.jl turns the Julia =Markdown.MD= into HTML and base64s it down a
+vterm escape; =julia-repl--show= -- which lives in =julia-repl.el=, not in
+EmacsVterm.jl -- is what drops it into a plain buffer with =shr-render-region=
+and =view-mode=. So the rendering half is ours to change, and the Julia half
+need only start sending more than the HTML.
 
+The first piece is the cross-references. A Julia docstring is full of
+~[`foo`](@ref)~ links, and =Markdown.html= writes every one of them as
+=href="@ref"= with the symbol sitting in the link text, which =shr= then hands
+to =browse-url= as the literal string "@ref". They are the most useful links a
+docstring has and the only ones that go nowhere. Buttons that ask the REPL for
+that symbol's own docs are what make the buffer navigable at all; the
+helpful-shaped part -- a header, the methods table, a source line -- sits in
+the metadata Julia already attaches and is not here yet.
+
+#+begin_src elisp
+;; Julia docs, part one: cross-references that lead somewhere.
+;;
+;; Nothing calls these yet.  The mode that will, and the sender it binds, are
+;; the next piece; keeping them apart is what lets this be checked on its own
+;; by `local/tests/julia-doc-test.el', against an HTML render of a real
+;; docstring.
+
+(defvar-local brust-julia-doc-follow-function nil
+  "Function that fetches the documentation of a cross-reference target.
+Called with one argument, the symbol the link points at.  Set by
+`brust-julia-doc--linkify-refs' and read by `brust-julia-doc--follow-ref';
+a mode binds it to the sender that talks to the Julia REPL.
+
+Buffer-local on purpose: two doc buffers open side by side keep their own
+REPL, so following a link in one must not send into the other.")
+
+(defun brust-julia-doc--ref-target (href text)
+  "The Julia symbol an `@ref' link in a rendered docstring points at, else nil.
+HREF is the link's `shr-url' property and TEXT the text it covers.  Nil means
+\"not a cross-reference\", and shr is left to handle the link as before.
+
+Julia's Markdown.html writes a cross-reference in two shapes, both measured
+against `@doc sin' on 1.13:
+
+  [text](@ref)      -> href \"@ref\"       the target is the link text
+  [text](@ref sym)  -> href \"@ref sym\"   the target is written out
+
+The first is why a signature link such as ``[`sin(x)`](@ref)`` needs no
+special case here: the text is what goes to `@doc', and `@doc sin(x)'
+resolves the method on its own.  The two shapes are told apart exactly rather
+than with a bare `string-prefix-p', which would take \"@referenced\" for a
+cross-reference and hand `@doc' the tail of it."
+  (let* ((raw (cond ((equal href "@ref") text)
+                    ((string-prefix-p "@ref " href) (substring href 5))))
+         (target (and raw (string-trim raw))))
+    (if (equal target "") nil target)))
+
+(defun brust-julia-doc--follow-ref (button)
+  "Button action: fetch the documentation of the symbol BUTTON points at.
+A named function rather than a closure over the sender: the harness in
+`local/tests/' evals the forms read out of this file in a buffer carrying no
+`lexical-binding' cookie, where a closure would not survive.  Reading the
+target off the button with `button-get' is what carries it instead."
+  (let ((target (button-get button 'brust-julia-doc-ref)))
+    (unless brust-julia-doc-follow-function
+      (error "No Julia doc sender here -- see `brust-julia-doc--linkify-refs'"))
+    (funcall brust-julia-doc-follow-function target)))
+
+(defun brust-julia-doc--linkify-refs (follow)
+  "Make every `@ref' link in the current buffer a button calling FOLLOW.
+FOLLOW is stored in `brust-julia-doc-follow-function' and called with the
+symbol the link points at.  Call once, after `shr-render-region'.
+
+Two lines here are load-bearing and neither is obvious:
+
+`make-text-button', not `add-text-properties'.  shr marks its links with a
+`button' property of plain t, and `button-at' / `next-button' want a marker.
+With t they find nothing and `push-button' is a no-op, so a link built by hand
+looks like a button and navigates like a hole.  (Which is why TAB and
+`forward-button' have never moved between links in *julia-doc*.)
+
+The `keymap' write after it.  `make-text-button' will not replace a keymap
+already on the text, and shr puts `shr-map' on every link -- so without that
+line the span becomes a real button while RET and mouse-2 go on running
+`shr-browse-url', and the cross-reference goes on feeding the literal \"@ref\"
+to `browse-url'.  It is the half-fixed state, the one that reads as done.
+
+shr's `face' is deliberately left alone, so a cross-reference looks exactly as
+it did and only behaves differently."
+  (setq brust-julia-doc-follow-function follow)
+  (let ((pos (point-min)))
+    (while (< pos (point-max))
+      (let ((url (get-text-property pos 'shr-url)))
+        (if (null url)
+            (setq pos (or (next-single-property-change pos 'shr-url)
+                          (point-max)))
+          (let* ((end (or (next-single-property-change pos 'shr-url)
+                          (point-max)))
+                 (target (brust-julia-doc--ref-target
+                          url (buffer-substring-no-properties pos end))))
+            (when target
+              (make-text-button pos end
+                                'brust-julia-doc-ref target
+                                'action #'brust-julia-doc--follow-ref)
+              (put-text-property pos end 'keymap button-map))
+            (setq pos end)))))))
 #+end_src
 
 ** Claude Code

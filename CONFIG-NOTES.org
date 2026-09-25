@@ -371,6 +371,36 @@ Error when using the jinx speller (triggered by =jinx-languages= /
 
 * Tricks / maintenance recipes
 
+** 2026-09-25 — custom.el is transient here: a detector, and a skill that folds it back in
+Settings in this config live in =config.org=, but Emacs has its own place to put them:
+Customize's saves, and the =safe-local-variable-values= pairs appended when you answer =!= at a
+file-local prompt, both go to =custom-file= — which Doom points at =$DOOMDIR/custom.el=
+(=doom-emacs.el:284=, with =en/disable-command= advised to write there too, =:288-292=).
+Rather than move =custom-file= out of the config dir, the file is treated as *transient*:
+
+- *It is gitignored* (=.gitignore=), so it never reaches a commit and never shows in =git status=.
+- *A detector in config.org says so, loudly.* At config load, if =custom-file= exists,
+  =display-warning= on =my/custom-file= names the file and points at the skill; a missing
+  custom.el — the normal state — is silent. Verified 2026-09-25: silent with the file absent,
+  fires with an empty one present.
+- *The =migrate-custom-el= skill does the folding* (=.claude/skills/migrate-custom-el/=): it
+  sorts what the file holds into the right blocks (=custom-set-faces= to =** Faces=,
+  variables to the =(setq ...)= under =** Set some vars=, the safe-local pairs to that block's
+  =;; Local Variables= comment, =(put 'CMD 'disabled ...)= to =** Enabling=), re-tangles,
+  deletes the file and reports. It exists because placement needs judgement: on 2026-09-25 all
+  three faces in custom.el (=org-block-begin-line=, =org-block-end-line=, =shadow=) were
+  *already* identical in =** Faces= — Customize echoes what was written by hand — so a naive
+  importer would have duplicated them.
+- *The one thing that had to move:* =safe-local-variable-values= with =(tramp-default-method
+  . "ssh")= and =(projectile-project-root . t)=, now in that =setq= block. Verified by reading
+  the pair back *out of config.org* and applying it to a cleared variable; the =shadow= face
+  was verified the same way. A whole-config batch check was abandoned deliberately: =DOOMDIR=
+  is not set in a plain shell here, and a batch Emacs with the wrong env loads a *different*
+  config without complaining — a false pass is worse than no check.
+- *Do not "clean up" the skill's job by deleting custom.el on sight:* it holds the settings
+  until they are folded in. Fold first, delete second.
+
+
 ** 2026-09-15 — Folding: evil's keys, Doom's module, hideshow's rules, no LSP anywhere
 The keys are evil's own, in normal state, and need no binding: =za= adds or removes the fold
 at point, =zc= / =zo= close and open one, =zO= opens recursively, =zr= / =zm= do the whole
@@ -690,23 +720,32 @@ The =** SAGE= section is parked this way (5 blocks, all =:tangle no=): Sage is n
 but its code is still there to un-park.
 
 Two costs worth remembering:
-- *Tangling happens on save, not on =doom sync=.* =doom sync= does NOT tangle
-  =config.org= — until 2026-09-25 =config.org='s own header read "config.el only updates
-  via =M-x org-babel-tangle=", and that is wrong. With =:config literate= enabled,
-  =after-save-hook= runs =+literate-recompile-maybe-h=, which shells out to a batch Emacs
-  and retangles when you save *any* org file in =doom-user-dir= — measured 2026-09-25: a
-  =tangle-config= process, "Done tangling 2 file(s)!", 0.4s. =M-x org-babel-tangle= is
-  only needed to tangle *without* saving. A =:tangle no= edit still stays invisible until
-  some save or tangle happens, and that tangle then flushes *all* pending org
-  edits at once, which shows up as a surprisingly large =config.el= diff. Seen
-  2026-09-14: an 82-line diff that was mostly a park decided days earlier.
+- *Tangling happens on save, and on =doom sync=.* The truth, read out of the code on
+  2026-09-25: =bin/doom-sync:107= runs =(run-hooks 'doom-before-sync-hook)= before it
+  synchronizes — only =--reload= skips that — and the =:config literate= module hooks
+  =+literate-tangle-h= into it (=modules/config/literate/cli.el:18=), so a plain
+  =doom sync= tangles =config.org= *first* and aborts the whole sync if that tangle
+  fails (in batch, =+literate-tangle--sync= exits 3). That is why =config.el= — and
+  =packages.el= — need not be committed: a fresh clone gets both from its first
+  =doom sync=, before either is read. Saving *any* org file in =doom-user-dir= also
+  retangles, in the background: =after-save-hook= runs =+literate-recompile-maybe-h= —
+  measured 2026-09-25: a =tangle-config= process, "Done tangling 2 file(s)!", 0.4s.
+  =M-x org-babel-tangle= is what does it *now*, without either of those.
+  A =:tangle no= edit still stays invisible until some save, sync or tangle happens, and
+  that tangle then flushes *all* pending org edits at once, which shows up as a
+  surprisingly large =config.el= diff. Seen 2026-09-14: an 82-line diff that was mostly a
+  park decided days earlier.
   - *Do not read =config.el='s timestamp to tell whether a save retangled:* org skips the
     write when the tangled text is unchanged, so a successful retangle of a comment-only
     edit leaves the file — and its mtime — exactly as it was. Ask
     =(process-live-p +literate-tangle--async-proc)= or read the = *tangle config*= buffer
-    instead. (Two "verifications" of this trick were wrong before that was noticed: the
-    first save was a no-op — =save-buffer= does nothing to an unmodified buffer, so no
-    hook ran — and the second wrote nothing because the text had not changed.)
+    instead.
+  - *Three wrong turns, written down so they are not taken again* (all on 2026-09-25):
+    (1) "that save was a no-op" — =save-buffer= does nothing to an unmodified buffer, so
+    no hook ran and the first check of this proved nothing; (2) "org wrote the file" — it
+    had not: identical text means no write, which is why the mtime never moved; (3) "=doom
+    sync= does not tangle" — it does, and =config.org='s own header carried that false
+    claim for a day, because only the save path had been read.
 - *Parking a =(package! …)= block un-declares the package.* =packages.el= is generated
   too, and =doom sync= runs autoremove from it — so the next sync *deletes* the package.
   Parking Sage's two =package!= blocks is what dropped =ob-sagemath= and
