@@ -5574,6 +5574,33 @@ back, switch =:tangle no= to =:tangle packages.el= / =:tangle config.el= and run
 ;;    ?\} '("{ " . " }")))
 
 (global-evil-visualstar-mode +1)
+
+;; Help buffers open in evil's *normal* state, whose keymap answers before the
+;; mode's own.  That is why helpful's `n'/`p' for buttons and `help-mode's
+;; `l'/`r' for history have never fired, and neither had the Julia doc
+;; buffer's keys.  Giving the three maps precedence over normal state is what
+;; fixes it: each mode's own bindings start working, defined once, instead of
+;; being repeated for the state.
+;;
+;; `gg' survives, which is the thing to check after touching this.  A `g'
+;; prefix with no `gg' under it falls through to evil; a *bare* `g' in one of
+;; these maps would not, and that is why the revert/update keys are `gr' --
+;; which is also what Doom already binds for helpful.  helpful needed its `g'
+;; cleared for the same reason: it binds that key alone.
+(with-eval-after-load 'evil
+  (evil-make-overriding-map brust-julia-doc-mode-map 'normal)
+  (evil-make-overriding-map help-mode-map 'normal)
+  (define-key help-mode-map (kbd "h")  #'help-go-back)
+  (define-key help-mode-map (kbd "l")  #'help-go-forward)
+  (define-key help-mode-map (kbd "gr") #'revert-buffer)
+
+  (with-eval-after-load 'helpful
+    (evil-make-overriding-map helpful-mode-map 'normal)
+    (define-key helpful-mode-map (kbd "g")  nil)
+    (define-key helpful-mode-map (kbd "h")  #'+emacs-lisp/helpful-previous)
+    (define-key helpful-mode-map (kbd "l")  #'+emacs-lisp/helpful-next)
+    (define-key helpful-mode-map (kbd "gr") #'helpful-update)))
+
 #+END_SRC
 
 *** Del char

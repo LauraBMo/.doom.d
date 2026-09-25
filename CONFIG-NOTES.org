@@ -416,6 +416,30 @@ a link displays something (=window-normalize-buffer-to-switch-to= does not =set-
   displaying itself with a plain =pop-to-buffer= (a REPL, the dashboard's agenda and mail items)
   would still need a door.
 
+** 2026-09-25 — a help buffer's own keys never fire: they are in the major-mode map, and evil's normal state answers first
+Measured in a live =*helpful function: car*= buffer: =(key-binding "l")= is =evil-forward-char=, =("n")=
+is =evil-ex-search-next=, =("p")= is =ignore=. Doom binds =l=/=r= in =helpful-mode-map= to
+=+emacs-lisp/helpful-previous=/=next= (=modules/lang/emacs-lisp/config.el:320-321=) and helpful binds
+=n=/=p= to the button commands, and *none of it fires* — those buffers open in evil's normal state, and
+a minor-mode map outranks the major-mode one (the entry on =cdlatex-mode-map= is the same trap). =TAB=
+works only because evil never claims it, and RET on a link works from the other side: the button's
+text-property keymap outranks evil too.
+Fixed by *giving the mode maps precedence* rather than repeating every key for the state:
+=evil-make-overriding-map MAP 'normal= ("Give KEYMAP precedence over the global keymap of STATE"). Each
+mode's own bindings then fire, defined once, and the doc buffer's keys are back where the mode is. This
+was the first version's mistake — =evil-define-key 'normal= for three maps duplicated every binding and
+ran 24 lines.
+Three things learned doing it, each measured. (1) A =g= *prefix* in an overriding map costs nothing:
+=gg'/=G= still fall through to evil, so =gr= works for revert — verified by pressing the keys and watching
+point move, not by reading =key-binding=. A *bare* =g= binding would not fall through, which is why
+=helpful-mode-map= has its own single =g= (update) cleared in favour of =gr=. (2) A check that reads the
+keymap object proves nothing: =lookup-key= on =brust-julia-doc-mode-map= returned =forward-button= for TAB
+while the live buffer answered =evil-forward-char= for =l=. Ask the live buffer — =(key-binding KEY)= with
+the mode in the state it really opens in. No =--batch= test can see this, because evil is not there.
+(3) State bindings outrank an overriding map, so a stale =evil-define-key 'normal= in the session masks
+the new mechanism entirely while debugging: clear the map's auxiliary keymap
+(=(evil-get-auxiliary-keymap MAP 'normal nil nil)=, then =define-key ... nil=) before believing a reading.
+
 ** 2026-09-25 — an empty JSON field is not an absent one, and elisp will happily print it
 =Markdown.MD= for a docstring fetched with =?help= has *nothing* attached to it: that path goes through
 =REPL.helpmode=, which displays an MD of its own making, so =:binding=, =:typesig= and =:results= are all
