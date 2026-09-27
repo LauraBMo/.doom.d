@@ -469,13 +469,6 @@ when the selected one is dedicated; a split only from a single window."
 
 It was discontinued.
 
-#+begin_src elisp
-(defsubst brust-mode-line-doom-space nil
-  "Text style with whitespace."
-  ;; From doom-mode-line
-  (propertize " " 'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive)))
-#+end_src
-
 ** Display time
 #+begin_src elisp
 (defun brust-kill-date nil
@@ -507,14 +500,14 @@ Keymap to show or kill current date.")
 ** Number modes
 
 Only show line number and the total number of lines.
-Define my own mode [[file:local/lisp/brust-line-number.el][Brust Line Number]].
+Define my own mode [[file:~/src/lisp/total-line-number.el/][total-line-number.el]].
 
 #+begin_src elisp
 (defun brust-mode-line-set-number-modes nil
-  (load-file
-   (expand-file-name "~/.config/doom/local/lisp/brust-line-number.el"))
+  (add-to-list 'load-path (expand-file-name "~/src/lisp/total-line-number.el/"))
+  (require 'total-line-number)
   (doom-modeline +1)  
-  (brust-line-number-mode +1)
+  (total-line-number-mode +1)
   ;; doom-modeline-buffer-encoding nil
   (line-number-mode -1)
   (display-time-mode +1)
@@ -2148,21 +2141,6 @@ of the narrow-or-widen so I don't have to keep remembering which is which.
       (replace-match "-"))
     ;; Get the file name
     (buffer-string)))
-#+end_src
-
-** Total number of lines
-#+begin_src elisp
-(defsubst brust--number-of-lines-current-buffer nil
-  (let ((n (string-to-number
-            (save-excursion
-              (goto-char (point-max))
-              (format-mode-line "%l")))))
-    (s-trim
-     (cond
-      ((> n 1000000) (format "%7.1fM" (/ n 1000000.0)))
-      ((> n 1000) (format "%7.1fk" (/ n 1000.0)))
-      ;;((> n 100) (format "%7.1fh" (/ n 100.0)))
-      (t (format "%8d" n))))))
 #+end_src
 
 ** Vterm
@@ -4019,7 +3997,7 @@ traps the package must keep.  The short version: =julia-repl--show= is what
 renders the HTML badly, and it lives in =julia-repl.el= rather than in
 EmacsVterm.jl, so the rendering half is ours to change.
 
-It is on =load-path= rather than a =package!=, the way =brust-line-number.el=
+It is on =load-path= rather than a =package!=, the way =total-line-number.el=
 is: the checkout under =~/src= is the copy being edited, and straight's
 =:local-repo= is a repository *name* rather than a path, so a recipe would
 clone a second one.
@@ -4954,7 +4932,7 @@ FACE defaults to inheriting from default and highlight."
      :summarizer brust--number-of-lines-summarize)
     (save-window-excursion
       (switch-to-buffer buffer)
-      (brust--number-of-lines-current-buffer)))
+      (total-line-number-count)))
 
   (defun brust--number-of-lines-string-to-number (str)
     (let ((factor
@@ -5567,7 +5545,7 @@ Show the rainbow progres line.
   (setq pdf-annot-activate-created-annotations t
         pdf-view-resize-factor 1.1)
   (add-hook! 'pdf-view-mode-hook
-    (brust-line-number-mode -1)
+    (total-line-number-mode -1)
     (pdf-isearch-batch-mode +1)
     (pdf-view-themed-minor-mode +1)
     (pdf-view-roll-minor-mode +1)  ;; faster motion
