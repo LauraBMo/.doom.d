@@ -4140,16 +4140,42 @@ insert-state =<escape>= itself, so the old manual binding is gone.
       )
 #+end_src
 
-** TODO Singular
+** Singular
 *** Config
 #+BEGIN_SRC elisp
-(setq singular-emacs-home-directory "/usr/share/singular/emacs/")
-;; (add-load-path! singular-emacs-home-directory)
-(cl-pushnew singular-emacs-home-directory load-path :test #'string=)
-(autoload 'singular "singular"
-  "Start Singular using default values." t)
-(autoload 'singular-other "singular"
-  "Ask for arguments and start Singular." t)
+;; The Emacs interface is not in Fedora's Singular package at all (4.4.1p5 ships
+;; 3237 files under /usr/share/singular and not one of them .el), so the plain
+;; "/usr/share/singular/emacs/" this used to point at is a path that cannot
+;; exist here.  Resolve the interface from the first install prefix that really
+;; carries it: /usr first, in case Fedora ever ships those files, then the conda
+;; `sage' env, which is where they are today.
+(defconst brust-singular-installs
+  '("/usr" "/home/laury/miniforge3/envs/sage")
+  "Install prefixes to look for the Singular Emacs interface under, best first.")
+
+(defvar brust-singular-install
+  (cl-find-if (lambda (prefix)
+                (file-exists-p
+                 (expand-file-name "share/singular/emacs/singular.el" prefix)))
+              brust-singular-installs)
+  "Prefix of the install carrying the Singular Emacs interface, or nil.")
+
+(setq singular-emacs-home-directory
+      (when brust-singular-install
+        (expand-file-name "share/singular/emacs/" brust-singular-install)))
+
+(when brust-singular-install
+  (cl-pushnew singular-emacs-home-directory load-path :test #'string=)
+  (autoload 'singular "singular"
+    "Start Singular using default values." t)
+  (autoload 'singular-other "singular"
+    "Ask for arguments and start Singular." t)
+  ;; singular.el starts the process by name off `exec-path', and a GUI session's
+  ;; PATH carries no conda env's bin, so name the binary outright unless it is
+  ;; already findable.
+  (setq singular-executable-default
+        (or (executable-find "Singular")
+            (expand-file-name "bin/Singular" brust-singular-install))))
 
 (add-to-list 'auto-mode-alist '("\\.sing\\'" . c++-mode))
 (add-to-list 'auto-mode-alist '("\\.lib\\'" .  c++-mode))
@@ -4157,9 +4183,16 @@ insert-state =<escape>= itself, so the old manual binding is gone.
 (defun brust-singular-mode-hook nil
   ;; turn-on fontification for c++-mode
   (font-lock-mode 1)
-  (setq singular-help-fall-back-file-name "singular.hlp")
+  ;; No `singular-help-fall-back-file-name' override: singular.el's own default
+  ;; is "singular.info", which is the file this install has (share/info), while
+  ;; a "singular.hlp" exists nowhere here.
   (set (make-local-variable 'singular-commands-alist) nil)
-  (load (concat singular-emacs-home-directory "cmd-cmpl"))
+  ;; Guarded: this hook sits on `c++-mode-hook', so it runs for EVERY C++ buffer,
+  ;; and the bare (load ...) that used to be here signalled "Cannot open load
+  ;; file: /usr/share/singular/emacs/cmd-cmpl" on every one of them while that
+  ;; directory was absent.
+  (when singular-emacs-home-directory
+    (load (concat singular-emacs-home-directory "cmd-cmpl")))
   ;; turn on aut-new line
   (c-toggle-auto-newline 1)
   ;; tunr off hungry-delete
