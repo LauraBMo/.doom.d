@@ -469,7 +469,7 @@ Define my own mode [[file:~/src/lisp/total-line-number.el/][total-line-number.el
 (defun brust-mode-line-set-number-modes nil
   (add-to-list 'load-path (expand-file-name "~/src/lisp/total-line-number.el/"))
   (require 'total-line-number)
-  (doom-modeline +1)  
+  (doom-modeline +1)
   (total-line-number-mode +1)
   ;; doom-modeline-buffer-encoding nil
   (line-number-mode -1)
@@ -556,7 +556,7 @@ Editing =.bib= files.
         bibtex-user-optional-fields '(("keywords" "Keywords to describe the entry" "")
                                       ("file" "Link to document file." ":"))
         bibtex-align-at-equal-sign t)
-        
+
   ;; How to format entries
   ;; No required fields
   (setf (alist-get 'required-fields bibtex-entry-format nil 'remove) nil)
@@ -5268,7 +5268,7 @@ I just want auto format in a few modes.
         jinx-delay 1.0)
 
   ;; Exclude code-like faces; include comments/strings
-  ;; If using Tree-sitter 
+  ;; If using Tree-sitter
   ;; (setq jinx-include-faces
   ;;       (append jinx-include-faces
   ;; '(tree-sitter-hl-face:comment tree-sitter-hl-face:string tree-sitter-hl-face:doc))))
