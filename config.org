@@ -40,6 +40,7 @@ good ten seconds to do by hand.
   - [[#faces][Faces]]
   - [[#enabling][Enabling]]
   - [[#window-display][Window display]]
+  - [[#killing-a-buffer-must-always-work][Killing a buffer must always work]]
 - [[#mode-line][Mode Line]]
   - [[#doom-space][Doom space]]
   - [[#display-time][Display time]]
@@ -378,90 +379,52 @@ good ten seconds to do by hand.
 #+end_src
 ** Window display
 
+The policy itself lives in its own repo: [[file:~/src/lisp/onlytwo.el/][onlytwo.el]].
+Its README carries the rules and the reasoning, =onlytwo-test.el= the cases; what
+stays here is which buffers are which, and turning it on.  (The 2026-09-27 spec,
+rule by rule, is in CONFIG-NOTES.org.)
+
 #+begin_src elisp
-;; Global window-placement policy for `display-buffer' (Claude Code, julia-repl,
-;; compilation, help...): at most two windows, ever. A new buffer goes to the pane
-;; on the RIGHT of the selected window, or to the selected window itself when that
-;; is already rightmost. The thresholds decide whether the split from a single
-;; window is possible at all — `split-window-sensibly' wants
-;; `split-width-threshold' columns for a side-by-side split (80 here; the default
-;; 160 is wider than most frames), and `split-height-threshold' nil forbids the
-;; stacked fallback. Below 80 a *sole* window is split stacked anyway: that third
-;; branch of `split-window-sensibly' takes the only usable window disregarding the
-;; height threshold (measured, see CONFIG-NOTES), so 80 is a preference there, not
-;; a guarantee.
-(setq split-width-threshold 80
-      split-height-threshold nil)
+(add-to-list 'load-path (expand-file-name "~/src/lisp/onlytwo.el/"))
+(require 'onlytwo)
 
-;; The default action chain cannot express "the other pane" — it splits whichever
-;; window it likes, third window included, and otherwise hands back the one you
-;; are already in — so this action goes FIRST in `display-buffer-alist', for every
-;; buffer name, and nothing opens a third window: help, compilation, magit,
-;; Vertico's buffer view all take the other pane. A rule that must WIN over this
-;; one has to sit EARLIER in the list, and `add-to-list' prepends, so add it below
-;; this block.
-;;
-;; The one exception is a buffer being *read* rather than worked in —
-;; `my/in-place-modes`: documentation and the dashboard. What you ask for from one
-;; of those takes the pane you asked from instead of the one beside it, which is
-;; what following a link in a help or Julia-doc buffer, or clicking a dashboard
-;; item, should do. Asking the rule about the *selected* window's buffer is what
-;; makes that one rule with no advice and no overriding action; the cost accepted
-;; is that a buffer arriving while documentation sits in the *left* pane takes
-;; that pane rather than the right one.
-(defconst my/in-place-modes '(helpful-mode julia-help-mode +dashboard-mode)
-  "Buffers that are read, not worked in.
-Documentation (elisp's from `helpful', Julia's from `julia-help-mode') and
-the Doom dashboard: what is asked for from one of these takes the window it was
-asked from instead of the pane beside it.  A mode named here that is not loaded
-yet is harmless -- `derived-mode-p' simply never matches it.")
+(setq onlytwo-in-place-modes '(helpful-mode julia-help-mode +dashboard-mode)
+      onlytwo-full-frame-modes '(dired-mode ibuffer-mode elfeed-search-mode))
+(onlytwo-mode +1)
+#+end_src
 
-(defun my/in-place-window-p ()
-  "Non-nil when the selected window shows a buffer from `my/in-place-modes'.
-A dedicated window never counts: this policy does not write into one."
-  (and (not (window-dedicated-p (selected-window)))
-       (with-current-buffer (window-buffer (selected-window))
-         (apply #'derived-mode-p my/in-place-modes))))
+** Killing a buffer must always work
 
-(defun my/display-buffer-max-two-windows (buffer alist)
-  "Display BUFFER in one of the frame's panes, never creating a third.
-The pane on the right of the selected window; the selected window itself when it
-is rightmost, or when documentation is being read there; the frame's other pane
-when the selected one is dedicated; a split only from a single window."
-  (or (display-buffer-reuse-window buffer alist)
-      (let* ((selected (selected-window))
-             (right (window-in-direction 'right selected))
-             (others (delq selected
-                           (window-list-1 nil 'nomini (window-frame selected))))
-             ;; `window--display-buffer' silently un-dedicates a window it is
-             ;; handed, so a dedicated one is never a target.
-             (usable (lambda (w) (and w (not (window-dedicated-p w)))))
-             (spare (seq-find usable others))
-             ;; The other pane, when there is one: the one on the right, or any
-             ;; pane for a caller that asked not to get this window back.
-             (other (or (and (funcall usable right) right)
-                        (and (cdr (assq 'inhibit-same-window alist)) spare))))
-        (cond
-         ;; Reading: this pane is the one that gets replaced.
-         ((my/in-place-window-p)
-          (window--display-buffer buffer selected 'reuse alist))
-         (other
-          (window--display-buffer buffer other 'reuse alist))
-         ((funcall usable selected)
-          (if others
-              ;; Rightmost of two: take over this pane.
-              (window--display-buffer buffer selected 'reuse alist)
-            ;; Single window: split it, or reuse it if splitting is impossible.
-            (or (and pop-up-windows (display-buffer-pop-up-window buffer alist))
-                (window--display-buffer buffer selected 'reuse alist))))
-         ;; The selected window is dedicated: the frame's other pane is the
-         ;; answer, since nil here reaches the default chain, which splits a THIRD
-         ;; window (measured, see CONFIG-NOTES).
-         (spare
-          (window--display-buffer buffer spare 'reuse alist))))))
+It did not, and the bug was not in the config: Doom's advice on
+`kill-current-buffer' (`doom--switch-to-fallback-buffer-maybe-a',
+doom-emacs.el:1095) calls `(switch-to-prev-buffer nil t)', which REFUSES to act on
+a window dedicated to its buffer -- it signals, and because the advice is
+`:before-until' the kill never runs and the buffer is unclosable for good
+(reproduced, measured, and still true on Doom's `master'; see CONFIG-NOTES).
+Doom is not patched here on purpose: it moves too fast for a local advice to
+age well.  The wrapper below is this config's own, and it stays in the config
+rather than in onlytwo.el because without Doom it has nothing to fix.
 
-(add-to-list 'display-buffer-alist
-             '("\\`" my/display-buffer-max-two-windows)) ; every buffer name
+Windows dedicated to their buffer are ordinary elsewhere: `+vterm/toggle'
+dedicates the terminal's (term/vterm/autoload.el:44), Doom's eshell dedicates
+its own, and treemacs and pdf-tools' outline are side windows, which are
+dedicated by nature.
+
+Clearing the dedication is not a workaround but the behaviour wanted: the buffer
+dies and the WINDOW STAYS, showing whatever it held before.  Left dedicated, the
+window would be deleted with the buffer instead (measured).
+
+#+begin_src elisp
+(defun my/kill-this-buffer ()
+  "Kill the current buffer, even from a window dedicated to it.
+The dedication is cleared first: `kill-current-buffer' is advised by Doom, and
+that advice calls `switch-to-prev-buffer', which signals in a dedicated window
+and so aborts the kill.  See the comment above."
+  (interactive)
+  (let ((window (selected-window)))
+    (when (window-dedicated-p window)
+      (set-window-dedicated-p window nil)))
+  (kill-current-buffer))
 #+end_src
 
 * Mode Line
@@ -1431,7 +1394,7 @@ From the PDF specification 1.7:
  ;; Normal mode workarounds (keep it to minimum)
  ;; :n "u"     #'emacs-undo ;; now undo works fine
  :nim "C-e" #'doom/forward-to-last-non-comment-or-eol
- :n "q"     #'kill-current-buffer
+ :n "q"     #'my/kill-this-buffer
  :n "Q"     #'mark-whole-buffer ;; was undefined
  ;; TODO Take care of org-mode?
  ;; I move by paragraphs more then by sentences
@@ -5473,7 +5436,12 @@ For a git and github integration with emacs!
   (setq ;; magit-turn-on-auto-revert-mode nil
    magit-diff-hide-trailing-cr-characters t
    ;; magit-set-upstream-on-push 'dontask
-   ;; magit-display-buffer-function 'magit-display-buffer-fullframe-status-v1
+   ;; Status, log and diff take the whole frame (2026-09-27 quiz: magit is a task
+   ;; of its own, not something to glance at beside your code), and magit puts the
+   ;; previous layout back when you bury it -- `magit-bury-buffer-function' is
+   ;; `magit-mode-quit-window', Doom's default.  Upstream's own option, so this
+   ;; needs no local machinery.
+   magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1
    magit-save-repository-buffers 'dontask
    magit-diff-paint-whitespace t
    ;; magit-diff-refine-ignore-whitespace nil
@@ -5556,7 +5524,7 @@ Show the rainbow progres line.
    :map pdf-view-mode-map
    :n "g g"            #'pdf-view-first-page
    :n "G"            #'pdf-view-last-page
-   :n "q"            #'kill-current-buffer
+   :n "q"            #'my/kill-this-buffer
    ;; Vertical movement
    :n "j"            #'brust-pdf-view-next-line-or-next-page-5
    :n "k"            #'brust-pdf-view-previous-line-or-previous-page-5
@@ -5689,12 +5657,32 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
 (use-package! zoom
   :defer t
   :init
+  ;; zoom is the config's ONE proportion mechanism (2026-09-27 quiz, rule 9):
+  ;; the selected window is enlarged to `zoom-size' and the others balanced, so
+  ;; whichever pane you are in gets 61.8% -- the terminal while you type in it,
+  ;; the code while you edit, the doc while you read.
+  ;;
+  ;; An "ignored" buffer is not enlarged, only balanced: with two panes that is
+  ;; 50/50, which is what a doc should get while you read it (the same quiz).
+  ;; `special-mode' sweeps up the read-only utilities wholesale -- `help-mode',
+  ;; `julia-help-mode', ibuffer and friends all derive from it.  The rest are
+  ;; named because they are root modes with no parent to catch them.
+  ;;
+  ;; These were SYMBOLS' work to do and were strings until 2026-09-27, so
+  ;; dired, ediff and sr-speedbar were zoomed all along: `derived-mode-p' takes
+  ;; mode symbols, and against a string it simply answers nil (measured, see
+  ;; CONFIG-NOTES).
   (setq zoom-size '(0.618 . 0.618)
-        zoom-ignored-major-modes '("dired-mode"
-                                   "ediff-mode"
-                                   ;; "eshell-mode"
-                                   ;; "neotree-mode"
-                                   "sr-speedbar-mode")
+        zoom-ignored-major-modes '(dired-mode
+                                   ediff-mode
+                                   ;; eshell-mode
+                                   ;; neotree-mode
+                                   sr-speedbar-mode
+                                   special-mode
+                                   helpful-mode
+                                   org-agenda-mode
+                                   elfeed-search-mode
+                                   magit-status-mode)
         zoom-ignored-buffer-name-regexps '("^*calc" "^\\*magit: +.*"))
   (add-hook! 'emacs-startup-hook (zoom-mode +1)))
 
