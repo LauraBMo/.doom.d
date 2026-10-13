@@ -3962,7 +3962,7 @@ buffer rather than signalling."
 *** TODO EmacsVTerm
 From [[https://github.com/wentasah/EmacsVterm.jl][EmacsVTerm.jl]]; Modify it so docs are shown into helpful.el buffer with helpful bindings and clicable links...
 
-The Emacs half of this lives in its own repo now, [[file:~/src/julia-help.el/][julia-help.el]], so the Julia side can point
+The Emacs half of this lives in its own repo now, [[file:~/src/lisp/julia-help.el/][julia-help.el]], so the Julia side can point
 at something shareable.  Julia's =@doc= opens a buffer of its own --
 =*julia-help: sin*= -- holding the binding, the defining module, the
 signature, a =Methods= table whose rows open the source, and docstring
@@ -3979,14 +3979,13 @@ is: the checkout under =~/src= is the copy being edited, and straight's
 clone a second one.
 
 #+begin_src elisp
-(add-to-list 'load-path (expand-file-name "~/src/julia-help.el/"))
+(add-to-list 'load-path (expand-file-name "~/src/lisp/julia-help.el/"))
 (require 'julia-help)
 #+end_src
 
 Where a doc buffer lands is the window policy's business rather than the
 package's: =julia-help-mode= is in =my/in-place-modes=, and the mode map is
 given precedence over evil's normal state further down.
-
 
 ** Claude Code
 Bridges the Claude Code CLI into Emacs via [[https://github.com/manzaltu/claude-code-ide.el][claude-code-ide.el]]
@@ -5205,6 +5204,15 @@ Do not add single deleted chars to =kill-ring=
 
 (advice-add 'evil-delete-char :around 'bb/evil-delete--black-hole-register)
 (advice-add 'evil-delete-backward-char :around 'bb/evil-delete--black-hole-register)
+#+end_src
+
+*** Julia help
+[[https://github.com/LauraBMo/julia-help.el][julia-help]] buffers open in normal state under Evil, which shadows the
+mode map.  Give it precedence there.
+
+#+begin_src elisp
+(with-eval-after-load 'evil
+  (evil-make-overriding-map julia-help-mode-map 'normal))
 #+end_src
 
 ** COMMENT Formatter
