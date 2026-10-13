@@ -1009,26 +1009,24 @@ With prefix argument all files (hidden, .gitignoreds, ....) are shown as candida
 
 ** File templates
 
+Doom's file templates are yasnippet snippets, and =+file-templates--expand= reaches them
+through yasnippet's tables: =+file-templates-dir= exists only to put a directory on
+=yas-snippet-dirs=.  That directory sits inside the modules checkout
+(=~/.config/emacs/sources/doom+/modules/editor/file-templates/=), where a =doom upgrade= can
+take away anything parked in it.  So the three templates live in =snippets/<mode>/=, this
+config's own snippet directory, which yas already loads and an upgrade does not touch --
+no copying after a sync.  (The =snippets/julia-mode/= directory *was* a git submodule,
+=julia-jasnippets=; it was never initialised, so it contributed nothing, and it is gone.
+See CONFIG-NOTES.org.)
+
+The mode directory names are what tie a snippet to its rule below: =:mode 'latex-mode=
+looks the trigger up among =latex-mode/= snippets, wherever that directory sits.
+
 #+begin_src elisp
-;; +file-templates-dir
-
-;; It is run once when upgrading or syncing doom (when .emacs.d/module/ folder might be modified).
-;; cp -r ~/.config/doom/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates
-;; alias doom-sync='~/.emacs.d/bin/doom sync && \
-;;     cp -r ~/.config/doom/local/templates/* ~/.emacs.d/modules/editor/file-templates/templates && \
-;;     echo > Templates sync'
-;; alias doom-up='~/.emacs.d/bin/doom upgrade && doom-sync'
-
 (set-file-template! "[.]sing" :trigger "__sing" :mode 'c++-mode)
 (set-file-template! "[.]tex"  :trigger "__tex"  :mode 'latex-mode)
 (set-file-template! "[.]jl"   :trigger "__jl"   :mode 'julia-mode)
 #+end_src
-
-#+begin_src bash :tangle no
-cp -r ~/.config/doom/local/templates/* ~/.config/emacs/modules/editor/file-templates/templates
-#+end_src
-
-#+RESULTS:
 
 ** High light TODOS
 *** Making Items

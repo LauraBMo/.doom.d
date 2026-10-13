@@ -1,4 +1,0 @@
-[submodule "snippets/julia-mode"]
-	path = snippets/julia-mode
-	url = git@github.com:LauraBMo/julia-jasnippets.git
-	branch = LauraBMo
