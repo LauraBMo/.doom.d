@@ -4721,6 +4721,26 @@ Make it compatible with =org-mode=
 ** Recentf
 #+begin_src elisp
 (add-hook! 'emacs-startup-hook (recentf-mode 1))
+
+;; recentf writes its list to disk only on a clean exit (recentf.el puts
+;; `recentf-save-list' on `kill-emacs-hook' and nowhere else), so a crash loses
+;; every file opened since the last clean exit. Save on each visit instead.
+(after! recentf
+  (setq recentf-save-file "~/.config/doom/local/recentf")
+
+  (defvar +recentf-last-saved nil
+    "`recentf-list' as last written to disk, to skip redundant writes.")
+
+  (defun +recentf-save-on-visit-h ()
+    "Persist `recentf-list' after visiting a file."
+    (when (and recentf-mode
+               (not (equal recentf-list +recentf-last-saved)))
+      (setq +recentf-last-saved recentf-list)
+      (recentf-save-list)))
+
+  ;; Depth 90: run after `recentf-track-opened-file' (default depth 0), so the
+  ;; file just visited is already in the list when we write it.
+  (add-hook! 'find-file-hook :depth 90 #'+recentf-save-on-visit-h))
 #+end_src
 ** Projectile
 
