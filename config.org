@@ -5657,6 +5657,18 @@ Take fancy screenshots of my code [[https://github.com/tecosaur/screenshot][scre
  (use-package! tidal
    :config
    (setq tidal-boot-script-path "~/src/tidal-music/BootTidal.hs"))
+
+;; Live visuals for Tidal: the daemon turns the OSC Tidal already sends on its
+;; second target into PNG frames, and tidal-viz.el shows them inline, under
+;; whichever block was last sent.  Its own repo now, on load-path the way
+;; julia-help.el is.  See CONFIG-NOTES.org.
+(add-to-list 'load-path (expand-file-name "~/src/lisp/tidal-viz.el/"))
+(require 'tidal-viz)
+
+;; Turn the inline visual on in any Tidal buffer.  The frame rides in an overlay,
+;; so the .tidal file itself is never modified.  Colours follow the theme.
+(add-hook 'tidal-mode-hook #'tidal-viz-inline-mode)
+(add-hook 'literate-tidal-mode-hook #'tidal-viz-inline-mode)
 #+end_src
 
 ** Transpose frames
