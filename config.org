@@ -3298,6 +3298,10 @@ Bad
 ;; Julia REPL
 ;; (defun open-popup-new-frame (buffer &optional alist) (+popup-display-buffer-fullframe-fn buffer alist))
 (use-package! julia-repl
+  ;; :demand so that `(after! julia-repl ...)' registers `julia-repl--show' in
+  ;; `vterm-eval-cmds' at startup.  Deferred, a REPL started before the load has
+  ;; no handler, and vterm drops its escape with "Failed to find command".
+  :demand t
   :hook (julia-ts-mode . julia-repl-mode)
   )
 ;; :config
@@ -3309,6 +3313,15 @@ Bad
 #+end_src
 
 *** Julia repl mode
+#+begin_src elisp :tangle packages.el
+(package! julia-repl
+    :recipe (:host github :repo "LauraBMo/julia-repl" :branch "json-documentation"))
+
+;; `:lang julia' pins julia-repl to 0173237a, which predates the fork's
+;; MIME-types work; unpin so `doom sync -u' can follow the branch.
+(unpin! julia-repl)
+#+end_src
+
 #+begin_src elisp
 ;; (setq auto-mode-alist (delete '("\\.jl\\'" . ess-julia-mode) auto-mode-alist))
 
